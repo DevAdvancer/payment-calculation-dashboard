@@ -121,6 +121,7 @@ function mapPaymentImportRow(row, index, xlsxUtils) {
     type: String(getCell(row, ["Type", "type"]) || "").trim(),
     notes: String(getCell(row, ["Remarks", "Notes", "notes"]) || "").trim(),
     poNum: String(getCell(row, ["PO#", "PO Num", "poNum"]) || "").trim(),
+    sheetScope: "payment",
   };
 }
 
@@ -306,6 +307,7 @@ export default function PaymentCalcPage() {
           type:        r["Type"]    || r["type"]    || "",
           notes:       r["Remarks"] || r["Notes"]   || r["notes"] || "",
           poNum:       r["PO#"]     || r["poNum"]   || "",
+          sheetScope:   "payment",
         }));
         importEntries(mapped);
         showToast(`Imported ${mapped.length} entries`);

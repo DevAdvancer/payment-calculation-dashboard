@@ -127,6 +127,7 @@ function mapSpecialImportRow(row, index, isLaidOff, xlsxUtils) {
     status,
     type: String(getCell(row, ["Type", "type"]) || "").trim(),
     notes: isLaidOff ? String(getCell(row, ["Remarks", "Notes", "notes"]) || "").trim() : "",
+    sheetScope: isLaidOff ? "laidoff" : "defaulter",
   };
 }
 
@@ -323,7 +324,6 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
         {kpiData.map(kpi => (
           <div className="kpi-card" key={kpi.label}>
             <div className="kpi-label">{kpi.label}</div>
-            <div className="kpi-value">{kpi.count}</div>
             <div className="kpi-sub" style={{ color: isLaidOff ? "#fb923c" : "#f87171" }}><MoneyStack usd={kpi.sum.USD} gbp={kpi.sum.GBP} decimals={0} /></div>
           </div>
         ))}

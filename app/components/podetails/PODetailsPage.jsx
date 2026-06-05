@@ -203,6 +203,7 @@ function mapPoImportRow(row, index, utils) {
     notes: String(getCell(row, ["Remarks", "Notes", "notes"]) || "").trim(),
     poNum: String(getCell(row, ["PO#", "PO Num", "poNum"]) || "").trim(),
     currency: currency === "GBP" || currency === "USD" ? currency : undefined,
+    sheetScope: "po-details",
   };
 }
 
@@ -245,6 +246,7 @@ export default function PODetailsPage() {
 
   const [sort, setSort]       = useState({ key:"candidate", dir:"asc" });
   const [search, setSearch]   = useState("");
+  const [poFilters, setPoFilters] = useState({ company: "", month: "", year: "" });
   const [selected, setSelected] = useState(new Set());
   const [editingId, setEditingId] = useState(null);
   const [editBuf, setEditBuf]   = useState({});
@@ -271,6 +273,17 @@ export default function PODetailsPage() {
     setShowModal(true);
   };
   const closeModal = () => setShowModal(false);
+
+  const poEntries = useMemo(
+    () => entries.filter(e => !e.sheetScope || e.sheetScope === "po-details"),
+    [entries]
+  );
+  const filterOptions = useMemo(() => ({
+    companies: [...new Set(poEntries.map(e => e.company).filter(Boolean))].sort(),
+    months: [...new Set(poEntries.map(e => e.month).filter(Boolean))]
+      .sort((a, b) => MONTH_NAMES.indexOf(a) - MONTH_NAMES.indexOf(b)),
+    years: [...new Set(poEntries.map(e => e.year).filter(Boolean))].sort((a, b) => Number(b) - Number(a)),
+  }), [poEntries]);
 
   const { pct, months } = parseAgreement(form.agreement, form.customPct, form.customMonths);
   const totalSalary = form.payStructure === "annual"
@@ -400,7 +413,7 @@ export default function PODetailsPage() {
   const rows = useMemo(() => {
     /* Group all installments by candidate */
     const groups = new Map();
-    entries.forEach(e => {
+    poEntries.forEach(e => {
       const key = (e.candidate || "").trim().toLowerCase();
       if (!key) return;
       if (!groups.has(key)) groups.set(key, []);
@@ -447,6 +460,8 @@ export default function PODetailsPage() {
         company:    first.company,
         currency:   cur,
         poDate:     first.poDate,                              // DOJ
+        month:      pick("month"),
+        year:       pick("year"),
         signupDate: pick("signupDate"),
         placedDate: pick("placedDate"),
         closedBy:   pick("closedBy"),
@@ -462,6 +477,9 @@ export default function PODetailsPage() {
     });
 
     let arr = aggregated;
+    if (poFilters.company) arr = arr.filter(r => r.company === poFilters.company);
+    if (poFilters.month) arr = arr.filter(r => r.month === poFilters.month);
+    if (poFilters.year) arr = arr.filter(r => String(r.year) === String(poFilters.year));
     if (search.trim()) {
       const q = search.toLowerCase();
       arr = arr.filter(r =>
@@ -476,7 +494,7 @@ export default function PODetailsPage() {
       return sort.dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
     });
     return arr;
-  }, [entries, sort, search]);
+  }, [poEntries, sort, search, poFilters]);
 
   const toggleSort = (key) => setSort(s => ({ key, dir: s.key === key && s.dir === "asc" ? "desc" : "asc" }));
   const toggleAll  = (checked) => setSelected(checked ? new Set(rows.map(r => r.id)) : new Set());
@@ -495,7 +513,7 @@ export default function PODetailsPage() {
   const handleDeleteRow = async (row) => {
     const sameCandidate = (e) =>
       (e.candidate || "").trim().toLowerCase() === (row.candidate || "").trim().toLowerCase();
-    const candidateEntries = entries.filter(sameCandidate);
+    const candidateEntries = poEntries.filter(sameCandidate);
     const count = candidateEntries.length;
     if (!count) return;
 
@@ -521,7 +539,7 @@ export default function PODetailsPage() {
     let totalEntries = 0;
     const toDelete = [];
     for (const row of selectedRows) {
-      const matches = entries.filter(sameAs(row));
+      const matches = poEntries.filter(sameAs(row));
       totalEntries += matches.length;
       toDelete.push(...matches);
     }
@@ -602,7 +620,7 @@ export default function PODetailsPage() {
   };
 
   const handleViewCandidate = (row) => {
-    const candidateEntries = entries.filter(e =>
+    const candidateEntries = poEntries.filter(e =>
       (e.candidate || "").trim().toLowerCase() === (row.candidate || "").trim().toLowerCase()
     );
     if (!candidateEntries.length) { showToast("No entries found for this candidate"); return; }
@@ -715,6 +733,23 @@ export default function PODetailsPage() {
               onFocus={e => e.target.style.borderColor="var(--color-accent)"}
               onBlur={e => e.target.style.borderColor="var(--color-border)"} />
           </div>
+          <select className="filter-select" value={poFilters.company} onChange={e => setPoFilters(f => ({ ...f, company: e.target.value }))} style={{ height:29, fontSize:12 }}>
+            <option value="">All Companies</option>
+            {filterOptions.companies.map(c => <option key={c}>{c}</option>)}
+          </select>
+          <select className="filter-select" value={poFilters.month} onChange={e => setPoFilters(f => ({ ...f, month: e.target.value }))} style={{ height:29, fontSize:12 }}>
+            <option value="">All Months</option>
+            {filterOptions.months.map(m => <option key={m}>{m}</option>)}
+          </select>
+          <select className="filter-select" value={poFilters.year} onChange={e => setPoFilters(f => ({ ...f, year: e.target.value }))} style={{ height:29, fontSize:12 }}>
+            <option value="">All Years</option>
+            {filterOptions.years.map(y => <option key={y}>{y}</option>)}
+          </select>
+          {Object.values(poFilters).some(Boolean) && (
+            <button className="btn-toolbar" style={{ padding:"5px 10px", fontSize:12 }} onClick={() => setPoFilters({ company:"", month:"", year:"" })}>
+              Clear
+            </button>
+          )}
           <button className="btn-toolbar btn-export" style={{ padding:"5px 10px", fontSize:12 }} onClick={openModal}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Row
