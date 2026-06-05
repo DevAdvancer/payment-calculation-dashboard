@@ -8,7 +8,7 @@ export async function PATCH(request, { params }) {
     const parsed = ExpensePatchSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Validation failed", details: formatValidationErrors(parsed.error.errors) },
+        { error: "Validation failed", details: formatValidationErrors(parsed.error) },
         { status: 400 }
       );
     }

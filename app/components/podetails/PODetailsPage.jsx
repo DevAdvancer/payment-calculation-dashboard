@@ -233,6 +233,7 @@ export default function PODetailsPage() {
   const [editingId, setEditingId] = useState(null);
   const [editBuf, setEditBuf]   = useState({});
   const [showModal, setShowModal] = useState(false);
+  const [pasteImport, setPasteImport] = useState(null);
   const fileRef = useRef();
   const pasteTargetRef = useRef();
 
@@ -567,29 +568,21 @@ export default function PODetailsPage() {
     if (!text.trim() || !text.includes("\t")) return;
 
     const rowObjects = clipboardRowsToObjects(text);
-    const accepted = [];
-    rowObjects.forEach((row, i) => {
-      const mapped = mapPoImportRow(row, i);
-      if (!mapped) return;
-      const confirmText = [
-        "Import this PO row?",
-        "",
-        `Name: ${mapped.candidate}`,
-        `Company: ${mapped.company || "-"}`,
-        `DOJ: ${mapped.poDate || "-"}`,
-        `Agreement: ${mapped.type || "-"}`,
-        `Total: ${fmtMoneyC(mapped.amount, mapped.currency || currencyOf(mapped.company), 0)}`,
-      ].join("\n");
-      if (confirm(confirmText)) accepted.push(mapped);
-    });
-
-    if (accepted.length) {
+    const mapped = rowObjects.map((row, i) => mapPoImportRow(row, i)).filter(Boolean);
+    if (mapped.length) {
       e.preventDefault();
-      importMappedRows(accepted, "Pasted");
+      setPasteImport({ rows: mapped });
     } else if (rowObjects.length) {
       e.preventDefault();
-      showToast("Paste import cancelled");
+      showToast("No valid PO rows found in clipboard");
     }
+  };
+
+  const confirmPasteImport = async () => {
+    if (!pasteImport?.rows?.length) return;
+    const rowsToImport = pasteImport.rows;
+    setPasteImport(null);
+    await importMappedRows(rowsToImport, "Pasted");
   };
 
   const handleViewCandidate = (row) => {
@@ -831,6 +824,59 @@ export default function PODetailsPage() {
       </div>
 
       {/* ── New Placement Modal (2-step form) ── */}
+      {pasteImport && (
+        <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && setPasteImport(null)}>
+          <div style={{ background:"var(--color-surface)", borderRadius:"var(--radius-lg)", width:"100%", maxWidth:620, boxShadow:"0 24px 70px rgba(15,23,42,.18)", overflow:"hidden", border:"1px solid var(--color-border)" }}>
+            <div style={{ padding:"18px 22px", borderBottom:"1px solid var(--color-border)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+              <div>
+                <div style={{ fontSize:16, fontWeight:700, color:"var(--color-ink)" }}>Paste PO Details Rows</div>
+                <div style={{ fontSize:12, color:"var(--color-ink-muted)", marginTop:3 }}>
+                  {pasteImport.rows.length} copied row{pasteImport.rows.length === 1 ? "" : "s"} will be imported into PO Details.
+                </div>
+              </div>
+              <button className="modal-close" onClick={() => setPasteImport(null)} style={{ fontSize:20, lineHeight:1 }}>×</button>
+            </div>
+            <div style={{ padding:22 }}>
+              <div style={{ maxHeight:260, overflow:"auto", border:"1px solid var(--color-border)", borderRadius:"var(--radius-md)" }}>
+                <table className="excel-table" style={{ minWidth:560 }}>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Company</th>
+                      <th>DOJ</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pasteImport.rows.slice(0, 8).map((row, i) => (
+                      <tr key={`${row.id}-${i}`}>
+                        <td style={{ fontWeight:600 }}>{row.candidate || "—"}</td>
+                        <td>{row.company || "—"}</td>
+                        <td>{fmtDate(row.poDate)}</td>
+                        <td className="num">{fmtMoneyC(row.amount, row.currency || currencyOf(row.company), 0)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {pasteImport.rows.length > 8 && (
+                <div style={{ fontSize:12, color:"var(--color-ink-muted)", marginTop:8 }}>
+                  Showing first 8 rows. All {pasteImport.rows.length} copied rows will be pasted.
+                </div>
+              )}
+              <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:18 }}>
+                <button onClick={() => setPasteImport(null)} style={{ padding:"8px 14px", border:"1px solid var(--color-border)", borderRadius:"var(--radius-md)", background:"var(--color-surface-2)", color:"var(--color-ink-muted)", cursor:"pointer", fontWeight:600 }}>
+                  Cancel
+                </button>
+                <button onClick={confirmPasteImport} style={{ padding:"8px 14px", border:"1px solid var(--color-primary)", borderRadius:"var(--radius-md)", background:"var(--color-primary)", color:"#fff", cursor:"pointer", fontWeight:700 }}>
+                  Paste {pasteImport.rows.length} Row{pasteImport.rows.length === 1 ? "" : "s"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showModal && (
         <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && closeModal()}
           style={{ alignItems:"flex-start", paddingTop:32, paddingBottom:32, overflowY:"auto" }}>

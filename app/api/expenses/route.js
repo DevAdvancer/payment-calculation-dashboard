@@ -18,7 +18,7 @@ export async function POST(request) {
       const parsed = BulkExpenseSchema.safeParse(body);
       if (!parsed.success) {
         return NextResponse.json(
-          { error: "Validation failed", details: formatValidationErrors(parsed.error.errors) },
+          { error: "Validation failed", details: formatValidationErrors(parsed.error) },
           { status: 400 }
         );
       }
@@ -28,7 +28,7 @@ export async function POST(request) {
     const parsed = ExpenseSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Validation failed", details: formatValidationErrors(parsed.error.errors) },
+        { error: "Validation failed", details: formatValidationErrors(parsed.error) },
         { status: 400 }
       );
     }

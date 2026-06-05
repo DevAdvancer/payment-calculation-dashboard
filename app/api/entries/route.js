@@ -19,7 +19,7 @@ export async function POST(request) {
       const parsed = BulkEntrySchema.safeParse(body);
       if (!parsed.success) {
         return NextResponse.json(
-          { error: "Validation failed", details: formatValidationErrors(parsed.error.errors) },
+          { error: "Validation failed", details: formatValidationErrors(parsed.error) },
           { status: 400 }
         );
       }
@@ -30,7 +30,7 @@ export async function POST(request) {
     const parsed = EntrySchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Validation failed", details: formatValidationErrors(parsed.error.errors) },
+        { error: "Validation failed", details: formatValidationErrors(parsed.error) },
         { status: 400 }
       );
     }

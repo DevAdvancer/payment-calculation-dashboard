@@ -15,10 +15,9 @@ import MoneyStack from "@/app/components/MoneyStack";
 import QuickEntryModal from "./QuickEntryModal";
 
 export default function PaymentCalcPage() {
-  const { getActive, getCandidateNames, updateEntry, updateStatus, deleteEntry, importEntries, showToast, loading, navigate } =
+  const { entries, getCandidateNames, updateEntry, updateStatus, deleteEntry, importEntries, showToast, loading, navigate } =
     useDashboardStore();
 
-  const entries       = getActive();
   const allNames      = getCandidateNames();
 
   const [searchTerm, setSearchTerm]     = useState("");
