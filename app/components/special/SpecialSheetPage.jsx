@@ -47,6 +47,16 @@ function parseMoney(value) {
   return parseFloat(cleaned) || 0;
 }
 
+function normalizeCompanyName(value) {
+  const raw = String(value || "").trim();
+  const key = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (key === "sst" || key === "silverspace" || key === "silverspaceinc") return "SilverSpace Inc";
+  if (key === "vizva" || key === "vizvainc") return "Vizva Inc";
+  if (key === "vizvauk" || key === "vizvaukltd") return "Vizva UK Ltd";
+  if (key === "flawless" || key === "flawlessed") return "Flawless-ED";
+  return raw;
+}
+
 function toMMDDYYYY(date) {
   if (!date) return "";
   const d = date instanceof Date ? date : new Date(date);
@@ -87,6 +97,12 @@ function normalizeSheetStatus(status, isLaidOff) {
   return raw === "Default" ? "Default" : "Default";
 }
 
+function normalizeInstance(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (raw === "second half" || raw === "second" || raw === "2nd half" || raw === "2") return "Second Half";
+  return "First Half";
+}
+
 function mapSpecialImportRow(row, index, isLaidOff, xlsxUtils) {
   const candidate = String(getCell(row, ["Name of the Candidate", "Candidate", "Name", "candidate"]) || "").trim();
   if (!candidate) return null;
@@ -98,12 +114,12 @@ function mapSpecialImportRow(row, index, isLaidOff, xlsxUtils) {
 
   return {
     id: String(Date.now() + index),
-    company: String(getCell(row, ["Company", "company"]) || "").trim(),
+    company: normalizeCompanyName(getCell(row, ["Company", "company"])),
     candidate,
     poDate,
     month: String(getCell(row, ["Month", "month"]) || parts.month || "").trim(),
     year: String(getCell(row, ["Year", "year"]) || parts.year || "").trim(),
-    instance: String(getCell(row, ["Instance of Payment", "Instance", "instance"]) || parts.instance).trim(),
+    instance: normalizeInstance(getCell(row, ["Instance of Payment", "Instance", "instance"]) || parts.instance),
     amount,
     paid: 0,
     due: amount,

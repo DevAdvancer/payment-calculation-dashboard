@@ -112,6 +112,16 @@ function parseMoney(value) {
   return parseFloat(cleaned) || 0;
 }
 
+function normalizeCompanyName(value) {
+  const raw = String(value || "").trim();
+  const key = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (key === "sst" || key === "silverspace" || key === "silverspaceinc") return "SilverSpace Inc";
+  if (key === "vizva" || key === "vizvainc") return "Vizva Inc";
+  if (key === "vizvauk" || key === "vizvaukltd") return "Vizva UK Ltd";
+  if (key === "flawless" || key === "flawlessed") return "Flawless-ED";
+  return raw;
+}
+
 function normalizeDateCell(value, utils) {
   if (value == null || value === "") return "";
   if (value instanceof Date && !isNaN(value.getTime())) return toMMDDYYYY(value);
@@ -141,6 +151,12 @@ function poDateParts(poDate) {
   };
 }
 
+function normalizeInstance(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (raw === "second half" || raw === "second" || raw === "2nd half" || raw === "2") return "Second Half";
+  return "First Half";
+}
+
 function rowLooksEmpty(row) {
   return !Object.values(row || {}).some(v => String(v ?? "").trim() !== "");
 }
@@ -149,7 +165,7 @@ function mapPoImportRow(row, index, utils) {
   const candidate = String(getCell(row, ["Name", "Name of the Candidate", "Candidate", "candidate"]) || "").trim();
   if (!candidate) return null;
 
-  const company = String(getCell(row, ["Company", "company"]) || "").trim();
+  const company = normalizeCompanyName(getCell(row, ["Company", "company"]));
   const agreement = agreementInfo(getCell(row, ["Agrmt", "Agreement", "Type", "agreement", "type"]));
   const salary = parseMoney(getCell(row, ["Salary", "Annual Salary", "Annual Package", "salary"]));
   const importedTotal = parseMoney(getCell(row, ["Total", "Total Contract", "Total Amount", "Contract Value", "totalAmt"]));
@@ -177,7 +193,7 @@ function mapPoImportRow(row, index, utils) {
     poDate,
     month: String(getCell(row, ["Month", "month"]) || dateParts.month || "").trim(),
     year: String(getCell(row, ["Year", "year"]) || dateParts.year || "").trim(),
-    instance: String(getCell(row, ["Instance of Payment", "Instance", "instance"]) || dateParts.instance).trim(),
+    instance: normalizeInstance(getCell(row, ["Instance of Payment", "Instance", "instance"]) || dateParts.instance),
     amount: total,
     paid,
     due: balance,
