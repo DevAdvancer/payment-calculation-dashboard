@@ -1,0 +1,28 @@
+{
+  "name": "payment-calculation-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "@tanstack/react-table": "^8.21.3",
+    "jspdf": "^4.2.1",
+    "next": "^14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.6.0",
+    "xlsx": "^0.18.5",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.5",
+    "playwright": "^1.59.1"
+  }
+}
