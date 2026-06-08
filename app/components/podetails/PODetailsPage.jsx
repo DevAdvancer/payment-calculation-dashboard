@@ -168,7 +168,7 @@ function rowLooksEmpty(row) {
 }
 
 function mapPoImportRow(row, index, utils) {
-  const candidate = String(getCell(row, ["Name", "Name of the Candidate", "Candidate", "candidate"]) || "").trim();
+  const candidate = String(getCell(row, ["Name", "Name of the Candidate", "Candidate Name", "CandidateName", "Candidate", "candidate"]) || "").trim();
   if (!candidate) return null;
 
   const company = normalizeCompanyName(getCell(row, ["Company", "company"]));
@@ -227,7 +227,15 @@ function clipboardRowsToObjects(text) {
   if (!table.length) return [];
 
   const first = table[0].map(cleanHeader);
-  const known = PO_IMPORT_HEADERS.map(cleanHeader);
+  const known = [
+    ...PO_IMPORT_HEADERS,
+    "Candidate", "Name", "Candidate Name", "CandidateName",
+    "DOJ", "Date of Joining", "doj", "dateofjoining", "PO Date", "poDate", "Date",
+    "Salary", "Annual Salary", "Annual Package", "salary",
+    "Total Contract", "Total Amount", "Contract Value", "totalAmt",
+    "Agrmt", "Agreement", "Type", "agreement", "type",
+    "Remarks", "Notes", "notes"
+  ].map(cleanHeader);
   const hasHeader = first.some(h => known.includes(h) || ["candidate", "nameofcandidate", "dateofjoining"].includes(h));
   const headers = hasHeader ? table[0] : PO_IMPORT_HEADERS;
   const rows = hasHeader ? table.slice(1) : table;

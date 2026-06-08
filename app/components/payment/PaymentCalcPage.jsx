@@ -95,12 +95,12 @@ function normalizeInstance(value) {
 }
 
 function mapPaymentImportRow(row, index, xlsxUtils) {
-  const candidate = String(getCell(row, ["Name of the Candidate", "Candidate", "Name", "candidate"]) || "").trim();
+  const candidate = String(getCell(row, ["Name of the Candidate", "Candidate Name", "CandidateName", "Candidate", "Name", "candidate"]) || "").trim();
   if (!candidate) return null;
 
-  const poDate = normalizeDateCell(getCell(row, ["Date", "PO Date", "poDate"]), xlsxUtils);
+  const poDate = normalizeDateCell(getCell(row, ["Date", "PO Date", "poDate", "DOJ", "Date of Joining", "doj", "dateofjoining"]), xlsxUtils);
   const parts = dateParts(poDate);
-  const amount = parseMoney(getCell(row, ["USD", "Amount", "amount"]));
+  const amount = parseMoney(getCell(row, ["USD", "Amount", "amount", "Salary", "salary", "Total", "total", "Value", "value"]));
   const paid = parseMoney(getCell(row, ["Paid", "paid"]));
   const due = parseMoney(getCell(row, ["Due", "due"])) || (normalizeStatus(getCell(row, ["Status", "status"])) === "Paid" ? 0 : amount);
 
@@ -120,7 +120,7 @@ function mapPaymentImportRow(row, index, xlsxUtils) {
     status: normalizeStatus(getCell(row, ["Status", "status"])),
     type: String(getCell(row, ["Type", "type"]) || "").trim(),
     notes: String(getCell(row, ["Remarks", "Notes", "notes"]) || "").trim(),
-    poNum: String(getCell(row, ["PO#", "PO Num", "poNum"]) || "").trim(),
+    poNum: String(getCell(row, ["PO#", "PO Num", "poNum", "po"]) || "").trim(),
     sheetScope: "payment",
   };
 }
@@ -139,7 +139,13 @@ function clipboardRowsToObjects(text) {
   if (!table.length) return [];
 
   const first = table[0].map(cleanHeader);
-  const known = PAYMENT_IMPORT_HEADERS.map(cleanHeader);
+  const known = [
+    ...PAYMENT_IMPORT_HEADERS,
+    "Candidate", "Name", "Candidate Name", "CandidateName",
+    "PO Date", "poDate", "DOJ", "Date of Joining", "doj", "dateofjoining",
+    "USD", "Amount", "amount", "Salary", "salary", "Total", "total",
+    "PO#", "PO Num", "poNum", "po", "Remarks", "Notes", "notes"
+  ].map(cleanHeader);
   const hasHeader = first.some(h => known.includes(h) || h === "candidate" || h === "nameofcandidate");
   const headers = hasHeader ? table[0] : PAYMENT_IMPORT_HEADERS;
   const rows = hasHeader ? table.slice(1) : table;
@@ -388,7 +394,7 @@ export default function PaymentCalcPage() {
   );
 
   return (
-    <div className="page-inner">
+    <div className="page-inner" ref={pasteTargetRef} onPaste={handlePasteRows} tabIndex={0} style={{ outline: "none" }}>
       {/* Shared datalist for the editable Type-of-Service column.
           Any value typed once becomes available to every row's input. */}
       <datalist id="svc-type-options">

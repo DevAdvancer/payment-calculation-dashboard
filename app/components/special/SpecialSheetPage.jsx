@@ -104,7 +104,7 @@ function normalizeInstance(value) {
 }
 
 function mapSpecialImportRow(row, index, isLaidOff, xlsxUtils) {
-  const candidate = String(getCell(row, ["Name of the Candidate", "Candidate", "Name", "candidate"]) || "").trim();
+  const candidate = String(getCell(row, ["Name of the Candidate", "Candidate Name", "CandidateName", "Candidate", "Name", "candidate"]) || "").trim();
   if (!candidate) return null;
 
   const amount = parseMoney(getCell(row, ["USD", "Amount", "amount"]));
@@ -146,7 +146,13 @@ function clipboardRowsToObjects(text, isLaidOff) {
 
   const defaultHeaders = isLaidOff ? LAID_OFF_IMPORT_HEADERS : DEFAULTER_IMPORT_HEADERS;
   const first = table[0].map(cleanHeader);
-  const known = defaultHeaders.map(cleanHeader);
+  const known = [
+    ...defaultHeaders,
+    "Candidate", "Name", "Candidate Name", "CandidateName",
+    "PO Date", "poDate", "DOJ", "Date of Joining", "doj", "dateofjoining", "Date",
+    "USD", "Amount", "amount", "Salary", "salary", "Total", "total",
+    "PO#", "PO Num", "poNum", "po", "Remarks", "Notes", "notes"
+  ].map(cleanHeader);
   const hasHeader = first.some(h => known.includes(h) || h === "candidate" || h === "nameofcandidate");
   const headers = hasHeader ? table[0] : defaultHeaders;
   const rows = hasHeader ? table.slice(1) : table;
