@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+export const dynamic = 'force-dynamic';
 import { listExpenses, createExpense, bulkUpsertExpenses, bulkDeleteExpenses } from "../../../lib/expense-store";
 import { ExpenseSchema, BulkExpenseSchema, formatValidationErrors } from "../../../lib/schemas";
 

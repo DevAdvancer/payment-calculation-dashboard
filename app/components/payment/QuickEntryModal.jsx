@@ -98,7 +98,7 @@ export default function QuickEntryModal({ onClose }) {
     const instance = day <= 15 ? "First Half" : "Second Half";
 
     const amt  = parseFloat(form.amount) || 0;
-    const paid = form.status === "Paid" ? amt : (parseFloat(form.paid) || 0);
+    const paid = form.status === "Received" ? amt : (parseFloat(form.paid) || 0);
 
     setSaving(true);
     const result = await createEntry({

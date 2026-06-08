@@ -70,15 +70,13 @@ export default function AdminPage() {
     reader.readAsDataURL(file);
   }
 
-  /* Build a delta of just the keys that changed since last save —
-     avoids re-uploading multi-MB base64 images on every click. */
-  function buildDelta() {
-    if (!baseline) return settings || {};
-    const delta = {};
+  /* Check if any field changed since last save/load */
+  function hasChanges() {
+    if (!baseline) return true;
     for (const k of Object.keys(settings || {})) {
-      if (settings[k] !== baseline[k]) delta[k] = settings[k];
+      if (settings[k] !== baseline[k]) return true;
     }
-    return delta;
+    return false;
   }
 
   function approxKB(obj) {
@@ -88,17 +86,23 @@ export default function AdminPage() {
   async function save() {
     setSaving(true);
     try {
-      const delta = buildDelta();
-      const keysChanged = Object.keys(delta).length;
-      if (keysChanged === 0) {
+      if (!hasChanges()) {
         showToast("Nothing to save — no changes");
         setSaving(false);
         return;
       }
 
-      const sizeKB = approxKB(delta);
-      /* Vercel functions reject >4.5MB request bodies. Catch this client-side
-         so the user gets a real reason instead of a generic network error. */
+      /* Send ALL current per-company settings (skip legacy DEFAULTS keys).
+         This ensures every field the user sees gets persisted reliably. */
+      const payload = {};
+      for (const [k, v] of Object.entries(settings || {})) {
+        /* Only persist company-scoped keys (vizva_*, silverspace_*, flawless_*) */
+        if (k.startsWith("vizva_") || k.startsWith("silverspace_") || k.startsWith("flawless_")) {
+          payload[k] = v;
+        }
+      }
+
+      const sizeKB = approxKB(payload);
       if (sizeKB > 4000) {
         showToast(`✕ Save failed — payload is ${sizeKB} KB (limit ~4500 KB). Compress images and retry.`, 7000);
         setSaving(false);
@@ -106,8 +110,9 @@ export default function AdminPage() {
       }
 
       const res = await fetch("/api/admin/settings", {
-        method:"PUT", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify(delta),
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
@@ -116,17 +121,18 @@ export default function AdminPage() {
         showToast(`✕ Save failed — ${msg}`, 7000);
         return;
       }
-      const { settings: serverSettings } = await res.json().catch(() => ({}));
-      if (serverSettings) {
-        setSettings(serverSettings);
-        setBaseline(serverSettings);
+      const data = await res.json().catch(() => ({}));
+      if (data.settings) {
+        setSettings(data.settings);
+        setBaseline(data.settings);
       } else {
+        /* Fallback: just update baseline to current so hasChanges() resets */
         setBaseline({ ...settings });
       }
       setSaved(true);
-      showToast(`✓ Saved ${keysChanged} ${keysChanged === 1 ? "field" : "fields"} (${sizeKB} KB)`);
+      showToast("✓ Settings saved successfully");
     } catch (e) {
-      console.error("admin save network error:", e);
+      console.error("admin save error:", e);
       showToast("✕ Save failed — network error", 7000);
     } finally { setSaving(false); }
   }

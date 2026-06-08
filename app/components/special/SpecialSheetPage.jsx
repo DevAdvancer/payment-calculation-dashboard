@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import useDashboardStore, {
   ALL_STATUSES,
@@ -12,9 +12,10 @@ import useDashboardStore, {
 } from "@/lib/use-store";
 import DateInput from "@/app/components/DateInput";
 import MoneyStack from "@/app/components/MoneyStack";
+import PaginationControls from "@/app/components/PaginationControls";
 
 function statusBadgeClass(status) {
-  if (status === "Paid") return "badge-paid";
+  if (status === "Received") return "badge-paid";
   if (status === "Pending") return "badge-pending";
   if (status === "Laid Off") return "badge-laidoff";
   if (status === "Default") return "badge-defaulter";
@@ -174,6 +175,14 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
 
   const [filters, setFilters] = useState({ company: "", month: "", year: "" });
   const [pasteImport, setPasteImport] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
+
+
 
   /* ── Filter options ── */
   const companies = [...new Set(rawEntries.map(e => e.company).filter(Boolean))].sort();
@@ -187,6 +196,10 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
     if (filters.year) rows = rows.filter(e => String(e.year) === String(filters.year));
     return rows;
   }, [rawEntries, filters]);
+
+  const paginatedRows = useMemo(() => {
+    return entries.slice((page - 1) * pageSize, page * pageSize);
+  }, [entries, page, pageSize]);
 
   /* ── KPI data — totals split by currency for stacked display */
   const sumSplit = (rows) => {
@@ -469,9 +482,9 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
               </tr>
             </thead>
             <tbody>
-              {entries.map((entry, idx) => (
+              {paginatedRows.map((entry, idx) => (
                 <tr key={entry.id}>
-                  <td style={{ color: "var(--text-dim)", fontSize: 11 }}>{idx + 1}</td>
+                  <td style={{ color: "var(--text-dim)", fontSize: 11 }}>{(page - 1) * pageSize + idx + 1}</td>
                   <td style={{ fontWeight: 500 }}>{entry.company || "—"}</td>
                   <td style={{ fontWeight: 600, color: "var(--mint)" }}>{entry.candidate || "—"}</td>
                   <td>
@@ -544,6 +557,13 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
               ))}
             </tbody>
           </table>
+          <PaginationControls
+            total={entries.length}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
         </div>
       )}
     </div>

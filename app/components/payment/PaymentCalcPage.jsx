@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import * as XLSX from "xlsx";
 import useDashboardStore, {
   ALL_STATUSES,
@@ -13,6 +13,8 @@ import FilterBar from "./FilterBar";
 import DateInput from "@/app/components/DateInput";
 import MoneyStack from "@/app/components/MoneyStack";
 import QuickEntryModal from "./QuickEntryModal";
+import PaginationControls from "@/app/components/PaginationControls";
+import DeleteConfirmModal from "@/app/components/DeleteConfirmModal";
 
 const PAYMENT_IMPORT_HEADERS = [
   "Company", "Name of the Candidate", "Date", "Month", "Year", "Instance of Payment",
@@ -85,6 +87,7 @@ function dateParts(poDate) {
 
 function normalizeStatus(value) {
   const raw = String(value || "").trim();
+  if (raw === "Paid") return "Received";
   return ALL_STATUSES.includes(raw) ? raw : "Pending";
 }
 
@@ -102,7 +105,7 @@ function mapPaymentImportRow(row, index, xlsxUtils) {
   const parts = dateParts(poDate);
   const amount = parseMoney(getCell(row, ["USD", "Amount", "amount", "Salary", "salary", "Total", "total", "Value", "value"]));
   const paid = parseMoney(getCell(row, ["Paid", "paid"]));
-  const due = parseMoney(getCell(row, ["Due", "due"])) || (normalizeStatus(getCell(row, ["Status", "status"])) === "Paid" ? 0 : amount);
+  const due = parseMoney(getCell(row, ["Due", "due"])) || (normalizeStatus(getCell(row, ["Status", "status"])) === "Received" ? 0 : amount);
 
   return {
     id: String(Date.now() + index),
@@ -158,7 +161,7 @@ function clipboardRowsToObjects(text) {
 }
 
 export default function PaymentCalcPage() {
-  const { getActive, getCandidateNames, updateEntry, updateStatus, deleteEntry, importEntries, showToast, loading, navigate } =
+  const { getActive, getCandidateNames, updateEntry, updateStatus, deleteEntry, bulkDelete, importEntries, showToast, loading, navigate } =
     useDashboardStore();
 
   const entries       = getActive();
@@ -175,9 +178,30 @@ export default function PaymentCalcPage() {
   const [editingUSD, setEditingUSD]     = useState(null);
   const [usdDraft, setUSDDraft]         = useState("");
   const [pasteImport, setPasteImport]   = useState(null);
+  const [selected, setSelected]         = useState(new Set());
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    loading: false,
+  });
+  const [page, setPage]                 = useState(1);
+  const [pageSize, setPageSize]         = useState(100);
   const importRef = useRef();
   const searchRef = useRef();
   const pasteTargetRef = useRef();
+
+  useEffect(() => {
+    setPage(1);
+    setSelected(new Set());
+  }, [searchTerm, filters, selectedName]);
+
+  useEffect(() => {
+    setSelected(new Set());
+  }, [page, pageSize]);
+
+
 
   /* ── Autocomplete suggestions ── */
   const suggestions = useMemo(() => {
@@ -265,6 +289,33 @@ export default function PaymentCalcPage() {
     });
   }, [filtered, sortKey, sortDir]);
 
+  const paginatedRows = useMemo(() => {
+    return sorted.slice((page - 1) * pageSize, page * pageSize);
+  }, [sorted, page, pageSize]);
+
+  const toggleAll = (checked) => setSelected(checked ? new Set(sorted.map(r => r.id)) : new Set());
+  const toggleRow = (id) => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const handleDeleteSelected = () => {
+    if (!selected.size) return;
+    const count = selected.size;
+    const batches = Math.ceil(count / 500);
+    setDeleteConfirm({
+      isOpen: true,
+      title: `Delete ${count.toLocaleString()} selected ${count === 1 ? "entry" : "entries"}?`,
+      message: `Are you sure you want to delete the ${count.toLocaleString()} selected entry/entries? This cannot be undone.`,
+      loadingText: count > 500 ? `Deleting in ${batches} batches…` : "Deleting…",
+      onConfirm: async () => {
+        setDeleteConfirm(prev => ({ ...prev, loading: true }));
+        const ok = await bulkDelete(Array.from(selected));
+        if (ok) {
+          setSelected(new Set());
+          showToast(`✓ Deleted ${count.toLocaleString()} entries`);
+        }
+        setDeleteConfirm({ isOpen: false, title: "", message: "", onConfirm: null, loading: false, loadingText: "" });
+      },
+    });
+  };
+
   const toggleSort = (key) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortKey(key); setSortDir("asc"); }
@@ -279,12 +330,21 @@ export default function PaymentCalcPage() {
   const totalPaid       = totalPaidByCur.USD  + totalPaidByCur.GBP;
 
   /* ── Delete with fade ── */
-  const handleDelete = (id) => {
-    setFadingIds(prev => new Set([...prev, id]));
-    setTimeout(() => {
-      deleteEntry(id);
-      setFadingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
-    }, 200);
+  const handleDelete = (id, candidateName) => {
+    setDeleteConfirm({
+      isOpen: true,
+      title: "Delete payment entry?",
+      message: `Are you sure you want to delete this payment entry for ${candidateName || "this candidate"}? This cannot be undone.`,
+      onConfirm: async () => {
+        setDeleteConfirm(prev => ({ ...prev, loading: true }));
+        setDeleteConfirm({ isOpen: false, title: "", message: "", onConfirm: null, loading: false });
+        setFadingIds(prev => new Set([...prev, id]));
+        setTimeout(async () => {
+          await deleteEntry(id);
+          setFadingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
+        }, 200);
+      },
+    });
   };
 
   /* ── Excel Import ── */
@@ -377,8 +437,8 @@ export default function PaymentCalcPage() {
     if (!isNaN(val) && val !== entry.amount) {
       await updateEntry(entry.id, {
         amount: val,
-        paid: entry.status === "Paid" ? val : (parseFloat(entry.paid) || 0),
-        due:  entry.status === "Paid" ? 0 : entry.status === "Pending" ? val : (parseFloat(entry.due) || 0),
+        paid: entry.status === "Received" ? val : (parseFloat(entry.paid) || 0),
+        due:  entry.status === "Received" ? 0 : entry.status === "Pending" ? val : (parseFloat(entry.due) || 0),
       });
     }
     setEditingUSD(null);
@@ -420,9 +480,9 @@ export default function PaymentCalcPage() {
           <div className="kpi-sub">across {filtered.length} {filtered.length === 1 ? "entry" : "entries"}</div>
         </div>
         <div className="kpi-card">
-          <div className="kpi-label">Total Paid</div>
+          <div className="kpi-label">Received</div>
           <div className="kpi-value" style={{ color: "#4ade80" }}><MoneyStack usd={totalPaidByCur.USD} gbp={totalPaidByCur.GBP} decimals={0} /></div>
-          <div className="kpi-sub">{totalValue > 0 ? Math.round((totalPaid / totalValue) * 100) : 0}% collected</div>
+          <div className="kpi-sub">{totalValue > 0 ? Math.round((totalPaid / totalValue) * 100) : 0}% received</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Outstanding</div>
@@ -500,6 +560,14 @@ export default function PaymentCalcPage() {
           </div>
         </div>
         <div className="toolbar-right">
+          {selected.size > 0 && (
+            <button className="btn-del" onClick={handleDeleteSelected} style={{ marginRight: 8 }}>
+              <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ marginRight: 6 }}>
+                <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+              </svg>
+              Delete ({selected.size})
+            </button>
+          )}
           <label className="btn-icon" style={{ cursor: "pointer" }}>
             <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
@@ -540,7 +608,7 @@ export default function PaymentCalcPage() {
           {[
             ["Entries",      String(candidateSummary.count)],
             ["Total Value",  fmtMoneyC(candidateSummary.totalValue, candidateSummary.currency, 0)],
-            ["Paid",         fmtMoneyC(candidateSummary.totalPaid,  candidateSummary.currency, 0)],
+            ["Received",     fmtMoneyC(candidateSummary.totalPaid,  candidateSummary.currency, 0)],
             ["Outstanding",  fmtMoneyC(candidateSummary.totalDue,   candidateSummary.currency, 0)],
           ].map(([k, v]) => (
             <div key={k} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
@@ -570,6 +638,14 @@ export default function PaymentCalcPage() {
           <table className="tbl">
             <thead>
               <tr>
+                <th style={{ width: 36, textAlign: "center" }}>
+                  <input
+                    type="checkbox"
+                    checked={selected.size === sorted.length && sorted.length > 0}
+                    onChange={e => toggleAll(e.target.checked)}
+                    style={{ width: 14, height: 14, cursor: "pointer" }}
+                  />
+                </th>
                 <th style={{ width: 36 }}>#</th>
                 <th onClick={() => toggleSort("company")}>Company{sortIcon("company")}</th>
                 <th onClick={() => toggleSort("candidate")}>Name of the Candidate{sortIcon("candidate")}</th>
@@ -586,15 +662,24 @@ export default function PaymentCalcPage() {
               </tr>
             </thead>
             <tbody>
-              {sorted.map((entry, idx) => (
+              {paginatedRows.map((entry, idx) => (
                 <tr
                   key={entry.id}
                   style={{
                     opacity: fadingIds.has(entry.id) ? 0 : 1,
                     transition: "opacity 0.2s ease",
+                    background: selected.has(entry.id) ? "var(--surface-2)" : undefined,
                   }}
                 >
-                  <td style={{ color: "var(--text-dim)", fontSize: 11 }}>{idx + 1}</td>
+                  <td style={{ textAlign: "center" }}>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(entry.id)}
+                      onChange={() => toggleRow(entry.id)}
+                      style={{ width: 14, height: 14, cursor: "pointer" }}
+                    />
+                  </td>
+                  <td style={{ color: "var(--text-dim)", fontSize: 11 }}>{(page - 1) * pageSize + idx + 1}</td>
                   <td style={{ fontWeight: 500, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {entry.company || "—"}
                   </td>
@@ -692,7 +777,7 @@ export default function PaymentCalcPage() {
                   </td>
                   <td>
                     <button
-                      onClick={() => handleDelete(entry.id)}
+                      onClick={() => handleDelete(entry.id, entry.candidate)}
                       style={{
                         background: "transparent", border: "none",
                         color: "var(--text-dim)", cursor: "pointer",
@@ -710,6 +795,13 @@ export default function PaymentCalcPage() {
               ))}
             </tbody>
           </table>
+          <PaginationControls
+            total={sorted.length}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
         </div>
       )}
 
@@ -769,6 +861,16 @@ export default function PaymentCalcPage() {
       )}
 
       {showQuickEntry && <QuickEntryModal onClose={() => setShowQuickEntry(false)} />}
+
+      <DeleteConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        title={deleteConfirm.title}
+        message={deleteConfirm.message}
+        onConfirm={deleteConfirm.onConfirm}
+        onCancel={() => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))}
+        loading={deleteConfirm.loading}
+        loadingText={deleteConfirm.loadingText || "Deleting..."}
+      />
     </div>
   );
 }

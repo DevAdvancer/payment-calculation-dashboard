@@ -9,7 +9,7 @@ const MONTH_IDX = Object.fromEntries(MONTH_NAMES.map((m, i) => [m, i]));
 const yyShort = (year) => String(year).slice(-2);
 const monthYearKey = (m, y) => `${m}-${yyShort(y)}`;          // "Jan-26"
 
-const RECEIVED_STATUS = "Paid";
+const RECEIVED_STATUS = "Received";
 
 export default function SummaryPage() {
   const { getActive, loading } = useDashboardStore();

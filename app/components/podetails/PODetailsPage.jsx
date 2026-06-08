@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import useDashboardStore, { fmtMoney, fmtMoneyC, fmtDate, fmtEmailDate, MONTH_NAMES, currencyOf, currencySymbol, sumByCurrency } from "../../../lib/use-store";
 import MoneyStack from "../MoneyStack";
 import DateInput from "../DateInput";
+import PaginationControls from "../PaginationControls";
+import DeleteConfirmModal from "../DeleteConfirmModal";
 
 /* ─── Placement form constants (mirrors NewPlacementPage) ─── */
 const COMPANY_OPTIONS = [
@@ -159,7 +161,8 @@ function normalizeInstance(value) {
 
 function normalizeStatus(value) {
   const raw = String(value || "").trim();
-  const options = ["Paid", "Pending", "Laid Off", "Offer Revoke", "No Offer", "Resigned", "Default"];
+  if (raw === "Paid") return "Received";
+  const options = ["Received", "Pending", "Laid Off", "Offer Revoke", "No Offer", "Resigned", "Default"];
   return options.includes(raw) ? raw : "Pending";
 }
 
@@ -262,12 +265,32 @@ export default function PODetailsPage() {
   const [search, setSearch]   = useState("");
   const [poFilters, setPoFilters] = useState({ company: "", month: "", year: "" });
   const [selected, setSelected] = useState(new Set());
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    loading: false,
+  });
   const [editingId, setEditingId] = useState(null);
   const [editBuf, setEditBuf]   = useState({});
   const [showModal, setShowModal] = useState(false);
   const [pasteImport, setPasteImport] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
   const fileRef = useRef();
   const pasteTargetRef = useRef();
+
+  useEffect(() => {
+    setPage(1);
+    setSelected(new Set());
+  }, [search, poFilters]);
+
+  useEffect(() => {
+    setSelected(new Set());
+  }, [page, pageSize]);
+
+
 
   /* ── Placement form state (inside modal) ── */
   const [form, setFormState] = useState(EMPTY_FORM);
@@ -510,6 +533,10 @@ export default function PODetailsPage() {
     return arr;
   }, [poEntries, sort, search, poFilters]);
 
+  const paginatedRows = useMemo(() => {
+    return rows.slice((page - 1) * pageSize, page * pageSize);
+  }, [rows, page, pageSize]);
+
   const toggleSort = (key) => setSort(s => ({ key, dir: s.key === key && s.dir === "asc" ? "desc" : "asc" }));
   const toggleAll  = (checked) => setSelected(checked ? new Set(rows.map(r => r.id)) : new Set());
   const toggleRow  = (id) => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -524,25 +551,29 @@ export default function PODetailsPage() {
   };
 
   /* Delete every installment belonging to one candidate (an entire PO Details row) */
-  const handleDeleteRow = async (row) => {
+  const handleDeleteRow = (row) => {
     const sameCandidate = (e) =>
       (e.candidate || "").trim().toLowerCase() === (row.candidate || "").trim().toLowerCase();
     const candidateEntries = poEntries.filter(sameCandidate);
     const count = candidateEntries.length;
     if (!count) return;
 
-    const msg =
-      `Delete ${row.candidate} and all ${count} installment` +
-      `${count === 1 ? "" : "s"}?` +
-      `\n\nThis will permanently remove every payment entry for this candidate ` +
-      `from PO Details, Payment Calculation, and any routed sheets. This cannot be undone.`;
-    if (!confirm(msg)) return;
-
-    const ok = await bulkDelete(candidateEntries.map(e => e.id));
-    if (ok) showToast(`✓ Deleted ${row.candidate} (${count} ${count === 1 ? "entry" : "entries"})`);
+    setDeleteConfirm({
+      isOpen: true,
+      title: `Delete ${row.candidate}?`,
+      message: `Delete ${row.candidate} and all ${count} installment${count === 1 ? "" : "s"}?\n\nThis will permanently remove every payment entry for this candidate from PO Details, Payment Calculation, and any routed sheets. This cannot be undone.`,
+      onConfirm: async () => {
+        setDeleteConfirm(prev => ({ ...prev, loading: true }));
+        const ok = await bulkDelete(candidateEntries.map(e => e.id));
+        if (ok) {
+          showToast(`✓ Deleted ${row.candidate} (${count} ${count === 1 ? "entry" : "entries"})`);
+        }
+        setDeleteConfirm({ isOpen: false, title: "", message: "", onConfirm: null, loading: false });
+      },
+    });
   };
 
-  const handleDeleteSelected = async () => {
+  const handleDeleteSelected = () => {
     if (!selected.size) return;
     const selectedRows = rows.filter(r => selected.has(r.id));
     if (!selectedRows.length) return;
@@ -561,19 +592,21 @@ export default function PODetailsPage() {
     const candidateLabel = selectedRows.length === 1
       ? selectedRows[0].candidate
       : `${selectedRows.length} candidates`;
-    const msg =
-      `Delete ${candidateLabel} and all ${totalEntries} installment` +
-      `${totalEntries === 1 ? "" : "s"}?` +
-      `\n\nThis will permanently remove every payment entry for ` +
-      `${selectedRows.length === 1 ? "this candidate" : "these candidates"} ` +
-      `from PO Details, Payment Calculation, and any routed sheets. This cannot be undone.`;
-    if (!confirm(msg)) return;
 
-    const ok = await bulkDelete(toDelete.map(e => e.id));
-    if (ok) {
-      setSelected(new Set());
-      showToast(`✓ Deleted ${selectedRows.length} ${selectedRows.length === 1 ? "candidate" : "candidates"} (${totalEntries} entries)`);
-    }
+    setDeleteConfirm({
+      isOpen: true,
+      title: `Delete ${candidateLabel}?`,
+      message: `Delete ${candidateLabel} and all ${totalEntries} installment${totalEntries === 1 ? "" : "s"}?\n\nThis will permanently remove every payment entry for ${selectedRows.length === 1 ? "this candidate" : "these candidates"} from PO Details, Payment Calculation, and any routed sheets. This cannot be undone.`,
+      onConfirm: async () => {
+        setDeleteConfirm(prev => ({ ...prev, loading: true }));
+        const ok = await bulkDelete(toDelete.map(e => e.id));
+        if (ok) {
+          setSelected(new Set());
+          showToast(`✓ Deleted ${selectedRows.length} ${selectedRows.length === 1 ? "candidate" : "candidates"} (${totalEntries} entries)`);
+        }
+        setDeleteConfirm({ isOpen: false, title: "", message: "", onConfirm: null, loading: false });
+      },
+    });
   };
 
   const importMappedRows = async (mapped, label = "Imported") => {
@@ -795,7 +828,7 @@ export default function PODetailsPage() {
         {[
           { label: "Candidates",     count: true,                                                                color: "var(--color-ink)" },
           { label: "Total Contract", money: summary.totalValue,                                                  color: "var(--color-accent)" },
-          { label: "Paid",           money: summary.totalPaid,                                                   color: "#16a34a" },
+          { label: "Received",       money: summary.totalPaid,                                                   color: "#16a34a" },
           { label: "Outstanding",    money: summary.totalBal,                                                    color: "#d97706" },
         ].map((k) => (
           <div key={k.label} style={{
@@ -839,7 +872,7 @@ export default function PODetailsPage() {
                     <div className="empty-sub">Add a row, import Excel, or paste copied Excel rows to get started.</div>
                   </div>
                 </td></tr>
-              ) : rows.map(row => {
+              ) : paginatedRows.map(row => {
                 const isEditing = editingId === row.id;
                 return (
                   <tr key={row.id} style={{ background: selected.has(row.id) ? "#dbeafe" : undefined }}>
@@ -886,6 +919,13 @@ export default function PODetailsPage() {
             </tbody>
           </table>
         </div>
+        <PaginationControls
+          total={rows.length}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
       </div>
 
       {/* ── New Placement Modal (2-step form) ── */}
@@ -1090,6 +1130,15 @@ export default function PODetailsPage() {
           </div>
         </div>
       )}
+      {/* Custom delete modal */}
+      <DeleteConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        title={deleteConfirm.title}
+        message={deleteConfirm.message}
+        onConfirm={deleteConfirm.onConfirm}
+        onCancel={() => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))}
+        loading={deleteConfirm.loading}
+      />
     </div>
   );
 }

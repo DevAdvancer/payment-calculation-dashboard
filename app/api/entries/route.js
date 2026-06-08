@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // allow up to 60s for large bulk operations
 import { listEntries, createEntry, bulkUpsert, bulkDelete } from "../../../lib/dashboard-store";
 import { EntrySchema, BulkEntrySchema, formatValidationErrors } from "../../../lib/schemas";
 

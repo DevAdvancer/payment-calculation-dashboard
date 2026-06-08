@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+export const dynamic = 'force-dynamic';
 import { updateEntry, deleteEntry, getHistory } from "../../../../lib/dashboard-store";
 import { EntryPatchSchema, formatValidationErrors } from "../../../../lib/schemas";
 

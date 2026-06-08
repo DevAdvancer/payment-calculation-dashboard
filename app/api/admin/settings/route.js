@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 import { getSettings, setSettings } from "../../../../lib/admin-store";
 
 export async function GET() {

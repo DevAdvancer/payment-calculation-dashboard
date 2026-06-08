@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+export const dynamic = 'force-dynamic';
 import { updateExpense, deleteExpense } from "../../../../lib/expense-store";
 import { ExpensePatchSchema, formatValidationErrors } from "../../../../lib/schemas";
 
