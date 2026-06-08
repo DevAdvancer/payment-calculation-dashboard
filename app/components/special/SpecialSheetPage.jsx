@@ -173,7 +173,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
   const fileRef = useRef();
   const pasteTargetRef = useRef();
 
-  const [filters, setFilters] = useState({ company: "", month: "", year: "" });
+  const [filters, setFilters] = useState({ search: "", company: "", month: "", year: "" });
   const [pasteImport, setPasteImport] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
@@ -191,6 +191,13 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
   /* ── Filtered entries ── */
   const entries = useMemo(() => {
     let rows = rawEntries;
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      rows = rows.filter(e => 
+        (e.candidate || "").toLowerCase().includes(q) ||
+        (e.poNum || "").toLowerCase().includes(q)
+      );
+    }
     if (filters.company) rows = rows.filter(e => e.company === filters.company);
     if (filters.month) rows = rows.filter(e => e.month === filters.month);
     if (filters.year) rows = rows.filter(e => String(e.year) === String(filters.year));
@@ -341,9 +348,12 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
       {/* KPI Strip */}
       <div className="kpi-strip">
         {kpiData.map(kpi => (
-          <div className="kpi-card" key={kpi.label}>
-            <div className="kpi-label">{kpi.label}</div>
-            <div className="kpi-sub" style={{ color: isLaidOff ? "#fb923c" : "#f87171" }}><MoneyStack usd={kpi.sum.USD} gbp={kpi.sum.GBP} decimals={0} /></div>
+          <div className="kpi-card" key={kpi.label} style={{ minWidth: 160 }}>
+            <div className="kpi-label" style={{ fontSize: 13 }}>{kpi.label}</div>
+            <div className="kpi-value" style={{ fontSize: 26, marginBottom: 4 }}>{kpi.count}</div>
+            <div className="kpi-sub" style={{ color: isLaidOff ? "#fb923c" : "#f87171", fontSize: 13, marginTop: 0 }}>
+              <MoneyStack usd={kpi.sum.USD} gbp={kpi.sum.GBP} decimals={0} />
+            </div>
           </div>
         ))}
       </div>
@@ -351,6 +361,17 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
       {/* Filters + Export */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
         <div className="filter-bar" style={{ flex: 1, marginBottom: 0 }}>
+          <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ color: "var(--text-muted)", flexShrink: 0 }}>
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            className="filter-input"
+            style={{ width: 140 }}
+            placeholder="Search candidate or PO..."
+            value={filters.search}
+            onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
+          />
+          <div style={{ width: 1, height: 20, background: "var(--color-border)", margin: "0 4px" }} />
           <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ color: "var(--text-muted)", flexShrink: 0 }}>
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
           </svg>
@@ -367,7 +388,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
             {years.map(y => <option key={y}>{y}</option>)}
           </select>
           {Object.values(filters).some(Boolean) && (
-            <button className="btn-ghost" style={{ padding: "4px 10px", fontSize: 11 }} onClick={() => setFilters({ company: "", month: "", year: "" })}>Clear</button>
+            <button className="btn-ghost" style={{ padding: "4px 10px", fontSize: 11 }} onClick={() => setFilters({ search: "", company: "", month: "", year: "" })}>Clear</button>
           )}
         </div>
         <label className="btn-icon" style={{ cursor: "pointer" }}>

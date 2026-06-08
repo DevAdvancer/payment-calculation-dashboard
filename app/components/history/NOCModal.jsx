@@ -58,8 +58,8 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
     /* pre-select company closest to candidate's company if passed */
     if (company) {
       const lc = company.toLowerCase();
-      if (lc.includes("vizva"))       return "Vizva";
-      if (lc.includes("silver"))      return "SilverSpace";
+      if (lc.includes("vizva") || lc.includes("vcs")) return "Vizva";
+      if (lc.includes("silver"))                      return "SilverSpace";
       if (lc.includes("flawless"))    return "Flawless";
     }
     return "Vizva";
@@ -131,9 +131,19 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
     /* Watermark */
     doc.setTextColor(...accent);
     doc.setGState(doc.GState({ opacity:0.05 }));
-    doc.setFontSize(140);
-    doc.setFont("helvetica","bold");
-    doc.text(s.company_name.slice(0,3).toUpperCase(), W/2, H/2+50, { align:"center" });
+    if (s.watermark_url && s.watermark_url.startsWith("data:")) {
+      try {
+        doc.addImage(s.watermark_url, W/2 - 150, H/2 - 150, 300, 300);
+      } catch (e) {
+        doc.setFontSize(140);
+        doc.setFont("helvetica","bold");
+        doc.text(s.company_name.slice(0,3).toUpperCase(), W/2, H/2+50, { align:"center" });
+      }
+    } else {
+      doc.setFontSize(140);
+      doc.setFont("helvetica","bold");
+      doc.text(s.company_name.slice(0,3).toUpperCase(), W/2, H/2+50, { align:"center" });
+    }
     doc.setGState(doc.GState({ opacity:1 }));
 
     let y = margin + 30;
@@ -215,18 +225,12 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
         <div style={{ padding:"12px 24px", borderBottom:"1px solid var(--color-border)", background:"var(--color-surface-2)", display:"flex", alignItems:"center", gap:8 }}>
           <span style={{ fontSize:12, fontWeight:700, color:"var(--color-ink-muted)", textTransform:"uppercase", letterSpacing:".06em" }}>Issuing Company:</span>
           <div style={{ display:"flex", gap:6 }}>
-            {COMPANIES.map(co => (
-              <button key={co} onClick={() => setSelectedCo(co)}
-                style={{
-                  padding:"5px 16px", borderRadius:"var(--radius-full)", fontSize:12, fontWeight:600, cursor:"pointer",
-                  border: selectedCo===co ? "1px solid var(--color-primary)" : "1px solid var(--color-border)",
-                  background: selectedCo===co ? "var(--color-primary)" : "var(--color-surface)",
-                  color: selectedCo===co ? "#fff" : "var(--color-ink-muted)",
-                  transition:"all 0.15s",
-                }}>
-                {co}
-              </button>
-            ))}
+            <span style={{
+              padding:"5px 16px", borderRadius:"var(--radius-full)", fontSize:12, fontWeight:600,
+              border:"1px solid var(--color-primary)", background:"var(--color-primary)", color:"#fff"
+            }}>
+              {selectedCo}
+            </span>
           </div>
         </div>
 
@@ -245,9 +249,13 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
             }}>
               {/* Watermark */}
               <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:0, opacity:0.05, overflow:"hidden" }}>
-                <span style={{ fontSize:120, fontWeight:900, color:"#1a1f2e", letterSpacing:-4 }}>
-                  {s.company_name.slice(0,3).toUpperCase()}
-                </span>
+                {s.watermark_url ? (
+                  <img src={s.watermark_url} alt="" style={{ maxWidth:"80%", maxHeight:"80%", objectFit:"contain" }} />
+                ) : (
+                  <span style={{ fontSize:120, fontWeight:900, color:"#1a1f2e", letterSpacing:-4 }}>
+                    {s.company_name.slice(0,3).toUpperCase()}
+                  </span>
+                )}
               </div>
 
               <div style={{ position:"relative", zIndex:1 }}>

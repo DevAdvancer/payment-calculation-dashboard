@@ -36,7 +36,7 @@ export default function AdminPage() {
   const toastTimer = useRef(null);
 
   useEffect(() => {
-    fetch("/api/admin/settings")
+    fetch(`/api/admin/settings?t=${Date.now()}`, { cache: "no-store" })
       .then(r => r.json())
       .then(d => {
         const s = d.settings || {};
@@ -66,7 +66,24 @@ export default function AdminPage() {
   async function handleImageUpload(key, file) {
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = e => update(key, e.target.result);
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_DIM = 800;
+        let { width, height } = img;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) { height *= MAX_DIM / width; width = MAX_DIM; }
+          else { width *= MAX_DIM / height; height = MAX_DIM; }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        update(key, canvas.toDataURL("image/png", 0.8));
+      };
+      img.src = e.target.result;
+    };
     reader.readAsDataURL(file);
   }
 
@@ -415,8 +432,14 @@ function NOCPreview({ settings, company }) {
 
   return (
     <div style={{ background:"#fff", color:"#111827", borderRadius:10, padding:"36px 40px", fontFamily:"Georgia,serif", fontSize:13, lineHeight:1.7, position:"relative", overflow:"hidden", border:"1px solid #e3e6ea", boxShadow:"var(--shadow-md)", minHeight:500 }}>
-      <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", opacity:0.05, fontSize:120, fontWeight:900, color:"#1a1f2e" }}>
-        {s.company_name.slice(0,3).toUpperCase()}
+      <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", opacity:0.05, overflow:"hidden" }}>
+        {s.watermark_url ? (
+          <img src={s.watermark_url} alt="" style={{ maxWidth:"80%", maxHeight:"80%", objectFit:"contain" }} />
+        ) : (
+          <div style={{ fontSize:120, fontWeight:900, color:"#1a1f2e", letterSpacing:-4 }}>
+            {s.company_name.slice(0,3).toUpperCase()}
+          </div>
+        )}
       </div>
       <div style={{ position:"relative", zIndex:1 }}>
         {/* Header */}
