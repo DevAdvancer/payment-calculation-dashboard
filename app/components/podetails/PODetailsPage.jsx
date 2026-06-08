@@ -118,7 +118,7 @@ function normalizeCompanyName(value) {
   const raw = String(value || "").trim();
   const key = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
   if (key === "sst" || key === "silverspace" || key === "silverspaceinc") return "SilverSpace Inc";
-  if (key === "vizva" || key === "vizvainc") return "Vizva Inc";
+  if (key === "vizva" || key === "vizvainc" || key === "vcs") return "Vizva Inc";
   if (key === "vizvauk" || key === "vizvaukltd") return "Vizva UK Ltd";
   if (key === "flawless" || key === "flawlessed") return "Flawless-ED";
   return raw;

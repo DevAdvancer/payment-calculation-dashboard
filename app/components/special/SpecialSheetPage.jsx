@@ -52,7 +52,7 @@ function normalizeCompanyName(value) {
   const raw = String(value || "").trim();
   const key = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
   if (key === "sst" || key === "silverspace" || key === "silverspaceinc") return "SilverSpace Inc";
-  if (key === "vizva" || key === "vizvainc") return "Vizva Inc";
+  if (key === "vizva" || key === "vizvainc" || key === "vcs") return "Vizva Inc";
   if (key === "vizvauk" || key === "vizvaukltd") return "Vizva UK Ltd";
   if (key === "flawless" || key === "flawlessed") return "Flawless-ED";
   return raw;
@@ -308,7 +308,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
 
   const title = isLaidOff ? "Laid Off Sheet" : "Defaulter Sheet";
   const icon = isLaidOff ? "🔴" : "⚠️";
-  const infoStatuses = isLaidOff ? "Laid Off, Offer Revoke, No Offer, Resigned" : "Default";
+  const infoStatuses = isLaidOff ? "Laid Off, Offer Revoke, No Offer, Resigned, Contract End, BGV Fail" : "Default";
 
   if (loading) return (
     <div className="page-inner" ref={pasteTargetRef} onPaste={handlePasteRows} tabIndex={0} style={{ outline: "none" }}>
@@ -361,16 +361,25 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
       {/* Filters + Export */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
         <div className="filter-bar" style={{ flex: 1, marginBottom: 0 }}>
-          <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ color: "var(--text-muted)", flexShrink: 0 }}>
-            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            className="filter-input"
-            style={{ width: 140 }}
-            placeholder="Search candidate or PO..."
-            value={filters.search}
-            onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
-          />
+          <div className="search-wrap" style={{ marginRight: 10 }}>
+            <svg className="search-icon" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              className="search-input"
+              style={{ width: 180 }}
+              placeholder="Search candidate or PO..."
+              value={filters.search}
+              onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
+            />
+            {filters.search && (
+              <button
+                onClick={() => setFilters(f => ({ ...f, search: "" }))}
+                style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-dim)", fontSize: 16, lineHeight: 1, padding: 0 }}
+                title="Clear search"
+              >×</button>
+            )}
+          </div>
           <div style={{ width: 1, height: 20, background: "var(--color-border)", margin: "0 4px" }} />
           <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ color: "var(--text-muted)", flexShrink: 0 }}>
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
