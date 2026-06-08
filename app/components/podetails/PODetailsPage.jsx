@@ -157,6 +157,12 @@ function normalizeInstance(value) {
   return "First Half";
 }
 
+function normalizeStatus(value) {
+  const raw = String(value || "").trim();
+  const options = ["Paid", "Pending", "Laid Off", "Offer Revoke", "No Offer", "Resigned", "Default"];
+  return options.includes(raw) ? raw : "Pending";
+}
+
 function rowLooksEmpty(row) {
   return !Object.values(row || {}).some(v => String(v ?? "").trim() !== "");
 }
@@ -198,7 +204,7 @@ function mapPoImportRow(row, index, utils) {
     paid,
     due: balance,
     serviceType: String(getCell(row, ["Type of Service", "Service Type", "serviceType"]) || "Placement").trim(),
-    status: String(getCell(row, ["Status", "status"]) || "Pending").trim(),
+    status: normalizeStatus(getCell(row, ["Status", "status"])),
     type: agreement.type,
     notes: String(getCell(row, ["Remarks", "Notes", "notes"]) || "").trim(),
     poNum: String(getCell(row, ["PO#", "PO Num", "poNum"]) || "").trim(),

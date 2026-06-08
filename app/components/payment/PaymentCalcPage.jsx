@@ -288,29 +288,11 @@ export default function PaymentCalcPage() {
     const reader = new FileReader();
     reader.onload = (evt) => {
       try {
-        const wb   = XLSX.read(evt.target.result, { type: "array" });
+        const wb   = XLSX.read(evt.target.result, { type: "array", cellDates: true });
         const ws   = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
-        const mapped = rows.map(r => ({
-          candidate:   r["Name of the Candidate"] || r["Candidate"] || r["candidate"] || "",
-          company:     normalizeCompanyName(r["Company"] || r["company"] || ""),
-          client:      r["Client"]       || r["client"]       || "",
-          poDate:      r["Date"]         || r["poDate"]       || r["PO Date"] || "",
-          month:       r["Month"]        || r["month"]        || "",
-          year:        parseInt(r["Year"] || r["year"]) || new Date().getFullYear(),
-          instance:    r["Instance of Payment"] || r["Instance"] || r["instance"] || "First Half",
-          amount:      parseFloat(r["USD"] || r["Amount"] || r["amount"]) || 0,
-          paid:        parseFloat(r["Paid"] || r["paid"]) || 0,
-          due:         parseFloat(r["Due"]  || r["due"])  || 0,
-          serviceType: r["Type of Service"] || r["Service Type"] || r["serviceType"] || "Placement",
-          status:      r["Status"]  || r["status"]  || "Pending",
-          type:        r["Type"]    || r["type"]    || "",
-          notes:       r["Remarks"] || r["Notes"]   || r["notes"] || "",
-          poNum:       r["PO#"]     || r["poNum"]   || "",
-          sheetScope:   "payment",
-        }));
-        importEntries(mapped);
-        showToast(`Imported ${mapped.length} entries`);
+        const mapped = rows.map((r, i) => mapPaymentImportRow(r, i, XLSX.utils));
+        importMappedRows(mapped, "Imported");
       } catch {
         showToast("Import failed — invalid file format");
       }

@@ -15,6 +15,35 @@ const STATUS_OPTIONS = ["Pending", "Paid", "Reimbursed", "Cancelled"];
 const DEFAULT_CATEGORIES = ["Salaries", "Rent", "Utilities", "Software", "Marketing", "Travel", "Office", "Tax", "Misc"];
 const PAYMENT_METHODS    = ["Bank Transfer", "Credit Card", "Cash", "Cheque", "Wire", "Other"];
 
+function toMMDDYYYY(date) {
+  if (!date) return "";
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return "";
+  return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}-${d.getFullYear()}`;
+}
+
+function normalizeDateCell(value, xlsxUtils) {
+  if (value == null || value === "") return "";
+  if (value instanceof Date && !isNaN(value.getTime())) return toMMDDYYYY(value);
+  if (typeof value === "number" && xlsxUtils?.SSF?.parse_date_code) {
+    const parsed = xlsxUtils.SSF.parse_date_code(value);
+    if (parsed) return toMMDDYYYY(new Date(parsed.y, parsed.m - 1, parsed.d));
+  }
+  const raw = String(value).trim();
+  const mdy = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (mdy) return `${mdy[1].padStart(2, "0")}-${mdy[2].padStart(2, "0")}-${mdy[3]}`;
+  const ymd = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (ymd) return `${ymd[2].padStart(2, "0")}-${ymd[3].padStart(2, "0")}-${ymd[1]}`;
+  const parsed = new Date(raw);
+  return isNaN(parsed.getTime()) ? raw : toMMDDYYYY(parsed);
+}
+
+function normalizeExpenseStatus(status) {
+  const raw = String(status || "").trim();
+  const options = ["Pending", "Paid", "Reimbursed", "Cancelled"];
+  return options.includes(raw) ? raw : "Pending";
+}
+
 export default function ExpensePage() {
   const { expenses, createExpense, updateExpense, deleteExpense, bulkDeleteExpenses, showToast, loading } =
     useDashboardStore();
@@ -185,20 +214,26 @@ export default function ExpensePage() {
     const reader = new FileReader();
     reader.onload = async (evt) => {
       try {
-        const wb = XLSX.read(evt.target.result, { type: "array" });
+        const wb = XLSX.read(evt.target.result, { type: "array", cellDates: true });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
         const mapped = rows.map((r, i) => {
-          const dateStr = String(r.Date || r["Date"] || "").trim();
-          let m = dateStr.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-          if (!m) m = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-          const month = m ? MONTH_NAMES[parseInt(m[1], 10) - 1] : (r.Month || null);
-          const year  = m ? m[3] : (r.Year ? String(r.Year) : null);
+          const dateVal = r.Date || r["Date"] || "";
+          const dateStr = normalizeDateCell(dateVal, XLSX.utils);
+          let month = r.Month || null;
+          let year = r.Year ? String(r.Year) : null;
+          if (dateStr) {
+            const m = dateStr.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+            if (m) {
+              month = MONTH_NAMES[parseInt(m[1], 10) - 1];
+              year = m[3];
+            }
+          }
           const amount = parseFloat(r.Amount) || 0;
           const paid   = parseFloat(r.Paid)   || 0;
           return {
             id:            String(Date.now() + i),
-            expenseDate:   m ? `${m[1].padStart(2,"0")}-${m[2].padStart(2,"0")}-${m[3]}` : null,
+            expenseDate:   dateStr || null,
             month, year,
             category:      r.Category    || null,
             vendor:        r.Vendor      || null,
@@ -206,7 +241,7 @@ export default function ExpensePage() {
             amount, paid,
             due:           Math.max(0, amount - paid),
             currency:      r.Currency    || "USD",
-            status:        r.Status      || "Pending",
+            status:        normalizeExpenseStatus(r.Status),
             paymentMethod: r["Payment Method"] || null,
             reference:     r.Reference   || null,
             notes:         r.Notes       || null,
