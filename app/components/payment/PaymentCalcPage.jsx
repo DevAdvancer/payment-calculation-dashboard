@@ -16,6 +16,7 @@ import QuickEntryModal from "./QuickEntryModal";
 import PaginationControls from "@/app/components/PaginationControls";
 import DeleteConfirmModal from "@/app/components/DeleteConfirmModal";
 import { normalizeCompanyName } from "@/lib/company-utils";
+import { normalizePaymentImportAmounts } from "@/lib/payment-import-utils";
 import { normalizePaymentStatus } from "@/lib/status-utils";
 
 const PAYMENT_IMPORT_HEADERS = [
@@ -90,9 +91,13 @@ function mapPaymentImportRow(row, index, xlsxUtils) {
   const poDate = normalizeDateCell(getCell(row, ["Date", "PO Date", "poDate", "DOJ", "Date of Joining", "doj", "dateofjoining"]), xlsxUtils);
   const parts = dateParts(poDate);
   const amount = parseMoney(getCell(row, ["USD", "Amount", "amount", "Salary", "salary", "Total", "total", "Value", "value"]));
-  const paid = parseMoney(getCell(row, ["Paid", "paid"]));
   const status = normalizePaymentStatus(getCell(row, ["Status", "status"]));
-  const due = parseMoney(getCell(row, ["Due", "due"])) || (status === "Received" ? 0 : amount);
+  const amounts = normalizePaymentImportAmounts({
+    amount,
+    paid: parseMoney(getCell(row, ["Paid", "paid"])),
+    due: parseMoney(getCell(row, ["Due", "due"])),
+    status,
+  });
 
   return {
     id: String(Date.now() + index),
@@ -104,8 +109,8 @@ function mapPaymentImportRow(row, index, xlsxUtils) {
     year: String(getCell(row, ["Year", "year"]) || parts.year || new Date().getFullYear()).trim(),
     instance: normalizeInstance(getCell(row, ["Instance of Payment", "Instance", "instance"]) || parts.instance),
     amount,
-    paid,
-    due,
+    paid: amounts.paid,
+    due: amounts.due,
     serviceType: String(getCell(row, ["Type of Service", "Service Type", "serviceType"]) || "Placement").trim(),
     status,
     type: String(getCell(row, ["Type", "type"]) || "").trim(),
