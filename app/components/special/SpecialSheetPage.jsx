@@ -13,6 +13,9 @@ import useDashboardStore, {
 import DateInput from "@/app/components/DateInput";
 import MoneyStack from "@/app/components/MoneyStack";
 import PaginationControls from "@/app/components/PaginationControls";
+import DeleteConfirmModal from "@/app/components/DeleteConfirmModal";
+import { normalizeCompanyName } from "@/lib/company-utils";
+import { normalizeSpecialSheetStatus } from "@/lib/status-utils";
 
 function statusBadgeClass(status) {
   if (status === "Received") return "badge-paid";
@@ -46,16 +49,6 @@ function parseMoney(value) {
   if (typeof value === "number") return value;
   const cleaned = String(value).replace(/[^0-9.-]/g, "");
   return parseFloat(cleaned) || 0;
-}
-
-function normalizeCompanyName(value) {
-  const raw = String(value || "").trim();
-  const key = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
-  if (key === "sst" || key === "silverspace" || key === "silverspaceinc") return "SilverSpace Inc";
-  if (key === "vizva" || key === "vizvainc" || key === "vcs") return "Vizva Inc";
-  if (key === "vizvauk" || key === "vizvaukltd") return "Vizva UK Ltd";
-  if (key === "flawless" || key === "flawlessed") return "Flawless-ED";
-  return raw;
 }
 
 function toMMDDYYYY(date) {
@@ -92,12 +85,6 @@ function dateParts(poDate) {
   };
 }
 
-function normalizeSheetStatus(status, isLaidOff) {
-  const raw = String(status || "").trim();
-  if (isLaidOff) return LAIDOFF_STATUSES.includes(raw) ? raw : "Laid Off";
-  return raw === "Default" ? "Default" : "Default";
-}
-
 function normalizeInstance(value) {
   const raw = String(value || "").trim().toLowerCase();
   if (raw === "second half" || raw === "second" || raw === "2nd half" || raw === "2") return "Second Half";
@@ -111,7 +98,7 @@ function mapSpecialImportRow(row, index, isLaidOff, xlsxUtils) {
   const amount = parseMoney(getCell(row, ["USD", "Amount", "amount"]));
   const poDate = normalizeDateCell(getCell(row, ["Date", "PO Date", "poDate"]), xlsxUtils);
   const parts = dateParts(poDate);
-  const status = normalizeSheetStatus(getCell(row, ["Status", "status"]), isLaidOff);
+  const status = normalizeSpecialSheetStatus(getCell(row, ["Status", "status"]), isLaidOff);
 
   return {
     id: String(Date.now() + index),
@@ -166,7 +153,7 @@ function clipboardRowsToObjects(text, isLaidOff) {
 }
 
 export default function SpecialSheetPage({ type = "laidoff" }) {
-  const { getLaidOff, getDefaulters, updateEntry, updateStatus, deleteEntry, importEntries, showToast, loading } = useDashboardStore();
+  const { getLaidOff, getDefaulters, updateEntry, updateStatus, deleteEntry, bulkDelete, importEntries, showToast, loading } = useDashboardStore();
 
   const isLaidOff = type === "laidoff";
   const rawEntries = isLaidOff ? getLaidOff() : getDefaulters();
@@ -175,14 +162,26 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
 
   const [filters, setFilters] = useState({ search: "", company: "", month: "", year: "" });
   const [pasteImport, setPasteImport] = useState(null);
+  const [selected, setSelected] = useState(new Set());
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    loading: false,
+    loadingText: "",
+  });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
 
   useEffect(() => {
     setPage(1);
+    setSelected(new Set());
   }, [filters]);
 
-
+  useEffect(() => {
+    setSelected(new Set());
+  }, [page, pageSize, type]);
 
   /* ── Filter options ── */
   const companies = [...new Set(rawEntries.map(e => e.company).filter(Boolean))].sort();
@@ -207,6 +206,13 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
   const paginatedRows = useMemo(() => {
     return entries.slice((page - 1) * pageSize, page * pageSize);
   }, [entries, page, pageSize]);
+
+  const toggleAll = (checked) => setSelected(checked ? new Set(entries.map(r => r.id)) : new Set());
+  const toggleRow = (id) => setSelected(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
 
   /* ── KPI data — totals split by currency for stacked display */
   const sumSplit = (rows) => {
@@ -306,6 +312,28 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
     if (ok !== false) showToast(`Deleted ${entry.candidate || "entry"}`);
   };
 
+  const handleDeleteSelected = () => {
+    if (!selected.size) return;
+    const count = selected.size;
+    const label = isLaidOff ? "laid off" : "defaulter";
+    const batches = Math.ceil(count / 500);
+    setDeleteConfirm({
+      isOpen: true,
+      title: `Delete ${count.toLocaleString()} selected ${label} ${count === 1 ? "entry" : "entries"}?`,
+      message: `This will permanently delete the selected ${label} ${count === 1 ? "entry" : "entries"}. This cannot be undone.`,
+      loadingText: count > 500 ? `Deleting in ${batches} batches...` : "Deleting...",
+      onConfirm: async () => {
+        setDeleteConfirm(prev => ({ ...prev, loading: true }));
+        const ok = await bulkDelete(Array.from(selected));
+        if (ok) {
+          setSelected(new Set());
+          showToast(`Deleted ${count.toLocaleString()} ${label} ${count === 1 ? "entry" : "entries"}`);
+        }
+        setDeleteConfirm({ isOpen: false, title: "", message: "", onConfirm: null, loading: false, loadingText: "" });
+      },
+    });
+  };
+
   const title = isLaidOff ? "Laid Off Sheet" : "Defaulter Sheet";
   const icon = isLaidOff ? "🔴" : "⚠️";
   const infoStatuses = isLaidOff ? "Laid Off, Offer Revoke, No Offer, Resigned, Contract End, BGV Fail" : "Default";
@@ -400,6 +428,14 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
             <button className="btn-ghost" style={{ padding: "4px 10px", fontSize: 11 }} onClick={() => setFilters({ search: "", company: "", month: "", year: "" })}>Clear</button>
           )}
         </div>
+        {selected.size > 0 && (
+          <button className="btn-del" onClick={handleDeleteSelected}>
+            <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ marginRight: 6 }}>
+              <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+            </svg>
+            Delete ({selected.size})
+          </button>
+        )}
         <label className="btn-icon" style={{ cursor: "pointer" }}>
           <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
@@ -496,6 +532,14 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
           <table className="tbl">
             <thead>
               <tr>
+                <th style={{ width: 36, textAlign: "center" }}>
+                  <input
+                    type="checkbox"
+                    checked={selected.size === entries.length && entries.length > 0}
+                    onChange={e => toggleAll(e.target.checked)}
+                    style={{ width: 14, height: 14, cursor: "pointer" }}
+                  />
+                </th>
                 <th style={{ width: 36 }}>#</th>
                 <th>Company</th>
                 <th>Candidate</th>
@@ -513,7 +557,15 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
             </thead>
             <tbody>
               {paginatedRows.map((entry, idx) => (
-                <tr key={entry.id}>
+                <tr key={entry.id} style={{ background: selected.has(entry.id) ? "var(--surface-2)" : undefined }}>
+                  <td style={{ textAlign: "center" }}>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(entry.id)}
+                      onChange={() => toggleRow(entry.id)}
+                      style={{ width: 14, height: 14, cursor: "pointer" }}
+                    />
+                  </td>
                   <td style={{ color: "var(--text-dim)", fontSize: 11 }}>{(page - 1) * pageSize + idx + 1}</td>
                   <td style={{ fontWeight: 500 }}>{entry.company || "—"}</td>
                   <td style={{ fontWeight: 600, color: "var(--mint)" }}>{entry.candidate || "—"}</td>
@@ -596,6 +648,16 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
           />
         </div>
       )}
+
+      <DeleteConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        title={deleteConfirm.title}
+        message={deleteConfirm.message}
+        onConfirm={deleteConfirm.onConfirm}
+        onCancel={() => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))}
+        loading={deleteConfirm.loading}
+        loadingText={deleteConfirm.loadingText || "Deleting..."}
+      />
     </div>
   );
 }

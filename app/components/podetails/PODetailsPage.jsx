@@ -6,6 +6,8 @@ import MoneyStack from "../MoneyStack";
 import DateInput from "../DateInput";
 import PaginationControls from "../PaginationControls";
 import DeleteConfirmModal from "../DeleteConfirmModal";
+import { normalizeCompanyName } from "../../../lib/company-utils";
+import { normalizePaymentStatus } from "../../../lib/status-utils";
 
 /* ─── Placement form constants (mirrors NewPlacementPage) ─── */
 const COMPANY_OPTIONS = [
@@ -114,16 +116,6 @@ function parseMoney(value) {
   return parseFloat(cleaned) || 0;
 }
 
-function normalizeCompanyName(value) {
-  const raw = String(value || "").trim();
-  const key = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
-  if (key === "sst" || key === "silverspace" || key === "silverspaceinc") return "SilverSpace Inc";
-  if (key === "vizva" || key === "vizvainc" || key === "vcs") return "Vizva Inc";
-  if (key === "vizvauk" || key === "vizvaukltd") return "Vizva UK Ltd";
-  if (key === "flawless" || key === "flawlessed") return "Flawless-ED";
-  return raw;
-}
-
 function normalizeDateCell(value, utils) {
   if (value == null || value === "") return "";
   if (value instanceof Date && !isNaN(value.getTime())) return toMMDDYYYY(value);
@@ -160,10 +152,7 @@ function normalizeInstance(value) {
 }
 
 function normalizeStatus(value) {
-  const raw = String(value || "").trim();
-  if (raw === "Paid") return "Received";
-  const options = ["Received", "Pending", "Laid Off", "Offer Revoke", "No Offer", "Resigned", "Default"];
-  return options.includes(raw) ? raw : "Pending";
+  return normalizePaymentStatus(value);
 }
 
 function rowLooksEmpty(row) {

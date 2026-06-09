@@ -15,6 +15,8 @@ import MoneyStack from "@/app/components/MoneyStack";
 import QuickEntryModal from "./QuickEntryModal";
 import PaginationControls from "@/app/components/PaginationControls";
 import DeleteConfirmModal from "@/app/components/DeleteConfirmModal";
+import { normalizeCompanyName } from "@/lib/company-utils";
+import { normalizePaymentStatus } from "@/lib/status-utils";
 
 const PAYMENT_IMPORT_HEADERS = [
   "Company", "Name of the Candidate", "Date", "Month", "Year", "Instance of Payment",
@@ -38,16 +40,6 @@ function parseMoney(value) {
   if (typeof value === "number") return value;
   const cleaned = String(value).replace(/[^0-9.-]/g, "");
   return parseFloat(cleaned) || 0;
-}
-
-function normalizeCompanyName(value) {
-  const raw = String(value || "").trim();
-  const key = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
-  if (key === "sst" || key === "silverspace" || key === "silverspaceinc") return "SilverSpace Inc";
-  if (key === "vizva" || key === "vizvainc" || key === "vcs") return "Vizva Inc";
-  if (key === "vizvauk" || key === "vizvaukltd") return "Vizva UK Ltd";
-  if (key === "flawless" || key === "flawlessed") return "Flawless-ED";
-  return raw;
 }
 
 function toMMDDYYYY(date) {
@@ -85,12 +77,6 @@ function dateParts(poDate) {
   };
 }
 
-function normalizeStatus(value) {
-  const raw = String(value || "").trim();
-  if (raw === "Paid") return "Received";
-  return ALL_STATUSES.includes(raw) ? raw : "Pending";
-}
-
 function normalizeInstance(value) {
   const raw = String(value || "").trim().toLowerCase();
   if (raw === "second half" || raw === "second" || raw === "2nd half" || raw === "2") return "Second Half";
@@ -105,7 +91,8 @@ function mapPaymentImportRow(row, index, xlsxUtils) {
   const parts = dateParts(poDate);
   const amount = parseMoney(getCell(row, ["USD", "Amount", "amount", "Salary", "salary", "Total", "total", "Value", "value"]));
   const paid = parseMoney(getCell(row, ["Paid", "paid"]));
-  const due = parseMoney(getCell(row, ["Due", "due"])) || (normalizeStatus(getCell(row, ["Status", "status"])) === "Received" ? 0 : amount);
+  const status = normalizePaymentStatus(getCell(row, ["Status", "status"]));
+  const due = parseMoney(getCell(row, ["Due", "due"])) || (status === "Received" ? 0 : amount);
 
   return {
     id: String(Date.now() + index),
@@ -120,7 +107,7 @@ function mapPaymentImportRow(row, index, xlsxUtils) {
     paid,
     due,
     serviceType: String(getCell(row, ["Type of Service", "Service Type", "serviceType"]) || "Placement").trim(),
-    status: normalizeStatus(getCell(row, ["Status", "status"])),
+    status,
     type: String(getCell(row, ["Type", "type"]) || "").trim(),
     notes: String(getCell(row, ["Remarks", "Notes", "notes"]) || "").trim(),
     poNum: String(getCell(row, ["PO#", "PO Num", "poNum", "po"]) || "").trim(),
@@ -379,21 +366,36 @@ export default function PaymentCalcPage() {
     return ok;
   };
 
-  const handlePasteRows = (e) => {
-    const target = e.target;
-    if (target?.closest?.("input, textarea, select, [contenteditable='true']")) return;
-
-    const text = e.clipboardData?.getData("text/plain") || "";
-    if (!text.trim() || !text.includes("\t")) return;
-
+  const preparePastedRows = (text) => {
+    if (!text.trim() || !text.includes("\t")) return false;
     const rowObjects = clipboardRowsToObjects(text);
     const mapped = rowObjects.map((row, i) => mapPaymentImportRow(row, i)).filter(Boolean);
     if (mapped.length) {
-      e.preventDefault();
       setPasteImport({ rows: mapped });
-    } else if (rowObjects.length) {
-      e.preventDefault();
-      showToast("No valid payment rows found in clipboard");
+      return true;
+    }
+    if (rowObjects.length) showToast("No valid payment rows found in clipboard");
+    return false;
+  };
+
+  const handlePasteRows = (e) => {
+    const text = e.clipboardData?.getData("text/plain") || "";
+    if (preparePastedRows(text)) e.preventDefault();
+  };
+
+  const handlePasteButton = async () => {
+    pasteTargetRef.current?.focus();
+    if (!navigator?.clipboard?.readText) {
+      showToast("Press Ctrl+V to paste copied Excel rows into Payment Calculation");
+      return;
+    }
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!preparePastedRows(text)) {
+        showToast("Clipboard does not contain copied Excel rows");
+      }
+    } catch {
+      showToast("Press Ctrl+V to paste copied Excel rows into Payment Calculation");
     }
   };
 
@@ -576,7 +578,7 @@ export default function PaymentCalcPage() {
             Import Excel
             <input ref={importRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }} onChange={handleImport} />
           </label>
-          <button className="btn-icon" onClick={() => { pasteTargetRef.current?.focus(); showToast("Paste copied Excel rows into Payment Calculation"); }}>
+          <button className="btn-icon" onClick={handlePasteButton}>
             <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path d="M9 12h6" /><path d="M9 16h6" /><path d="M9 8h1" />
               <path d="M5 4h9l5 5v11a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
