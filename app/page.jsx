@@ -12,6 +12,7 @@ import NewPlacementPage from "./components/placement/NewPlacementPage";
 import PODetailsPage from "./components/podetails/PODetailsPage";
 import PaymentDashboardPage from "./components/dashboard/PaymentDashboardPage";
 import ExpensePage from "./components/expense/ExpensePage";
+import NotificationsPage from "./components/NotificationsPage";
 import CounterLoader from "./components/CounterLoader";
 
 export default function Home() {
@@ -42,6 +43,7 @@ export default function Home() {
       case "placement":  return <NewPlacementPage />;
       case "dashboard":  return <PaymentDashboardPage />;
       case "expenses":   return <ExpensePage />;
+      case "notifications": return <NotificationsPage />;
       default:           return <PODetailsPage />;
     }
   };

@@ -8,6 +8,7 @@ export default function Sidebar() {
   const navigateStore  = useDashboardStore((s) => s.navigate);
   const getLaidOff     = useDashboardStore((s) => s.getLaidOff);
   const getDefaulters  = useDashboardStore((s) => s.getDefaulters);
+  const notifications  = useDashboardStore((s) => s.notifications);
   const sidebarOpen    = useDashboardStore((s) => s.sidebarOpen);
   const setSidebarOpen = useDashboardStore((s) => s.setSidebarOpen);
 
@@ -16,6 +17,7 @@ export default function Sidebar() {
 
   const laidOffCount   = getLaidOff().length;
   const defaulterCount = getDefaulters().length;
+  const unreadNotificationsCount = notifications.filter(n => !n.read).length;
 
   const isActive = (id) => currentPage === id;
   /* Close mobile drawer after navigating */
@@ -95,6 +97,16 @@ export default function Sidebar() {
           PO Details
         </NavBtn>
 
+        {/* Notifications */}
+        <NavBtn active={isActive("notifications")} onClick={() => navigate("notifications")}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+          All Notifications
+          {unreadNotificationsCount > 0 && <span style={{ marginLeft:"auto", fontSize:10, padding:"1px 6px", background:"rgba(16,185,129,0.15)", color:"#10b981", borderRadius:9999 }}>{unreadNotificationsCount}</span>}
+        </NavBtn>
+
         {/* Payment Calculation */}
         <NavBtn
           active={isActive("payment")}
@@ -143,6 +155,8 @@ export default function Sidebar() {
           </svg>
           Summary
         </NavBtn>
+
+
 
       </div>
 
