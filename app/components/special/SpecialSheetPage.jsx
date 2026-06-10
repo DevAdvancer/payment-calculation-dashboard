@@ -166,7 +166,7 @@ function clipboardRowsToObjects(text, isLaidOff) {
 }
 
 export default function SpecialSheetPage({ type = "laidoff" }) {
-  const { getLaidOff, getDefaulters, updateEntry, updateStatus, deleteEntry, importEntries, showToast, loading } = useDashboardStore();
+  const { getLaidOff, getDefaulters, updateEntry, updateStatus, deleteEntry, bulkDelete, importEntries, showToast, loading } = useDashboardStore();
 
   const isLaidOff = type === "laidoff";
   const rawEntries = isLaidOff ? getLaidOff() : getDefaulters();
@@ -177,10 +177,15 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
   const [pasteImport, setPasteImport] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
+  const [selected, setSelected] = useState(new Set());
 
   useEffect(() => {
     setPage(1);
   }, [filters]);
+
+  useEffect(() => {
+    setSelected(new Set());
+  }, [filters, page, pageSize]);
 
 
 
@@ -207,6 +212,9 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
   const paginatedRows = useMemo(() => {
     return entries.slice((page - 1) * pageSize, page * pageSize);
   }, [entries, page, pageSize]);
+
+  const toggleAll = (checked) => setSelected(checked ? new Set(paginatedRows.map(e => e.id)) : new Set());
+  const toggleRow = (id) => setSelected(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
 
   /* ── KPI data — totals split by currency for stacked display */
   const sumSplit = (rows) => {
@@ -304,6 +312,16 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
   const handleDelete = async (entry) => {
     const ok = await deleteEntry(entry.id);
     if (ok !== false) showToast(`Deleted ${entry.candidate || "entry"}`);
+  };
+
+  const deleteSelected = async () => {
+    if (!selected.size) return;
+    const ids = Array.from(selected);
+    const ok = await bulkDelete(ids);
+    if (ok !== false) {
+      setSelected(new Set());
+      showToast(`Deleted ${ids.length} selected entr${ids.length === 1 ? "y" : "ies"}`);
+    }
   };
 
   const title = isLaidOff ? "Laid Off Sheet" : "Defaulter Sheet";
@@ -416,6 +434,18 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
           </svg>
           Paste Rows
         </button>
+        {selected.size > 0 && (
+          <button className="btn-icon" onClick={deleteSelected} style={{ borderColor: "#f87171", color: "#f87171" }}>
+            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M3 6h18" />
+              <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+              <path d="M10 11v6" />
+              <path d="M14 11v6" />
+              <path d="M5 6l1 14a2 2 0 002 2h8a2 2 0 002-2l1-14" />
+            </svg>
+            Delete Selected
+          </button>
+        )}
         <button className="btn-icon" onClick={handleExport}>
           <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
@@ -496,6 +526,14 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
           <table className="tbl">
             <thead>
               <tr>
+                <th style={{ width: 36, textAlign: "center" }}>
+                  <input
+                    type="checkbox"
+                    checked={selected.size === paginatedRows.length && paginatedRows.length > 0}
+                    onChange={e => toggleAll(e.target.checked)}
+                    style={{ width: 14, height: 14, cursor: "pointer" }}
+                  />
+                </th>
                 <th style={{ width: 36 }}>#</th>
                 <th>Company</th>
                 <th>Candidate</th>
@@ -513,7 +551,15 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
             </thead>
             <tbody>
               {paginatedRows.map((entry, idx) => (
-                <tr key={entry.id}>
+                <tr key={entry.id} style={{ background: selected.has(entry.id) ? "var(--surface-2)" : undefined }}>
+                  <td style={{ textAlign: "center" }}>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(entry.id)}
+                      onChange={() => toggleRow(entry.id)}
+                      style={{ width: 14, height: 14, cursor: "pointer" }}
+                    />
+                  </td>
                   <td style={{ color: "var(--text-dim)", fontSize: 11 }}>{(page - 1) * pageSize + idx + 1}</td>
                   <td style={{ fontWeight: 500 }}>{entry.company || "—"}</td>
                   <td style={{ fontWeight: 600, color: "var(--mint)" }}>{entry.candidate || "—"}</td>
