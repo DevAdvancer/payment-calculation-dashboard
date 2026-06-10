@@ -102,110 +102,42 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
     .replace(/{date}/g,           today)
     .replace(/{our_company}/g,    s.company_name);
 
+  const previewRef = useRef(null);
+
   /* ── PDF Download ── */
   const handleDownloadPDF = async () => {
-    if (typeof window.jspdf === "undefined") {
-      await new Promise((resolve, reject) => {
-        const sc = document.createElement("script");
-        sc.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-        sc.onload = resolve; sc.onerror = reject;
-        document.head.appendChild(sc);
-      });
-    }
+    if (!previewRef.current) return;
 
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation:"portrait", unit:"pt", format:"letter" });
-    const W = 612, H = 792, margin = 48;
-    const primary = [26, 31, 46]; /* dark navy */
-    const accent  = [37, 99, 235]; /* blue */
-    const ink     = [17, 24, 39];
+    const [jspdfMod, html2canvasMod] = await Promise.all([import("jspdf"), import("html2canvas")]);
+    const jsPDF = jspdfMod.jsPDF || jspdfMod.default || jspdfMod;
+    const html2canvas = html2canvasMod.default || html2canvasMod;
 
-    /* Border */
-    doc.setDrawColor(...primary);
-    doc.setLineWidth(3);
-    doc.rect(18, 18, W-36, H-36);
-    doc.setDrawColor(...accent);
-    doc.setLineWidth(0.5);
-    doc.rect(24, 24, W-48, H-48);
-
-    /* Watermark */
-    doc.setTextColor(...accent);
-    doc.setGState(doc.GState({ opacity:0.05 }));
-    if (s.watermark_url && s.watermark_url.startsWith("data:")) {
-      try {
-        doc.addImage(s.watermark_url, W/2 - 150, H/2 - 150, 300, 300);
-      } catch (e) {
-        doc.setFontSize(140);
-        doc.setFont("helvetica","bold");
-        doc.text(s.company_name.slice(0,3).toUpperCase(), W/2, H/2+50, { align:"center" });
-      }
-    } else {
-      doc.setFontSize(140);
-      doc.setFont("helvetica","bold");
-      doc.text(s.company_name.slice(0,3).toUpperCase(), W/2, H/2+50, { align:"center" });
-    }
-    doc.setGState(doc.GState({ opacity:1 }));
-
-    let y = margin + 30;
-
-    /* Company name */
-    doc.setTextColor(...ink);
-    doc.setFontSize(20);
-    doc.setFont("helvetica","bold");
-    doc.text(s.company_name, margin, y);
-    y += 20;
-
-    if (s.company_address) {
-      doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(80,80,80);
-      doc.text(s.company_address, margin, y); y += 14;
-    }
-
-    /* Right meta */
-    let ry = margin + 30;
-    doc.setFontSize(8.5); doc.setTextColor(80,80,80);
-    if (s.ein)     { doc.text(`EIN: ${s.ein}`,   W-margin, ry, {align:"right"}); ry+=12; }
-    if (s.email)   { doc.text(s.email,            W-margin, ry, {align:"right"}); ry+=12; }
-    if (s.phone)   { doc.text(s.phone,            W-margin, ry, {align:"right"}); ry+=12; }
-    if (s.website) { doc.text(s.website,          W-margin, ry, {align:"right"}); ry+=12; }
-
-    y = Math.max(y, ry) + 10;
-
-    /* Separator */
-    doc.setDrawColor(...accent); doc.setLineWidth(2);
-    doc.line(margin, y, W-margin, y); y += 14;
-
-    /* Ref / date */
-    doc.setFontSize(8.5); doc.setTextColor(100,100,100); doc.setFont("helvetica","normal");
-    doc.text(`Ref: ${nocRef.current}`, margin, y);
-    doc.text(`Date: ${today}`, W-margin, y, {align:"right"}); y += 22;
-
-    /* Title */
-    doc.setFontSize(18); doc.setFont("helvetica","bold");
-    doc.setTextColor(...accent);
-    doc.text("NO OBJECTION CERTIFICATE", W/2, y, {align:"center"}); y += 8;
-    const tw = 280;
-    doc.setFillColor(...accent);
-    doc.rect((W-tw)/2, y, tw, 2.5, "F"); y += 22;
-
-    /* Body */
-    doc.setFontSize(11); doc.setFont("helvetica","normal"); doc.setTextColor(...ink);
-    const lines = doc.splitTextToSize(bodyText, W-margin*2);
-    lines.forEach(line => {
-      if (y > H-120) { doc.addPage(); y = margin+20; }
-      doc.text(line, margin, y); y += 16;
+    const canvas = await html2canvas(previewRef.current, {
+      backgroundColor: "#ffffff",
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
     });
-    y += 30;
 
-    /* Signature */
-    if (s.signature_name || s.signature_title) {
-      doc.setDrawColor(...accent); doc.setLineWidth(0.75);
-      doc.line(margin, y, margin+200, y); y += 14;
-      doc.setFontSize(10); doc.setFont("helvetica","bold"); doc.setTextColor(...ink);
-      if (s.signature_name)  { doc.text(s.signature_name, margin, y); y+=13; }
-      if (s.signature_title) { doc.setFont("helvetica","normal"); doc.setTextColor(100,100,100); doc.text(s.signature_title, margin, y); }
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "letter" });
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    let heightLeft = pdfHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+    heightLeft -= pdf.internal.pageSize.getHeight();
+
+    while (heightLeft > 0) {
+      position = heightLeft - pdfHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+      heightLeft -= pdf.internal.pageSize.getHeight();
     }
 
-    doc.save(`NOC_${selectedCo}_${(candidate||"Candidate").replace(/\s+/g,"_")}_${currentYear()}.pdf`);
+    pdf.save(`NOC_${selectedCo}_${(candidate||"Candidate").replace(/\s+/g,"_")}_${currentYear()}.pdf`);
   };
 
   return (
@@ -242,7 +174,7 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
             </div>
           ) : (
             /* NOC Preview */
-            <div style={{
+            <div ref={previewRef} style={{
               background:"#fff", color:"#111827", borderRadius:8, padding:"32px 36px",
               position:"relative", overflow:"hidden", fontFamily:"Georgia, serif",
               border:"1px solid var(--color-border)", boxShadow:"var(--shadow-md)",
