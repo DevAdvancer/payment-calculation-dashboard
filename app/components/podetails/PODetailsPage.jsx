@@ -312,7 +312,7 @@ export default function PODetailsPage() {
   const closeModal = () => setShowModal(false);
 
   const poEntries = useMemo(
-    () => entries.filter(e => !e.sheetScope || e.sheetScope === "po-details"),
+    () => entries.filter(e => e.sheetScope === "po-details"),
     [entries]
   );
   const filterOptions = useMemo(() => ({
