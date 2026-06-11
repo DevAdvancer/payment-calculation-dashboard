@@ -17,18 +17,18 @@ function getInitials(name) {
 
 function progressGradient(pct) {
   if (pct >= 100) return "linear-gradient(90deg, #339989, #7DE2D1)";
-  if (pct >= 50)  return "linear-gradient(90deg, #339989, #2B2C28)";
+  if (pct >= 50) return "linear-gradient(90deg, #339989, #2B2C28)";
   return "linear-gradient(90deg, #ef4444, #f97316)";
 }
 
 function progressColor(pct) {
   if (pct >= 100) return "var(--teal)";
-  if (pct >= 50)  return "var(--mint)";
+  if (pct >= 50) return "var(--mint)";
   return "#f97316";
 }
 
 export default function CandidateHistoryPage() {
-  const { getCandidateNames, getByCandidate, updateEntry, updateStatus, loading } =
+  const { getCandidateNames, getByCandidate, updateEntry, updateStatus, addNotification, notifications, showToast, loading } =
     useDashboardStore();
 
   const [search, setSearch] = useState("");
@@ -37,6 +37,7 @@ export default function CandidateHistoryPage() {
   const [animated, setAnimated] = useState(false);
   const [showNOC, setShowNOC] = useState(false);
   const searchRef = useRef();
+  const prevPctRef = useRef(null);
 
   const allNames = getCandidateNames();
 
@@ -67,9 +68,14 @@ export default function CandidateHistoryPage() {
   }, [selected]);
 
   const selectCandidate = (name) => {
+    prevPctRef.current = null;
     setSelected(name);
     setSearch(name);
     setDropdownOpen(false);
+  };
+
+  const notificationExists = (candidate) => {
+    return notifications.some(n => n.type === "payment-complete" && n.candidate === candidate);
   };
 
   const clearSearch = () => {
@@ -78,6 +84,26 @@ export default function CandidateHistoryPage() {
     setDropdownOpen(false);
     searchRef.current?.focus();
   };
+
+  /* Effect: detect transition from <100 -> 100 and add one-time payment completion notification */
+  useEffect(() => {
+    if (!selected) return;
+    if (prevPctRef.current == null) {
+      prevPctRef.current = pct;
+      return;
+    }
+    const prev = prevPctRef.current ?? 0;
+    if (prev < 100 && pct === 100 && !notificationExists(selected)) {
+      const message = `${selected} has fully paid the amount. Please update the NOC`;
+      addNotification({
+        candidate: selected,
+        message,
+        type: "payment-complete",
+      });
+      showToast(message, 4500);
+    }
+    prevPctRef.current = pct;
+  }, [pct, selected, notifications, addNotification, showToast]);
 
   if (loading) return (
     <div className="page-inner">
