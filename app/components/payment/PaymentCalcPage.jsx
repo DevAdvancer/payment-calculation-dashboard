@@ -246,6 +246,14 @@ export default function PaymentCalcPage() {
    *   • If a name was selected from the dropdown → exact-match only.
    *   • Otherwise typed search does substring (`includes`) matching. */
   const filtered = useMemo(() => {
+    const extractMonth = (monthField) => {
+      if (!monthField) return "";
+      const str = String(monthField).trim();
+      // Extract just the 3-letter month abbreviation from values like "Apr-21", "April", "Apr", etc.
+      const match = str.match(/^([A-Za-z]{3})/);
+      return match ? match[1] : str;
+    };
+
     let rows = entries;
     if (selectedName) {
       const sel = selectedName.toLowerCase();
@@ -255,7 +263,7 @@ export default function PaymentCalcPage() {
       if (q) rows = rows.filter(e => (e.candidate || "").toLowerCase().includes(q));
     }
     if (filters.status)   rows = rows.filter(e => e.status === filters.status);
-    if (filters.month)    rows = rows.filter(e => e.month === filters.month);
+    if (filters.month)    rows = rows.filter(e => extractMonth(e.month) === filters.month);
     if (filters.year)     rows = rows.filter(e => String(e.year) === String(filters.year));
     if (filters.instance) rows = rows.filter(e => e.instance === filters.instance);
     if (filters.company)  rows = rows.filter(e => e.company === filters.company);
