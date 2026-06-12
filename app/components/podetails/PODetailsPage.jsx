@@ -8,6 +8,7 @@ import PaginationControls from "../PaginationControls";
 import DeleteConfirmModal from "../DeleteConfirmModal";
 import { normalizeCompanyName } from "../../../lib/company-utils";
 import { normalizePaymentStatus } from "../../../lib/status-utils";
+import { isPoDetailsEntry } from "../../../lib/po-details-utils";
 
 /* ─── Placement form constants (mirrors NewPlacementPage) ─── */
 const COMPANY_OPTIONS = [
@@ -301,7 +302,7 @@ export default function PODetailsPage() {
   const closeModal = () => setShowModal(false);
 
   const poEntries = useMemo(
-    () => entries.filter(e => e.sheetScope === "po-details"),
+    () => entries.filter(isPoDetailsEntry),
     [entries]
   );
   const filterOptions = useMemo(() => ({
