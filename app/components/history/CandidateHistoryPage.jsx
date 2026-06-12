@@ -295,9 +295,9 @@ export default function CandidateHistoryPage() {
 
             {/* Progress Bar Section */}
             <div style={{ marginTop: 22 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <div className="candidate-progress-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>Payment Completion</span>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div className="candidate-progress-actions" style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: progressColor(pct) }}>
                     {pct}% Complete
                   </span>

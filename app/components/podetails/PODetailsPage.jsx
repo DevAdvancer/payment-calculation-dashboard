@@ -814,21 +814,21 @@ export default function PODetailsPage() {
       </div>
 
       {/* KPI Strip — reflects current search filter; stacked currencies for mixed cohorts */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+      <div className="podetails-summary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
         {[
           { label: "Candidates",     count: true,                                                                color: "var(--color-ink)" },
           { label: "Total Contract", money: summary.totalValue,                                                  color: "var(--color-accent)" },
           { label: "Received",       money: summary.totalPaid,                                                   color: "#16a34a" },
           { label: "Outstanding",    money: summary.totalBal,                                                    color: "#d97706" },
         ].map((k) => (
-          <div key={k.label} style={{
+          <div key={k.label} className="podetails-summary-card" style={{
             background: "var(--color-surface)", border: "1px solid var(--color-border)",
             borderRadius: "var(--radius-lg)", padding: "14px 18px", boxShadow: "var(--shadow-sm)",
           }}>
             <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--color-ink-muted)", marginBottom: 6 }}>
               {k.label}
             </div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: k.color, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>
+            <div className="podetails-summary-value" style={{ fontSize: 22, fontWeight: 700, color: k.color, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>
               {k.count ? String(rows.length) : <MoneyStack usd={k.money.USD} gbp={k.money.GBP} decimals={0} />}
             </div>
             {search.trim() && (

@@ -482,9 +482,172 @@ body {
   }
 }
 
+@media (max-width: 614px) {
+  .special-info-banner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .special-info-banner > strong,
+  .special-info-statuses,
+  .special-info-text {
+    display: block;
+    width: 100%;
+  }
+
+  .special-filter-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .special-filter-bar {
+    width: 100% !important;
+    flex: 0 0 auto !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    overflow: visible !important;
+    white-space: normal !important;
+  }
+
+  .special-filter-bar .search-wrap {
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+
+  .special-filter-bar .search-input,
+  .special-filter-bar .filter-select,
+  .special-filter-bar .btn-ghost,
+  .special-filter-row .btn-icon,
+  .special-filter-row .btn-del {
+    width: 100% !important;
+    max-width: none !important;
+    justify-content: center !important;
+  }
+
+  .special-filter-bar .search-input {
+    box-sizing: border-box;
+  }
+
+  .special-filter-divider,
+  .special-filter-bar > svg {
+    display: none !important;
+  }
+}
+
 /* Small phone */
 @media (max-width: 480px) {
   .kpi-strip { grid-template-columns: 1fr !important; }
   .page-inner { padding: 56px 10px 14px !important; }
   .filter-select { flex: 1 1 100%; }
+}
+
+@media (max-width: 348px) {
+  .special-kpi-strip {
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+  }
+
+  .special-kpi-card {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 882px) {
+  .podetails-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .podetails-summary-card {
+    min-width: 0;
+  }
+
+  .podetails-summary-value {
+    overflow-wrap: anywhere;
+    line-height: 1.08;
+  }
+}
+
+@media (max-width: 1214px) {
+  .summary-content-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .summary-chart-panel {
+    order: 1;
+  }
+
+  .summary-table-panel {
+    order: 2;
+  }
+}
+
+@media (max-width: 520px) {
+  .podetails-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 425px) {
+  .placement-page {
+    padding: 56px 16px 20px !important;
+    max-width: none !important;
+  }
+
+  .placement-steps {
+    width: 100%;
+  }
+
+  .placement-steps > button {
+    flex: 1 1 0;
+    min-width: 0;
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  .placement-form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    padding: 18px 20px !important;
+  }
+
+  .placement-field {
+    grid-column: 1 / -1 !important;
+    min-width: 0;
+  }
+
+  .placement-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 16px 20px !important;
+  }
+
+  .placement-actions > button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+@media (max-width: 375px) {
+  .candidate-progress-header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  .candidate-progress-actions {
+    display: contents !important;
+  }
+
+  .candidate-progress-header .noc-btn {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+  }
 }
