@@ -93,6 +93,7 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
     signature_title: allSettings[`${coSlug}_signature_title`] || allSettings.signature_title || def.signature_title,
     signature_url:   allSettings[`${coSlug}_signature_url`]   || allSettings.signature_url   || defaultSignatureFor(coSlug),
     noc_body_template: allSettings[`${coSlug}_noc_body_template`] || allSettings.noc_body_template || DEFAULT_BODY,
+    noc_footer_note:   allSettings[`${coSlug}_noc_footer_note`]   || allSettings.noc_footer_note   || "",
   };
 
   const bodyText = s.noc_body_template
@@ -236,6 +237,12 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
                       {s.signature_name  && <div style={{ fontSize:12, fontWeight:700, color:"#111827" }}>{s.signature_name}</div>}
                       {s.signature_title && <div style={{ fontSize:10.5, color:"#6b7280" }}>{s.signature_title}</div>}
                     </div>
+                  </div>
+                )}
+
+                {s.noc_footer_note && (
+                  <div style={{ marginTop:28, paddingTop:18, borderTop:"1px solid #e5e7eb", fontSize:11, lineHeight:1.65, color:"#6b7280", whiteSpace:"pre-line" }}>
+                    {s.noc_footer_note}
                   </div>
                 )}
               </div>
