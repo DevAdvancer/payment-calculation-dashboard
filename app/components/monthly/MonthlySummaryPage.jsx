@@ -176,9 +176,9 @@ export default function SummaryPage() {
           <div className="empty-sub">Adjust Year, Month, or Company to see summary rows</div>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(280px, 420px)", gap: 20, alignItems: "start" }}>
+        <div className="summary-content-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(280px, 420px)", gap: 20, alignItems: "start" }}>
           {/* Pivot table */}
-          <div className="tbl-wrap">
+          <div className="tbl-wrap summary-table-panel">
             <table className="tbl" style={{ fontSize: 13 }}>
               <thead>
                 <tr>
@@ -224,7 +224,7 @@ export default function SummaryPage() {
           </div>
 
           {/* Bar chart */}
-          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", padding: 16 }}>
+          <div className="summary-chart-panel" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", padding: 16 }}>
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--text-muted)", marginBottom: 12 }}>
               Per-month Pending vs Received
             </div>

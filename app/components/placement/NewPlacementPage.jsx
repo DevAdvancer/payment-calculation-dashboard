@@ -298,7 +298,7 @@ export default function NewPlacementPage() {
   };
 
   return (
-    <div style={{ padding: 32, maxWidth: 1200, margin: "0 auto" }}>
+    <div className="placement-page" style={{ padding: 32, maxWidth: 1200, margin: "0 auto" }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 20, fontWeight: 700, color: "var(--color-ink)", letterSpacing: "-0.02em" }}>New Placement</h1>
@@ -306,7 +306,7 @@ export default function NewPlacementPage() {
       </div>
 
       {/* Step pills */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+      <div className="placement-steps" style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         {["I. Payment Schedule Setup", "II. Master Sheet Details"].map((label, i) => {
           const num   = i + 1;
           const done  = step > num;
@@ -347,7 +347,7 @@ export default function NewPlacementPage() {
               <div style={{ fontSize: 11, color: "var(--color-ink-muted)" }}>Candidate info, salary &amp; agreement terms</div>
             </div>
           </div>
-          <div style={{ padding: "16px 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="placement-form-grid" style={{ padding: "16px 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Recipient Name" required error={errors.candidateName}>
               <input value={form.candidateName} onChange={e => set("candidateName", e.target.value)} placeholder="Full name of candidate" style={inputStyle} />
             </Field>
@@ -426,7 +426,7 @@ export default function NewPlacementPage() {
             )}
           </div>
           {/* Step 1 footer: Next only */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderTop: "1px solid var(--color-border-light)", background: "var(--color-surface-2)" }}>
+          <div className="placement-actions" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderTop: "1px solid var(--color-border-light)", background: "var(--color-surface-2)" }}>
             <button onClick={() => { setForm(EMPTY_FORM); setErrors({}); }} style={btnGhostStyle}>Clear Form</button>
             <button onClick={handleNext} style={btnPrimaryStyle}>Next →</button>
           </div>
@@ -443,7 +443,7 @@ export default function NewPlacementPage() {
               <div style={{ fontSize: 11, color: "var(--color-ink-muted)" }}>Placement metadata for record-keeping</div>
             </div>
           </div>
-          <div style={{ padding: "16px 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="placement-form-grid" style={{ padding: "16px 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Signup Date">
               <DateInput value={form.signupDate} onChange={v => set("signupDate", v)} style={inputStyle} />
             </Field>
@@ -466,7 +466,7 @@ export default function NewPlacementPage() {
             </Field>
           </div>
           {/* Step 2 footer: Back + Submit */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderTop: "1px solid var(--color-border-light)", background: "var(--color-surface-2)" }}>
+          <div className="placement-actions" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderTop: "1px solid var(--color-border-light)", background: "var(--color-surface-2)" }}>
             <button onClick={() => setStep(1)} style={btnGhostStyle}>← Back</button>
             <button onClick={handleSubmit} disabled={saving} style={btnPrimaryStyle}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6 }}>
@@ -484,7 +484,7 @@ export default function NewPlacementPage() {
 
 function Field({ label, required, error, children, style }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4, ...style }}>
+    <div className="placement-field" style={{ display: "flex", flexDirection: "column", gap: 4, ...style }}>
       <label style={{ fontSize: 11, fontWeight: 700, color: "var(--color-ink-muted)", textTransform: "uppercase", letterSpacing: ".06em" }}>
         {label}{required && <span style={{ color: "var(--color-danger)", marginLeft: 2 }}>*</span>}
       </label>

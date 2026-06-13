@@ -339,7 +339,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
   const infoStatuses = isLaidOff ? "Laid Off, Offer Revoke, No Offer, Resigned, Contract End, BGV Fail" : "Default";
 
   if (loading) return (
-    <div className="page-inner" ref={pasteTargetRef} onPaste={handlePasteRows} tabIndex={0} style={{ outline: "none" }}>
+    <div className={`page-inner special-sheet-page special-sheet-${type}`} ref={pasteTargetRef} onPaste={handlePasteRows} tabIndex={0} style={{ outline: "none" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--text-muted)", padding: "40px 0" }}>
         <div style={{ width: 18, height: 18, border: "2px solid var(--teal)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
         Loading…
@@ -348,7 +348,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
   );
 
   return (
-    <div className="page-inner" ref={pasteTargetRef} onPaste={handlePasteRows} tabIndex={0} style={{ outline: "none" }}>
+    <div className={`page-inner special-sheet-page special-sheet-${type}`} ref={pasteTargetRef} onPaste={handlePasteRows} tabIndex={0} style={{ outline: "none" }}>
       {/* Header */}
       <div className="page-header">
         <h1 className="page-title">{icon} {title.split(" ")[0]} <span>{title.split(" ").slice(1).join(" ")}</span></h1>
@@ -356,7 +356,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
       </div>
 
       {/* Info Banner */}
-      <div style={{
+      <div className="special-info-banner" style={{
         background: isLaidOff ? "rgba(251,146,60,0.08)" : "rgba(248,113,113,0.08)",
         border: `1px solid ${isLaidOff ? "rgba(251,146,60,0.25)" : "rgba(248,113,113,0.25)"}`,
         borderRadius: "var(--r-lg)",
@@ -374,9 +374,9 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
       </div>
 
       {/* KPI Strip */}
-      <div className="kpi-strip">
+      <div className="kpi-strip special-kpi-strip">
         {kpiData.map(kpi => (
-          <div className="kpi-card" key={kpi.label} style={{ minWidth: 160 }}>
+          <div className="kpi-card special-kpi-card" key={kpi.label} style={{ minWidth: 160 }}>
             <div className="kpi-label" style={{ fontSize: 13 }}>{kpi.label}</div>
             <div className="kpi-value" style={{ fontSize: 26, marginBottom: 4 }}>{kpi.count}</div>
             <div className="kpi-sub" style={{ color: isLaidOff ? "#fb923c" : "#f87171", fontSize: 13, marginTop: 0 }}>
@@ -387,8 +387,8 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
       </div>
 
       {/* Filters + Export */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-        <div className="filter-bar" style={{ flex: 1, marginBottom: 0 }}>
+      <div className="special-filter-row" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+        <div className="filter-bar special-filter-bar" style={{ flex: 1, marginBottom: 0 }}>
           <div className="search-wrap" style={{ marginRight: 10 }}>
             <svg className="search-icon" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -408,7 +408,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
               >×</button>
             )}
           </div>
-          <div style={{ width: 1, height: 20, background: "var(--color-border)", margin: "0 4px" }} />
+          <div className="special-filter-divider" style={{ width: 1, height: 20, background: "var(--color-border)", margin: "0 4px" }} />
           <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ color: "var(--text-muted)", flexShrink: 0 }}>
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
           </svg>
