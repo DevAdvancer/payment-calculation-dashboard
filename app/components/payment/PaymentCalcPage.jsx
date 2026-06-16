@@ -78,9 +78,31 @@ function addDays(date, offset) {
 }
 
 function addMonths(date, offset) {
-  const d = new Date(date);
-  d.setMonth(d.getMonth() + offset);
-  return d;
+  const src = date instanceof Date ? new Date(date) : new Date(date);
+  const day = src.getDate();
+  const targetYear = src.getFullYear();
+  const targetMonthIndex = src.getMonth() + offset;
+
+  // Helper: is the source date the last day of its month?
+  const isLastDayOfMonth = (d) => {
+    const dt = new Date(d instanceof Date ? d : new Date(d));
+    return dt.getDate() === new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate();
+  };
+
+  // Create a date at the first of the target month, then determine
+  // the last day of that month.
+  const firstOfTarget = new Date(targetYear, targetMonthIndex, 1);
+  const lastDayOfTarget = new Date(firstOfTarget.getFullYear(), firstOfTarget.getMonth() + 1, 0).getDate();
+
+  // If source was the last day of its month, preserve 'end-of-month' semantics
+  // by clamping to the last valid day of the target month. Otherwise clamp
+  // to the last valid day only if the original day doesn't exist in target.
+  const dayClamped = isLastDayOfMonth(src) ? lastDayOfTarget : Math.min(day, lastDayOfTarget);
+
+  const out = new Date(firstOfTarget.getFullYear(), firstOfTarget.getMonth(), dayClamped);
+  // Preserve time components from the source date
+  out.setHours(src.getHours(), src.getMinutes(), src.getSeconds(), src.getMilliseconds());
+  return out;
 }
 
 function normalizeServiceTypeValue(value) {
@@ -331,9 +353,37 @@ export default function PaymentCalcPage() {
     return sorted.slice((page - 1) * pageSize, page * pageSize);
   }, [sorted, page, pageSize]);
 
+//   const handleStatusChange = async (entry, nextStatus) => {
+//   if (nextStatus === "Move" && entry.status !== "Move") {
+//       const currentIndex = sorted.findIndex((e) => String(e.id) === String(entry.id));
+//     if (currentIndex === -1) return;
+//     const affected = sorted.slice(currentIndex);
+//     const originals = affected.map((row) => ({ ...row }));
+//     setPendingMove({ entry, prevStatus: entry.status, currentIndex });
+//     setMoveRows(originals);
+//     setMoveDateIso(toISODate(entry.poDate));
+//     setMoveError("");
+
+//       for (const row of affected) {
+//         if (row.status === "Move") continue;
+//         await updateEntry(row.id, {
+//           status: "Move",
+//           paid: 0,
+//           due: parseFloat(row.amount) || 0,
+//           sheetScope: "payment",
+//         });
+//       }
+//     return;
+//   }
+//   updateStatus(entry.id, nextStatus);
+// };
+
   const handleStatusChange = async (entry, nextStatus) => {
     if (nextStatus === "Move" && entry.status !== "Move") {
-      const currentIndex = sorted.findIndex((e) => String(e.id) === String(entry.id));
+      const currentIndex = sorted.findIndex(
+        (e) => String(e.id) === String(entry.id)
+      );
+
       if (currentIndex === -1) return;
       const affected = sorted.slice(currentIndex);
       const originals = affected.map((row) => ({ ...row }));
@@ -342,15 +392,46 @@ export default function PaymentCalcPage() {
       setMoveDateIso(toISODate(entry.poDate));
       setMoveError("");
 
-      for (const row of affected) {
-        if (row.status === "Move") continue;
-        await updateEntry(row.id, {
-          status: "Move",
-          paid: 0,
-          due: parseFloat(row.amount) || 0,
-          sheetScope: "payment",
-        });
+      const updatedRows = [];
+
+      try {
+        for (const row of affected) {
+          if (row.status === "Move") continue;
+
+          await updateEntry(row.id, {
+            status: "Move",
+            paid: 0,
+            due: parseFloat(row.amount) || 0,
+            sheetScope: "payment",
+          });
+
+          updatedRows.push(row);
+        }
+      } catch (err) {
+        console.error("Move update failed:", err);
+
+        // Roll back successful updates
+        for (const row of updatedRows) {
+          try {
+            await updateEntry(row.id, {
+              status: row.status,
+              paid: row.paid,
+              due: row.due,
+              sheetScope: "payment",
+            });
+          } catch (rollbackErr) {
+            console.error("Rollback failed:", rollbackErr);
+          }
+        }
+
+        setPendingMove(null);
+        setMoveRows([]);
+        setMoveDateIso("");
+        setMoveError("");
+
+        showToast?.("Failed to move payment entries. Please try again.");
       }
+
       return;
     }
     updateStatus(entry.id, nextStatus);
@@ -414,22 +495,77 @@ export default function PaymentCalcPage() {
     }
   };
 
+  // const handleMoveCancel = async () => {
+  //   if (moveRows.length) {
+  //     for (const row of moveRows) {
+  //       if (row.status !== "Move") {
+  //         await updateEntry(row.id, {
+  //           status: row.status,
+  //           paid: row.status === "Received" ? parseFloat(row.amount) || 0 : 0,
+  //           due: row.status === "Received" ? 0 : parseFloat(row.amount) || 0,
+  //         });
+  //       }
+  //     }
+  //   }
+  //   setPendingMove(null);
+  //   setMoveDateIso("");
+  //   setMoveError("");
+  //   setMoveRows([]);
+  // };
+
+  // const handleMoveCancel = async () => {
+  //   try {
+  //     for (const row of moveRows) {
+  //       if (row.status === "Move") continue;
+
+  //       await updateEntry(row.id, {
+  //         status: row.status,
+  //         paid:
+  //           row.status === "Received"
+  //             ? parseFloat(row.amount) || 0
+  //             : 0,
+  //         due:
+  //           row.status === "Received"
+  //             ? 0
+  //             : parseFloat(row.amount) || 0,
+  //       });
+  //     }
+  //   } catch (err) {
+  //     console.error(err);
+  //     showToast?.("Failed to restore moved entries.");
+  //   }
+
+  //   setPendingMove(null);
+  //   setMoveDateIso("");
+  //   setMoveError("");
+  //   setMoveRows([]);
+  // };
+
   const handleMoveCancel = async () => {
-    if (moveRows.length) {
-      for (const row of moveRows) {
-        if (row.status !== "Move") {
+    try {
+      if (moveRows.length) {
+        for (const row of moveRows) {
+          if (row.status === "Move") continue;
+
           await updateEntry(row.id, {
             status: row.status,
-            paid: row.status === "Received" ? parseFloat(row.amount) || 0 : 0,
-            due: row.status === "Received" ? 0 : parseFloat(row.amount) || 0,
+            paid: row.paid,
+            due: row.due,
+            sheetScope: row.sheetScope || "payment",
           });
         }
       }
+    } 
+    catch (err) {
+    console.error(err);
+    showToast?.("Failed to restore moved entries.");
     }
-    setPendingMove(null);
-    setMoveDateIso("");
-    setMoveError("");
-    setMoveRows([]);
+    finally{ 
+      setPendingMove(null);
+      setMoveDateIso("");
+      setMoveError("");
+      setMoveRows([]);
+    }
   };
 
   const toggleAll = (checked) => setSelected(checked ? new Set(sorted.map(r => r.id)) : new Set());
