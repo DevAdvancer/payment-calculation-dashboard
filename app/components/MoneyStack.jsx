@@ -4,13 +4,14 @@ import { fmtMoneyC } from "@/lib/use-store";
 /**
  * Render a single number when only one currency has a non-zero total,
  * or stack USD on top + GBP underneath in smaller text when both exist.
+ * Defaults to 2 decimal places for currency formatting.
  *
- *   <MoneyStack usd={12000} gbp={0}     />   →   $12,000
- *   <MoneyStack usd={0}     gbp={8500}  />   →   £8,500
- *   <MoneyStack usd={12000} gbp={8500}  />   →   $12,000
- *                                              £8,500
+ *   <MoneyStack usd={12000} gbp={0}     />   →   $12,000.00
+ *   <MoneyStack usd={0}     gbp={8500}  />   →   £8,500.00
+ *   <MoneyStack usd={12000} gbp={8500}  />   →   $12,000.00
+ *                                              £8,500.00
  */
-export default function MoneyStack({ usd, gbp, decimals = 0, color }) {
+export default function MoneyStack({ usd, gbp, decimals = 2, color }) {
   const u = parseFloat(usd) || 0;
   const g = parseFloat(gbp) || 0;
   const both = u !== 0 && g !== 0;

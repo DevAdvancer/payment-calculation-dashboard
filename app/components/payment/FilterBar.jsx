@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { MONTH_NAMES, ALL_STATUSES, INSTANCE_OPTIONS } from "@/lib/use-store";
 
 const EMPTY_FILTERS = {
@@ -11,28 +11,32 @@ const EMPTY_FILTERS = {
   status:   "",
 };
 
-export default function FilterBar({ entries = [], onFilterChange }) {
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
-
+export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFilterChange }) {
   /* Derive unique options from entries */
-  const companies = [...new Set(entries.map((e) => e.company).filter(Boolean))].sort();
-  const years     = [...new Set(entries.map((e) => e.year).filter(Boolean))].sort((a, b) => b - a);
-
-  /* Notify parent on every change */
-  useEffect(() => {
-    if (typeof onFilterChange === "function") {
-      onFilterChange(filters);
+  const companies = useMemo(() => [...new Set(entries.map((e) => e.company).filter(Boolean))].sort(), [entries]);
+  const years = useMemo(() => {
+    const fromEntries = [...new Set(entries.map((e) => e.year).filter(Boolean))].sort((a, b) => b - a);
+    const currentYear = String(new Date().getFullYear());
+    if (!fromEntries.includes(currentYear)) {
+      return [currentYear, ...fromEntries];
     }
-  }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
+    return fromEntries;
+  }, [entries]);
 
   const set = (key) => (e) => {
-    setFilters((prev) => ({ ...prev, [key]: e.target.value }));
+    if (typeof onFilterChange === "function") {
+      onFilterChange((prev) => ({ ...prev, [key]: e.target.value }));
+    }
   };
 
   const activeCount = Object.values(filters).filter(Boolean).length;
-  const hasFilters  = activeCount > 0;
+  const hasFilters = activeCount > 0;
 
-  const clearAll = () => setFilters(EMPTY_FILTERS);
+  const clearAll = () => {
+    if (typeof onFilterChange === "function") {
+      onFilterChange(EMPTY_FILTERS);
+    }
+  };
 
   return (
     <>

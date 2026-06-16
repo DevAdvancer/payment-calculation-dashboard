@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import useDashboardStore, {
   ALL_STATUSES,
   INSTANCE_OPTIONS,
+  MONTH_NAMES,
   fmtMoney,
   fmtMoneyC,
   currencyOf,
@@ -48,6 +49,44 @@ function toMMDDYYYY(date) {
   const d = date instanceof Date ? date : new Date(date);
   if (isNaN(d.getTime())) return "";
   return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}-${d.getFullYear()}`;
+}
+
+function parseMMDDYYYY(value) {
+  if (!value) return null;
+  const m = String(value).match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (!m) return null;
+  return new Date(+m[3], +m[1] - 1, +m[2]);
+}
+
+function toISODate(value) {
+  const d = parseMMDDYYYY(value);
+  if (!d) return "";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function fromISODate(iso) {
+  if (!iso) return null;
+  const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  return new Date(+m[1], +m[2] - 1, +m[3]);
+}
+
+function addDays(date, offset) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + offset);
+  return d;
+}
+
+function addMonths(date, offset) {
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + offset);
+  return d;
+}
+
+function normalizeServiceTypeValue(value) {
+  if (value == null) return "";
+  const raw = String(value).trim();
+  return raw.toLowerCase() === "payment collection" ? "New Placement" : raw;
 }
 
 function normalizeDateCell(value, xlsxUtils) {
@@ -111,22 +150,13 @@ function mapPaymentImportRow(row, index, xlsxUtils) {
     amount,
     paid: amounts.paid,
     due: amounts.due,
-    serviceType: String(getCell(row, ["Type of Service", "Service Type", "serviceType"]) || "Placement").trim(),
+    serviceType: normalizeServiceTypeValue(getCell(row, ["Type of Service", "Service Type", "serviceType"]) || "Placement"),
     status,
     type: String(getCell(row, ["Type", "type"]) || "").trim(),
     notes: String(getCell(row, ["Remarks", "Notes", "notes"]) || "").trim(),
     poNum: String(getCell(row, ["PO#", "PO Num", "poNum", "po"]) || "").trim(),
     sheetScope: "payment",
   };
-}
-
-function parseClipboardTable(text) {
-  return String(text || "")
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .split("\n")
-    .map(line => line.split("\t").map(cell => cell.trim()))
-    .filter(cells => cells.some(Boolean));
 }
 
 function clipboardRowsToObjects(text) {
@@ -153,17 +183,20 @@ function clipboardRowsToObjects(text) {
 }
 
 export default function PaymentCalcPage() {
-  const { getActive, getCandidateNames, updateEntry, updateStatus, deleteEntry, bulkDelete, importEntries, showToast, loading, navigate } =
+  const { getActive, getCandidateNames, updateEntry, updateStatus, bulkCreate, deleteEntry, bulkDelete, importEntries, showToast, loading, navigate } =
     useDashboardStore();
 
   const entries       = getActive();
   const allNames      = getCandidateNames();
+  const now           = new Date();
+  const currentMonth  = MONTH_NAMES[now.getMonth()];
+  const currentYear   = String(now.getFullYear());
 
   const [searchTerm, setSearchTerm]     = useState("");
   const [selectedName, setSelectedName] = useState(null);   // exact-match lock when user picks from dropdown
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showQuickEntry, setShowQuickEntry] = useState(false);
-  const [filters, setFilters]           = useState({ company: "", month: "", year: "", instance: "", status: "" });
+  const [filters, setFilters]           = useState({ company: "", month: currentMonth, year: currentYear, instance: "", status: "" });
   const [sortKey, setSortKey]           = useState("poDate");
   const [sortDir, setSortDir]           = useState("asc");
   const [fadingIds, setFadingIds]       = useState(new Set());
@@ -180,6 +213,10 @@ export default function PaymentCalcPage() {
   });
   const [page, setPage]                 = useState(1);
   const [pageSize, setPageSize]         = useState(100);
+  const [pendingMove, setPendingMove]   = useState(null);
+  const [moveDateIso, setMoveDateIso]   = useState("");
+  const [moveError, setMoveError]       = useState("");
+  const [moveRows, setMoveRows]         = useState([]);
   const importRef = useRef();
   const searchRef = useRef();
   const pasteTargetRef = useRef();
@@ -208,9 +245,9 @@ export default function PaymentCalcPage() {
    * stored in any entry, so anything a user has typed before is available
    * as a suggestion for the next row. Order: defaults first, then alphabetical. */
   const serviceTypeOptions = useMemo(() => {
-    const defaults = ["Placement", "Payment Collection"];
+    const defaults = ["Placement", "New Placement"];
     const fromData = entries
-      .map(e => (e.serviceType || "").trim())
+      .map(e => normalizeServiceTypeValue(e.serviceType))
       .filter(Boolean);
     const seen = new Set(defaults.map(s => s.toLowerCase()));
     const extras = [];
@@ -246,14 +283,15 @@ export default function PaymentCalcPage() {
    *   • If a name was selected from the dropdown → exact-match only.
    *   • Otherwise typed search does substring (`includes`) matching. */
   const filtered = useMemo(() => {
-    const extractMonth = (monthField) => {
-      if (!monthField) return "";
-      const str = String(monthField).trim();
-      // Extract just the 3-letter month abbreviation from values like "Apr-21", "April", "Apr", etc.
-      const match = str.match(/^([A-Za-z]{3})/);
-      return match ? match[1] : str;
+    const normalizeMonth = (val) => {
+      if (!val) return "";
+      const str = String(val).trim();
+      const key = str.slice(0, 3).toLowerCase();
+      const idx = MONTH_NAMES.findIndex((m) => m.toLowerCase().startsWith(key));
+      return idx === -1 ? str : MONTH_NAMES[idx];
     };
 
+    const monthFilter = normalizeMonth(filters.month);
     let rows = entries;
     if (selectedName) {
       const sel = selectedName.toLowerCase();
@@ -263,7 +301,7 @@ export default function PaymentCalcPage() {
       if (q) rows = rows.filter(e => (e.candidate || "").toLowerCase().includes(q));
     }
     if (filters.status)   rows = rows.filter(e => e.status === filters.status);
-    if (filters.month)    rows = rows.filter(e => extractMonth(e.month) === filters.month);
+    if (monthFilter)       rows = rows.filter(e => normalizeMonth(e.month) === monthFilter);
     if (filters.year)     rows = rows.filter(e => String(e.year) === String(filters.year));
     if (filters.instance) rows = rows.filter(e => e.instance === filters.instance);
     if (filters.company)  rows = rows.filter(e => e.company === filters.company);
@@ -292,6 +330,107 @@ export default function PaymentCalcPage() {
   const paginatedRows = useMemo(() => {
     return sorted.slice((page - 1) * pageSize, page * pageSize);
   }, [sorted, page, pageSize]);
+
+  const handleStatusChange = async (entry, nextStatus) => {
+    if (nextStatus === "Move" && entry.status !== "Move") {
+      const currentIndex = sorted.findIndex((e) => String(e.id) === String(entry.id));
+      if (currentIndex === -1) return;
+      const affected = sorted.slice(currentIndex);
+      const originals = affected.map((row) => ({ ...row }));
+      setPendingMove({ entry, prevStatus: entry.status, currentIndex });
+      setMoveRows(originals);
+      setMoveDateIso(toISODate(entry.poDate));
+      setMoveError("");
+
+      for (const row of affected) {
+        if (row.status === "Move") continue;
+        await updateEntry(row.id, {
+          status: "Move",
+          paid: 0,
+          due: parseFloat(row.amount) || 0,
+          sheetScope: "payment",
+        });
+      }
+      return;
+    }
+    updateStatus(entry.id, nextStatus);
+  };
+
+  const handleMoveConfirm = async () => {
+    if (!pendingMove || !moveRows.length) return;
+    if (!moveDateIso) {
+      setMoveError("Please select a date.");
+      return;
+    }
+    const baseDate = fromISODate(moveDateIso);
+    if (!baseDate || isNaN(baseDate.getTime())) {
+      setMoveError("Please select a valid date.");
+      return;
+    }
+
+    const originals = moveRows;
+    setPendingMove(null);
+    setMoveDateIso("");
+    setMoveError("");
+    setMoveRows([]);
+
+    const duplicates = originals.map((row, idx) => {
+      const poDate = toMMDDYYYY(addMonths(baseDate, idx));
+      const parts = dateParts(poDate);
+      return {
+        ...row,
+        id: String(Date.now()) + String(idx) + Math.random().toString(16).slice(2),
+        status: "Pending",
+        paid: 0,
+        due: parseFloat(row.amount) || 0,
+        poDate,
+        month: parts.month,
+        year: parts.year,
+        instance: parts.instance,
+        sheetScope: "payment",
+      };
+    });
+
+    if (duplicates.length) {
+      const ok = await bulkCreate(duplicates);
+      if (ok) {
+        // Reorder store entries so duplicates appear immediately after the moved block
+        const lastMovedId = originals[originals.length - 1]?.id;
+        const dupIds = new Set(duplicates.map(d => String(d.id)));
+        // Use the store instance to update ordering
+        useDashboardStore.setState(s => {
+          const prev = s.entries || [];
+          const dupEntries = prev.filter(e => dupIds.has(String(e.id)));
+          const withoutDup = prev.filter(e => !dupIds.has(String(e.id)));
+          const insertAfterIndex = withoutDup.findIndex(e => String(e.id) === String(lastMovedId));
+          if (insertAfterIndex === -1) {
+            return { entries: [...withoutDup, ...dupEntries] };
+          }
+          const head = withoutDup.slice(0, insertAfterIndex + 1);
+          const tail = withoutDup.slice(insertAfterIndex + 1);
+          return { entries: [...head, ...dupEntries, ...tail] };
+        });
+      }
+    }
+  };
+
+  const handleMoveCancel = async () => {
+    if (moveRows.length) {
+      for (const row of moveRows) {
+        if (row.status !== "Move") {
+          await updateEntry(row.id, {
+            status: row.status,
+            paid: row.status === "Received" ? parseFloat(row.amount) || 0 : 0,
+            due: row.status === "Received" ? 0 : parseFloat(row.amount) || 0,
+          });
+        }
+      }
+    }
+    setPendingMove(null);
+    setMoveDateIso("");
+    setMoveError("");
+    setMoveRows([]);
+  };
 
   const toggleAll = (checked) => setSelected(checked ? new Set(sorted.map(r => r.id)) : new Set());
   const toggleRow = (id) => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -328,6 +467,21 @@ export default function PaymentCalcPage() {
   const totalDueByCur   = sumByCurrency(filtered, "due");
   const totalValue      = totalValueByCur.USD + totalValueByCur.GBP;
   const totalPaid       = totalPaidByCur.USD  + totalPaidByCur.GBP;
+
+  /* ── Move / Placement / New Placement metrics */
+  const moveEntries = filtered.filter(e => e.status === "Move");
+  const moveUniqueCandidates = new Set(moveEntries.map(e => (e.candidate || "").trim().toLowerCase())).size;
+  const moveAmountByCur = sumByCurrency(moveEntries, "amount");
+
+  const placementReceivedByCur = sumByCurrency(
+    filtered.filter(e => e.status === "Received" && normalizeServiceTypeValue(e.serviceType) === "Placement"),
+    "amount"
+  );
+
+  const newPlacementReceivedByCur = sumByCurrency(
+    filtered.filter(e => e.status === "Received" && normalizeServiceTypeValue(e.serviceType) === "New Placement"),
+    "amount"
+  );
 
   /* ── Delete with fade ── */
   const handleDelete = (id, candidateName) => {
@@ -429,7 +583,7 @@ export default function PaymentCalcPage() {
       Year:                   e.year,
       "Instance of Payment":  e.instance,
       USD:                    parseFloat(e.amount) || 0,
-      "Type of Service":      e.serviceType,
+      "Type of Service":      normalizeServiceTypeValue(e.serviceType),
       Status:                 e.status,
       Type:                   e.type,
       Remarks:                e.notes,
@@ -491,18 +645,34 @@ export default function PaymentCalcPage() {
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Total Value</div>
-          <div className="kpi-value" style={{ color: "var(--mint)" }}><MoneyStack usd={totalValueByCur.USD} gbp={totalValueByCur.GBP} decimals={0} /></div>
+          <div className="kpi-value" style={{ color: "var(--mint)" }}><MoneyStack usd={totalValueByCur.USD} gbp={totalValueByCur.GBP} decimals={2} /></div>
           <div className="kpi-sub">across {filtered.length} {filtered.length === 1 ? "entry" : "entries"}</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Received</div>
-          <div className="kpi-value" style={{ color: "#4ade80" }}><MoneyStack usd={totalPaidByCur.USD} gbp={totalPaidByCur.GBP} decimals={0} /></div>
+          <div className="kpi-value" style={{ color: "#4ade80" }}><MoneyStack usd={totalPaidByCur.USD} gbp={totalPaidByCur.GBP} decimals={2} /></div>
           <div className="kpi-sub">{totalValue > 0 ? Math.round((totalPaid / totalValue) * 100) : 0}% received</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Outstanding</div>
-          <div className="kpi-value" style={{ color: "#fbbf24" }}><MoneyStack usd={totalDueByCur.USD} gbp={totalDueByCur.GBP} decimals={0} /></div>
+          <div className="kpi-value" style={{ color: "#fbbf24" }}><MoneyStack usd={totalDueByCur.USD} gbp={totalDueByCur.GBP} decimals={2} /></div>
           <div className="kpi-sub">pending collection</div>
+        </div>
+        <div className="kpi-card" style={{ background: "#fff1f2", borderColor: "#fecaca" }}>
+          <div className="kpi-label" style={{ color: "#b91c1c" }}>Move</div>
+          <div className="kpi-value" style={{ color: "#991b1b", fontSize: 26 }}>{moveUniqueCandidates}</div>
+          <div className="kpi-sub" style={{ color: "#831843" }}>count of candidates</div>
+          <div style={{ marginTop: 10, fontSize: 13, color: "#7f1d1d", fontWeight: 600 }}><MoneyStack usd={moveAmountByCur.USD} gbp={moveAmountByCur.GBP} decimals={2} /></div>
+        </div>
+        <div className="kpi-card" style={{ background: "#faf5ff", borderColor: "#ddd6fe" }}>
+          <div className="kpi-label" style={{ color: "#5b21b6" }}>Placement</div>
+          <div className="kpi-value" style={{ color: "#4c1d95", fontSize: 26 }}><MoneyStack usd={placementReceivedByCur.USD} gbp={placementReceivedByCur.GBP} decimals={2} /></div>
+          <div className="kpi-sub" style={{ color: "#5b21b6" }}>received amount</div>
+        </div>
+        <div className="kpi-card" style={{ background: "#eef2ff", borderColor: "#c7d2fe" }}>
+          <div className="kpi-label" style={{ color: "#4338ca" }}>New Placement</div>
+          <div className="kpi-value" style={{ color: "#312e81", fontSize: 26 }}><MoneyStack usd={newPlacementReceivedByCur.USD} gbp={newPlacementReceivedByCur.GBP} decimals={2} /></div>
+          <div className="kpi-sub" style={{ color: "#4338ca" }}>received amount</div>
         </div>
       </div>
 
@@ -622,9 +792,9 @@ export default function PaymentCalcPage() {
           <div style={{ height: 16, width: 1, background: "rgba(99,179,237,0.3)", flexShrink: 0 }} />
           {[
             ["Entries",      String(candidateSummary.count)],
-            ["Total Value",  fmtMoneyC(candidateSummary.totalValue, candidateSummary.currency, 0)],
-            ["Received",     fmtMoneyC(candidateSummary.totalPaid,  candidateSummary.currency, 0)],
-            ["Outstanding",  fmtMoneyC(candidateSummary.totalDue,   candidateSummary.currency, 0)],
+            ["Total Value",  fmtMoneyC(candidateSummary.totalValue, candidateSummary.currency, 2)],
+            ["Received",     fmtMoneyC(candidateSummary.totalPaid,  candidateSummary.currency, 2)],
+            ["Outstanding",  fmtMoneyC(candidateSummary.totalDue,   candidateSummary.currency, 2)],
           ].map(([k, v]) => (
             <div key={k} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
               <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-dim)", textTransform: "uppercase", letterSpacing: ".06em" }}>{k}</span>
@@ -635,7 +805,7 @@ export default function PaymentCalcPage() {
       )}
 
       {/* Filter Bar */}
-      <FilterBar entries={entries} onFilterChange={setFilters} />
+      <FilterBar entries={entries} filters={filters} onFilterChange={setFilters} />
 
       {/* Table */}
       {sorted.length === 0 ? (
@@ -683,7 +853,7 @@ export default function PaymentCalcPage() {
                   style={{
                     opacity: fadingIds.has(entry.id) ? 0 : 1,
                     transition: "opacity 0.2s ease",
-                    background: selected.has(entry.id) ? "var(--surface-2)" : undefined,
+                    background: entry.status === "Move" ? "rgba(248, 113, 113, 0.12)" : selected.has(entry.id) ? "var(--surface-2)" : undefined,
                   }}
                 >
                   <td style={{ textAlign: "center" }}>
@@ -747,7 +917,7 @@ export default function PaymentCalcPage() {
                         onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                         title="Click to edit"
                       >
-                        {fmtMoneyC(entry.amount, currencyOf(entry), 0)}
+                        {fmtMoneyC(entry.amount, currencyOf(entry), 2)}
                       </span>
                     )}
                   </td>
@@ -756,11 +926,11 @@ export default function PaymentCalcPage() {
                       list="svc-type-options"
                       className="tbl-input"
                       style={{ minWidth: 130 }}
-                      defaultValue={entry.serviceType || ""}
+                      defaultValue={normalizeServiceTypeValue(entry.serviceType) || ""}
                       placeholder="Type or pick…"
                       onBlur={e => {
-                        const next = e.target.value.trim();
-                        if (next !== (entry.serviceType || ""))
+                        const next = normalizeServiceTypeValue(e.target.value.trim());
+                        if (next !== normalizeServiceTypeValue(entry.serviceType || ""))
                           updateEntry(entry.id, { serviceType: next });
                       }}
                     />
@@ -769,10 +939,16 @@ export default function PaymentCalcPage() {
                     <select
                       className="tbl-select"
                       value={entry.status}
-                      onChange={e => updateStatus(entry.id, e.target.value)}
+                      onChange={e => handleStatusChange(entry, e.target.value)}
                       style={{ fontSize: 11 }}
                     >
-                      {ALL_STATUSES.map(s => <option key={s}>{s}</option>)}
+                      {[
+                        "Pending",
+                        "Received",
+                        "Laid Off",
+                        "Default",
+                        "Move",
+                      ].map(s => <option key={s}>{s}</option>)}
                     </select>
                   </td>
                   <td style={{ color: "var(--text-dim)", fontSize: 12, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -851,7 +1027,7 @@ export default function PaymentCalcPage() {
                         <td>{row.company || "-"}</td>
                         <td>{row.poDate || "-"}</td>
                         <td>{row.status || "-"}</td>
-                        <td style={{ fontWeight:600 }}>{fmtMoneyC(row.amount, currencyOf(row), 0)}</td>
+                        <td style={{ fontWeight:600 }}>{fmtMoneyC(row.amount, currencyOf(row), 2)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -868,6 +1044,45 @@ export default function PaymentCalcPage() {
                 </button>
                 <button className="btn-icon" onClick={confirmPasteImport} style={{ padding:"8px 14px" }}>
                   Paste {pasteImport.rows.length} Row{pasteImport.rows.length === 1 ? "" : "s"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingMove && (
+        <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && handleMoveCancel()}>
+          <div style={{ background:"var(--color-surface)", borderRadius:"var(--r-lg)", width:"100%", maxWidth:420, boxShadow:"0 24px 70px rgba(0,0,0,.22)", overflow:"hidden", border:"1px solid var(--color-border)" }}>
+            <div style={{ padding:"18px 22px", borderBottom:"1px solid var(--color-border)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+              <div>
+                <div style={{ fontSize:16, fontWeight:700, color:"var(--color-ink)" }}>Move payment entry</div>
+                <div style={{ fontSize:12, color:"var(--text-muted)", marginTop:3 }}>
+                  Select the starting date for this entry and later rows will be assigned sequential dates.
+                </div>
+              </div>
+              <button className="modal-close" onClick={handleMoveCancel} style={{ fontSize:20, lineHeight:1 }}>x</button>
+            </div>
+            <div style={{ padding:22, display:"grid", gap:14 }}>
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                <label htmlFor="move-date" style={{ fontSize:13, fontWeight:600, color:"var(--text-dim)" }}>Start Date</label>
+                <input
+                  id="move-date"
+                  type="date"
+                  value={moveDateIso}
+                  onChange={e => { setMoveDateIso(e.target.value); setMoveError(""); }}
+                  style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:"1px solid var(--border)", fontSize:14 }}
+                />
+              </div>
+              {moveError && (
+                <div style={{ color:"#dc2626", fontSize:13, fontWeight:600 }}>{moveError}</div>
+              )}
+              <div style={{ display:"flex", justifyContent:"flex-end", gap:10 }}>
+                <button className="btn-ghost" onClick={handleMoveCancel} style={{ padding:"8px 14px" }}>
+                  Cancel
+                </button>
+                <button className="btn-icon" onClick={handleMoveConfirm} style={{ padding:"8px 14px" }}>
+                  Confirm Move
                 </button>
               </div>
             </div>
