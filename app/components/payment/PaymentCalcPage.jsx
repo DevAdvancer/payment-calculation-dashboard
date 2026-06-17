@@ -79,30 +79,40 @@ function addDays(date, offset) {
 
 function addMonths(date, offset) {
   const src = date instanceof Date ? new Date(date) : new Date(date);
-  const day = src.getDate();
-  const targetYear = src.getFullYear();
-  const targetMonthIndex = src.getMonth() + offset;
 
-  // Helper: is the source date the last day of its month?
-  const isLastDayOfMonth = (d) => {
-    const dt = new Date(d instanceof Date ? d : new Date(d));
-    return dt.getDate() === new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate();
-  };
+  const originalDay = src.getDate();
+  const originalWasMonthEnd =
+    originalDay ===
+    new Date(src.getFullYear(), src.getMonth() + 1, 0).getDate();
 
-  // Create a date at the first of the target month, then determine
-  // the last day of that month.
-  const firstOfTarget = new Date(targetYear, targetMonthIndex, 1);
-  const lastDayOfTarget = new Date(firstOfTarget.getFullYear(), firstOfTarget.getMonth() + 1, 0).getDate();
+  // Move to first day before changing month to avoid overflow
+  const target = new Date(src);
+  target.setDate(1);
+  target.setMonth(target.getMonth() + offset);
 
-  // If source was the last day of its month, preserve 'end-of-month' semantics
-  // by clamping to the last valid day of the target month. Otherwise clamp
-  // to the last valid day only if the original day doesn't exist in target.
-  const dayClamped = isLastDayOfMonth(src) ? lastDayOfTarget : Math.min(day, lastDayOfTarget);
+  // Last day of target month
+  const lastDay = new Date(
+    target.getFullYear(),
+    target.getMonth() + 1,
+    0
+  ).getDate();
 
-  const out = new Date(firstOfTarget.getFullYear(), firstOfTarget.getMonth(), dayClamped);
-  // Preserve time components from the source date
-  out.setHours(src.getHours(), src.getMinutes(), src.getSeconds(), src.getMilliseconds());
-  return out;
+  // Preserve end-of-month behaviour
+  target.setDate(
+    originalWasMonthEnd
+      ? lastDay
+      : Math.min(originalDay, lastDay)
+  );
+
+  // Preserve time
+  target.setHours(
+    src.getHours(),
+    src.getMinutes(),
+    src.getSeconds(),
+    src.getMilliseconds()
+  );
+
+  return target;
 }
 
 function normalizeServiceTypeValue(value) {
@@ -378,194 +388,87 @@ export default function PaymentCalcPage() {
 //   updateStatus(entry.id, nextStatus);
 // };
 
-  const handleStatusChange = async (entry, nextStatus) => {
+  const handleStatusChange = (entry, nextStatus) => {
     if (nextStatus === "Move" && entry.status !== "Move") {
       const currentIndex = sorted.findIndex(
         (e) => String(e.id) === String(entry.id)
       );
 
       if (currentIndex === -1) return;
-      const affected = sorted.slice(currentIndex);
-      const originals = affected.map((row) => ({ ...row }));
-      setPendingMove({ entry, prevStatus: entry.status, currentIndex });
-      setMoveRows(originals);
+
+      // Just remember which row was selected.
+      // Actual updates happen only after Confirm.
+      setPendingMove({
+        entry,
+        prevStatus: entry.status,
+        currentIndex,
+      });
+
       setMoveDateIso(toISODate(entry.poDate));
       setMoveError("");
 
-      const updatedRows = [];
-
-      try {
-        for (const row of affected) {
-          if (row.status === "Move") continue;
-
-          await updateEntry(row.id, {
-            status: "Move",
-            paid: 0,
-            due: parseFloat(row.amount) || 0,
-            sheetScope: "payment",
-          });
-
-          updatedRows.push(row);
-        }
-      } catch (err) {
-        console.error("Move update failed:", err);
-
-        // Roll back successful updates
-        for (const row of updatedRows) {
-          try {
-            await updateEntry(row.id, {
-              status: row.status,
-              paid: row.paid,
-              due: row.due,
-              sheetScope: "payment",
-            });
-          } catch (rollbackErr) {
-            console.error("Rollback failed:", rollbackErr);
-          }
-        }
-
-        setPendingMove(null);
-        setMoveRows([]);
-        setMoveDateIso("");
-        setMoveError("");
-
-        showToast?.("Failed to move payment entries. Please try again.");
-      }
-
       return;
     }
+
+    // Normal status changes.
     updateStatus(entry.id, nextStatus);
   };
 
   const handleMoveConfirm = async () => {
-    if (!pendingMove || !moveRows.length) return;
-    if (!moveDateIso) {
-      setMoveError("Please select a date.");
-      return;
-    }
-    const baseDate = fromISODate(moveDateIso);
-    if (!baseDate || isNaN(baseDate.getTime())) {
-      setMoveError("Please select a valid date.");
-      return;
-    }
+      if (!pendingMove) return;
 
-    const originals = moveRows;
-    setPendingMove(null);
-    setMoveDateIso("");
-    setMoveError("");
-    setMoveRows([]);
-
-    const duplicates = originals.map((row, idx) => {
-      const poDate = toMMDDYYYY(addMonths(baseDate, idx));
-      const parts = dateParts(poDate);
-      return {
-        ...row,
-        id: String(Date.now()) + String(idx) + Math.random().toString(16).slice(2),
-        status: "Pending",
-        paid: 0,
-        due: parseFloat(row.amount) || 0,
-        poDate,
-        month: parts.month,
-        year: parts.year,
-        instance: parts.instance,
-        sheetScope: "payment",
-      };
-    });
-
-    if (duplicates.length) {
-      const ok = await bulkCreate(duplicates);
-      if (ok) {
-        // Reorder store entries so duplicates appear immediately after the moved block
-        const lastMovedId = originals[originals.length - 1]?.id;
-        const dupIds = new Set(duplicates.map(d => String(d.id)));
-        // Use the store instance to update ordering
-        useDashboardStore.setState(s => {
-          const prev = s.entries || [];
-          const dupEntries = prev.filter(e => dupIds.has(String(e.id)));
-          const withoutDup = prev.filter(e => !dupIds.has(String(e.id)));
-          const insertAfterIndex = withoutDup.findIndex(e => String(e.id) === String(lastMovedId));
-          if (insertAfterIndex === -1) {
-            return { entries: [...withoutDup, ...dupEntries] };
-          }
-          const head = withoutDup.slice(0, insertAfterIndex + 1);
-          const tail = withoutDup.slice(insertAfterIndex + 1);
-          return { entries: [...head, ...dupEntries, ...tail] };
-        });
+      if (!moveDateIso) {
+          setMoveError("Please select a date.");
+          return;
       }
-    }
+
+      const baseDate = fromISODate(moveDateIso);
+
+      if (!baseDate || isNaN(baseDate.getTime())) {
+          setMoveError("Please select a valid date.");
+          return;
+      }
+
+      const { currentIndex } = pendingMove;
+      const affected = sorted.slice(currentIndex);
+
+      for (let i = 0; i < affected.length; i++) {
+          const row = affected[i];
+
+          const newDate = addMonths(baseDate, i);
+          const poDate = toMMDDYYYY(newDate);
+          const parts = dateParts(poDate);
+
+          if (i === 0) {
+              await updateEntry(row.id, {
+                  poDate,
+                  month: parts.month,
+                  year: parts.year,
+                  instance: parts.instance,
+                  status: "Move",
+                  sheetScope: "payment",
+              });
+          } else {
+              await updateEntry(row.id, {
+                  poDate,
+                  month: parts.month,
+                  year: parts.year,
+                  instance: parts.instance,
+                  sheetScope: "payment",
+              });
+          }
+      }
+
+      setPendingMove(null);
+      setMoveDateIso("");
+      setMoveError("");
   };
 
-  // const handleMoveCancel = async () => {
-  //   if (moveRows.length) {
-  //     for (const row of moveRows) {
-  //       if (row.status !== "Move") {
-  //         await updateEntry(row.id, {
-  //           status: row.status,
-  //           paid: row.status === "Received" ? parseFloat(row.amount) || 0 : 0,
-  //           due: row.status === "Received" ? 0 : parseFloat(row.amount) || 0,
-  //         });
-  //       }
-  //     }
-  //   }
-  //   setPendingMove(null);
-  //   setMoveDateIso("");
-  //   setMoveError("");
-  //   setMoveRows([]);
-  // };
-
-  // const handleMoveCancel = async () => {
-  //   try {
-  //     for (const row of moveRows) {
-  //       if (row.status === "Move") continue;
-
-  //       await updateEntry(row.id, {
-  //         status: row.status,
-  //         paid:
-  //           row.status === "Received"
-  //             ? parseFloat(row.amount) || 0
-  //             : 0,
-  //         due:
-  //           row.status === "Received"
-  //             ? 0
-  //             : parseFloat(row.amount) || 0,
-  //       });
-  //     }
-  //   } catch (err) {
-  //     console.error(err);
-  //     showToast?.("Failed to restore moved entries.");
-  //   }
-
-  //   setPendingMove(null);
-  //   setMoveDateIso("");
-  //   setMoveError("");
-  //   setMoveRows([]);
-  // };
-
-  const handleMoveCancel = async () => {
-    try {
-      if (moveRows.length) {
-        for (const row of moveRows) {
-          if (row.status === "Move") continue;
-
-          await updateEntry(row.id, {
-            status: row.status,
-            paid: row.paid,
-            due: row.due,
-            sheetScope: row.sheetScope || "payment",
-          });
-        }
-      }
-    } 
-    catch (err) {
-    console.error(err);
-    showToast?.("Failed to restore moved entries.");
-    }
-    finally{ 
+  const handleMoveCancel = () => {
       setPendingMove(null);
       setMoveDateIso("");
       setMoveError("");
       setMoveRows([]);
-    }
   };
 
   const toggleAll = (checked) => setSelected(checked ? new Set(sorted.map(r => r.id)) : new Set());
