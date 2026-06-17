@@ -192,7 +192,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
     let rows = rawEntries;
     if (filters.search) {
       const q = filters.search.toLowerCase();
-      rows = rows.filter(e => 
+      rows = rows.filter(e =>
         (e.candidate || "").toLowerCase().includes(q) ||
         (e.poNum || "").toLowerCase().includes(q)
       );
@@ -222,13 +222,12 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
   };
   const kpiData = useMemo(() => {
     if (isLaidOff) {
-      return LAIDOFF_STATUSES.map(status => {
-        const rows = entries.filter(e => e.status === status);
-        return { label: status, count: rows.length, sum: sumSplit(rows) };
-      });
+      return [{ label: "Laid Off", count: entries.length }];
     }
     return [{ label: "Defaulters", count: entries.length, sum: sumSplit(entries) }];
   }, [entries, isLaidOff]);
+
+  const statusOptions = isLaidOff ? ["Laid Off"] : ALL_STATUSES;
 
   /* ── Export ── */
   const handleExport = () => {
@@ -336,7 +335,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
 
   const title = isLaidOff ? "Laid Off Sheet" : "Defaulter Sheet";
   const icon = isLaidOff ? "🔴" : "⚠️";
-  const infoStatuses = isLaidOff ? "Laid Off, Offer Revoke, No Offer, Resigned, Contract End, BGV Fail" : "Default";
+  const infoStatuses = isLaidOff ? "Laid Off" : "Default";
 
   if (loading) return (
     <div className={`page-inner special-sheet-page special-sheet-${type}`} ref={pasteTargetRef} onPaste={handlePasteRows} tabIndex={0} style={{ outline: "none" }}>
@@ -379,9 +378,6 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
           <div className="kpi-card special-kpi-card" key={kpi.label} style={{ minWidth: 160 }}>
             <div className="kpi-label" style={{ fontSize: 13 }}>{kpi.label}</div>
             <div className="kpi-value" style={{ fontSize: 26, marginBottom: 4 }}>{kpi.count}</div>
-            <div className="kpi-sub" style={{ color: isLaidOff ? "#fb923c" : "#f87171", fontSize: 13, marginTop: 0 }}>
-              <MoneyStack usd={kpi.sum.USD} gbp={kpi.sum.GBP} decimals={0} />
-            </div>
           </div>
         ))}
       </div>
@@ -463,18 +459,18 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
 
       {pasteImport && (
         <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && setPasteImport(null)}>
-          <div style={{ background:"var(--color-surface)", borderRadius:"var(--r-lg)", width:"100%", maxWidth:620, boxShadow:"0 24px 70px rgba(0,0,0,.22)", overflow:"hidden", border:"1px solid var(--color-border)" }}>
-            <div style={{ padding:"18px 22px", borderBottom:"1px solid var(--color-border)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+          <div style={{ background: "var(--color-surface)", borderRadius: "var(--r-lg)", width: "100%", maxWidth: 620, boxShadow: "0 24px 70px rgba(0,0,0,.22)", overflow: "hidden", border: "1px solid var(--color-border)" }}>
+            <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--color-border)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
               <div>
-                <div style={{ fontSize:16, fontWeight:700, color:"var(--color-ink)" }}>Paste {isLaidOff ? "Laid Off" : "Defaulter"} Rows</div>
-                <div style={{ fontSize:12, color:"var(--text-muted)", marginTop:3 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-ink)" }}>Paste {isLaidOff ? "Laid Off" : "Defaulter"} Rows</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>
                   {pasteImport.rows.length} copied row{pasteImport.rows.length === 1 ? "" : "s"} will be imported into the {isLaidOff ? "Laid Off" : "Defaulter"} sheet.
                 </div>
               </div>
-              <button className="modal-close" onClick={() => setPasteImport(null)} style={{ fontSize:20, lineHeight:1 }}>x</button>
+              <button className="modal-close" onClick={() => setPasteImport(null)} style={{ fontSize: 20, lineHeight: 1 }}>x</button>
             </div>
-            <div style={{ padding:22 }}>
-              <div style={{ maxHeight:260, overflow:"auto", border:"1px solid var(--color-border)", borderRadius:"var(--r-md)" }}>
+            <div style={{ padding: 22 }}>
+              <div style={{ maxHeight: 260, overflow: "auto", border: "1px solid var(--color-border)", borderRadius: "var(--r-md)" }}>
                 <table className="tbl">
                   <thead>
                     <tr>
@@ -488,26 +484,26 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
                   <tbody>
                     {pasteImport.rows.slice(0, 8).map((row, i) => (
                       <tr key={`${row.id}-${i}`}>
-                        <td style={{ fontWeight:600 }}>{row.candidate || "-"}</td>
+                        <td style={{ fontWeight: 600 }}>{row.candidate || "-"}</td>
                         <td>{row.company || "-"}</td>
                         <td>{row.poDate || "-"}</td>
                         <td><span className={statusBadgeClass(row.status)}>{row.status}</span></td>
-                        <td style={{ fontWeight:600 }}>{fmtMoneyC(row.amount, currencyOf(row), 0)}</td>
+                        <td style={{ fontWeight: 600 }}>{fmtMoneyC(row.amount, currencyOf(row), 0)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
               {pasteImport.rows.length > 8 && (
-                <div style={{ fontSize:12, color:"var(--text-muted)", marginTop:8 }}>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8 }}>
                   Showing first 8 rows. All {pasteImport.rows.length} copied rows will be pasted.
                 </div>
               )}
-              <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:18 }}>
-                <button className="btn-ghost" onClick={() => setPasteImport(null)} style={{ padding:"8px 14px" }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 18 }}>
+                <button className="btn-ghost" onClick={() => setPasteImport(null)} style={{ padding: "8px 14px" }}>
                   Cancel
                 </button>
-                <button className="btn-icon" onClick={confirmPasteImport} style={{ padding:"8px 14px" }}>
+                <button className="btn-icon" onClick={confirmPasteImport} style={{ padding: "8px 14px" }}>
                   Paste {pasteImport.rows.length} Row{pasteImport.rows.length === 1 ? "" : "s"}
                 </button>
               </div>
@@ -599,7 +595,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
                       onChange={e => updateStatus(entry.id, e.target.value)}
                       style={{ fontSize: 11 }}
                     >
-                      {ALL_STATUSES.map(s => <option key={s}>{s}</option>)}
+                      {statusOptions.map(s => <option key={s}>{s}</option>)}
                     </select>
                   </td>
                   <td style={{ color: "var(--text-dim)", fontSize: 12 }}>{entry.type || "—"}</td>
@@ -612,7 +608,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
                       onBlur={e => {
                         if (e.target.value !== (entry.notes || ""))
                           updateEntry(entry.id, { notes: e.target.value });
-                        }}
+                      }}
                     />
                   </td>
                   <td>
