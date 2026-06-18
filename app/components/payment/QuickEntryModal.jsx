@@ -108,6 +108,7 @@ export default function QuickEntryModal({ onClose }) {
       poDate:      form.poDate,
       month, year, instance,
       amount:      amt,
+      actual:      amt,
       paid,
       due:         amt - paid,
       status:      form.status,
