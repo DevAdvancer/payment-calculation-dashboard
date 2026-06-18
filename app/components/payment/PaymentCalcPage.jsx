@@ -508,8 +508,8 @@ export default function PaymentCalcPage() {
     const abort = new AbortController();
     const fetchRate = async () => {
       try {
-        const res = await fetch("https://api.unirateapi.com/api/rates?api_key=pPpy506ukDoq0zHlPLmJkxXlNy7yutkjheYcmGa4GJJfWuYzGJK7qLeLUALaWoJ2&from=GBP&to=USD");
-
+        const res = await fetch("/api/exchange");
+        
         if (!res.ok) throw new Error("Rate fetch failed");
         const data = await res.json();
         const rate = parseFloat(data?.rate);
