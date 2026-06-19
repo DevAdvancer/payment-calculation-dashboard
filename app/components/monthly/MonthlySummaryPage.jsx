@@ -265,8 +265,8 @@ export default function SummaryPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 16, marginBottom: 24 }}>
         <SummaryCard label="Pending" color="#f59e0b" amount={totalPending} />
         <SummaryCard label="Received" color="#4ade80" amount={totalReceived} />
-        <SummaryCard label="New Placement" color="black" amount={totalNewPlacement} />
-        <SummaryCard label="Placement" color="#7c3aed" amount={totalPlacement} />
+        <SummaryCard label="New Placement" color="#14b8a6" amount={totalNewPlacement} />
+        <SummaryCard label="Placement" color="#6366f1" amount={totalPlacement} />
       </div>
 
       {pivot.length === 0 ? (
@@ -288,10 +288,10 @@ export default function SummaryPage() {
             </div>
             <div className="summary-chart-panel" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", padding: 20 }}>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>New vs Placement</div>
-              <BarChart pivot={placementPivot} max={placementChartMax} pendingColor="black" receivedColor="#312e81" pendingLabel="Placement" receivedLabel="New Placement" getPending={r => r.placement} getReceived={r => r.newPlacement} />
+              <BarChart pivot={placementPivot} max={placementChartMax} pendingColor="#6366f1" receivedColor="#14b8a6" pendingLabel="Placement" receivedLabel="New Placement" getPending={r => r.placement} getReceived={r => r.newPlacement} />
               <div style={{ display: "flex", gap: 14, fontSize: 11, color: "var(--text-muted)", marginTop: 14, justifyContent: "flex-start" }}>
-                <Legend color="black" label="Placement" />
-                <Legend color="#312e81" label="New Placement" />
+                <Legend color="#6366f1" label="Placement" />
+                <Legend color="#14b8a6" label="New Placement" />
               </div>
             </div>
           </div>

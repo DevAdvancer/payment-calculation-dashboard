@@ -237,6 +237,8 @@ export default function PaymentCalcPage() {
   const [fadingIds, setFadingIds]       = useState(new Set());
   const [editingUSD, setEditingUSD]     = useState(null);
   const [usdDraft, setUSDDraft]         = useState("");
+  const [editingActual, setEditingActual] = useState(null);
+  const [actualDraft, setActualDraft] = useState("");
   const [gbpToUsd, setGbpToUsd]         = useState(1.35);
   const [pasteImport, setPasteImport]   = useState(null);
   const [selected, setSelected]         = useState(new Set());
@@ -475,6 +477,23 @@ export default function PaymentCalcPage() {
       setMoveRows([]);
   };
 
+  const handleActualClick = (entry) => {
+    setEditingActual(entry.id);
+    setActualDraft(String(entry.actual ?? entry.amount));
+  };
+
+  const handleActualBlur = async (entry) => {
+    const val = parseFloat(actualDraft);
+
+    if (!isNaN(val)) {
+      await updateEntry(entry.id, {
+        actual: val,
+      });
+    }
+
+    setEditingActual(null);
+  };
+
   const toggleAll = (checked) => setSelected(checked ? new Set(sorted.map(r => r.id)) : new Set());
   const toggleRow = (id) => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const handleDeleteSelected = () => {
@@ -527,7 +546,13 @@ export default function PaymentCalcPage() {
   const totalValueByCur = sumByCurrency(filtered, "amount");
   const totalPaidByCur  = sumByCurrency(filtered, "paid");
   const totalDueByCur   = sumByCurrency(filtered, "due");
-  const totalActualByCur = sumByCurrency(filtered, "actual");
+  const totalActualByCur = sumByCurrency(
+    filtered.map(e => ({
+        ...e,
+        actual: e.actual ?? e.amount
+    })),
+    "actual"
+);
   const totalValueUSD    = totalValueByCur.USD + totalValueByCur.GBP * gbpToUsd;
   const totalPaidUSD     = totalPaidByCur.USD  + totalPaidByCur.GBP * gbpToUsd;
   const totalDueUSD      = totalDueByCur.USD   + totalDueByCur.GBP * gbpToUsd;
@@ -1020,8 +1045,40 @@ export default function PaymentCalcPage() {
                       </select>
                     </td>
 
-                    <td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--text-dim)", fontWeight: 600 }}>
-                      {fmtMoneyC(entry.actual ?? entry.amount, currencyOf(entry), 2)}
+                    <td>
+                      {editingActual === entry.id ? (
+                        <input
+                          className="inline-cell-input"
+                          value={actualDraft}
+                          onChange={(e) => setActualDraft(e.target.value)}
+                          onBlur={() => handleActualBlur(entry)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              handleActualBlur(entry);
+                            }
+                          }}
+                          autoFocus
+                          style={{
+                            minWidth: 100,
+                            textAlign: "right",
+                          }}
+                        />
+                      ) : (
+                        <span
+                          onClick={() => handleActualClick(entry)}
+                          style={{
+                            cursor: "pointer",
+                            fontWeight: 600,
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {fmtMoneyC(
+                            entry.actual ?? entry.amount,
+                            currencyOf(entry),
+                            2
+                          )}
+                        </span>
+                      )}
                     </td>
 
                     <td>
