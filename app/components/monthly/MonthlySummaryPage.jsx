@@ -12,11 +12,20 @@ const monthYearKey = (m, y) => `${m}-${yyShort(y)}`;          // "Jan-26"
 const RECEIVED_STATUS = "Received";
 
 export default function SummaryPage() {
+  const today = new Date();
+
+  const currentMonth = MONTH_NAMES[today.getMonth()];
+  const currentYear = String(today.getFullYear());
   const { getActive, loading } = useDashboardStore();
   const entries = getActive();
 
-  const [filters, setFilters] = useState({ year: "", month: "", company: "" });
-
+  // const [filters, setFilters] = useState({ year: "", month: "", company: "" });
+  const [filters, setFilters] = useState({
+    year: currentYear,
+    month: currentMonth,
+    company: "",
+  });
+  
   /* ── Filter option sets, derived from current data ── */
   const years = useMemo(
     () => [...new Set(entries.map(e => e.year).filter(Boolean))].sort((a, b) => +b - +a),
@@ -309,7 +318,7 @@ export default function SummaryPage() {
               <tbody>
                 {pivot.map(r => (
                   <tr key={r.key}>
-                    <td style={{ fontWeight: 600, color: "var(--mint)" }}>{r.key}</td>
+                    <td style={{ fontWeight: 600, color: "var(--mint)" }}>{(r.key).split("-")[0]}</td>
                     <td style={{ fontVariantNumeric: "tabular-nums" }}>
                       {(r.pending.USD || r.pending.GBP)
                         ? <MoneyStack usd={r.pending.USD} gbp={r.pending.GBP} decimals={2} />

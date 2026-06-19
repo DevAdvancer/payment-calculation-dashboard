@@ -155,6 +155,15 @@ function normalizeInstance(value) {
   return "First Half";
 }
 
+function parseClipboardTable(text) {
+  return String(text || "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map(line => line.split("\t").map(cell => cell.trim()))
+    .filter(cells => cells.some(Boolean));
+}
+
 function mapPaymentImportRow(row, index, xlsxUtils) {
   const candidate = String(getCell(row, ["Name of the Candidate", "Candidate Name", "CandidateName", "Candidate", "Name", "candidate"]) || "").trim();
   if (!candidate) return null;
