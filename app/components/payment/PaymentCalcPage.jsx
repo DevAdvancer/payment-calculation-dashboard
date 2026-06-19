@@ -22,7 +22,7 @@ import { normalizePaymentStatus } from "@/lib/status-utils";
 
 const PAYMENT_IMPORT_HEADERS = [
   "Company", "Name of the Candidate", "Date", "Month", "Year", "Instance of Payment",
-  "USD", "Type of Service", "Status", "Type", "Remarks", "Client", "PO#",
+  "USD", "Actual", "Type of Service", "Status", "Type", "Remarks", "Client", "PO#",
 ];
 
 function cleanHeader(value) {
@@ -162,6 +162,8 @@ function mapPaymentImportRow(row, index, xlsxUtils) {
   const poDate = normalizeDateCell(getCell(row, ["Date", "PO Date", "poDate", "DOJ", "Date of Joining", "doj", "dateofjoining"]), xlsxUtils);
   const parts = dateParts(poDate);
   const amount = parseMoney(getCell(row, ["USD", "Amount", "amount", "Salary", "salary", "Total", "total", "Value", "value"]));
+  const actualRaw = getCell(row, ["Actual", "actual"]);
+  const actual = actualRaw === "" || actualRaw == null ? amount : parseMoney(actualRaw);
   const status = normalizePaymentStatus(getCell(row, ["Status", "status"]));
   const amounts = normalizePaymentImportAmounts({
     amount,
@@ -171,6 +173,7 @@ function mapPaymentImportRow(row, index, xlsxUtils) {
   });
 
   return {
+    actual,
     id: String(Date.now() + index),
     candidate,
     company: normalizeCompanyName(getCell(row, ["Company", "company"])),
@@ -234,6 +237,7 @@ export default function PaymentCalcPage() {
   const [fadingIds, setFadingIds]       = useState(new Set());
   const [editingUSD, setEditingUSD]     = useState(null);
   const [usdDraft, setUSDDraft]         = useState("");
+  const [gbpToUsd, setGbpToUsd]         = useState(1.35);
   const [pasteImport, setPasteImport]   = useState(null);
   const [selected, setSelected]         = useState(new Set());
   const [deleteConfirm, setDeleteConfirm] = useState({
@@ -500,17 +504,46 @@ export default function PaymentCalcPage() {
   };
   const sortIcon = (key) => sortKey === key ? (sortDir === "asc" ? " ↑" : " ↓") : "";
 
+  useEffect(() => {
+    const abort = new AbortController();
+    const fetchRate = async () => {
+      try {
+        const res = await fetch("/api/exchange");
+        
+        if (!res.ok) throw new Error("Rate fetch failed");
+        const data = await res.json();
+        const rate = parseFloat(data?.rate);
+        if (!isNaN(rate) && rate > 0) setGbpToUsd(rate);
+
+      } catch (err) {
+        console.warn("Failed to load GBP to USD rate", err);
+      }
+    };
+    fetchRate();
+    return () => abort.abort();
+  }, []);
+
   /* ── KPIs (reflect active filters) — split by currency for stacked display */
   const totalValueByCur = sumByCurrency(filtered, "amount");
   const totalPaidByCur  = sumByCurrency(filtered, "paid");
   const totalDueByCur   = sumByCurrency(filtered, "due");
-  const totalValue      = totalValueByCur.USD + totalValueByCur.GBP;
-  const totalPaid       = totalPaidByCur.USD  + totalPaidByCur.GBP;
+  const totalActualByCur = sumByCurrency(filtered, "actual");
+  const totalValueUSD    = totalValueByCur.USD + totalValueByCur.GBP * gbpToUsd;
+  const totalPaidUSD     = totalPaidByCur.USD  + totalPaidByCur.GBP * gbpToUsd;
+  const totalDueUSD      = totalDueByCur.USD   + totalDueByCur.GBP * gbpToUsd;
+  const totalActualUSD   = totalActualByCur.USD + totalActualByCur.GBP * gbpToUsd;
 
   /* ── Move / Placement / New Placement metrics */
   const moveEntries = filtered.filter(e => e.status === "Move");
   const moveUniqueCandidates = new Set(moveEntries.map(e => (e.candidate || "").trim().toLowerCase())).size;
   const moveAmountByCur = sumByCurrency(moveEntries, "amount");
+
+  const reconciliationByCur = {
+    USD: totalPaidByCur.USD + totalDueByCur.USD + moveAmountByCur.USD,
+    GBP: totalPaidByCur.GBP + totalDueByCur.GBP + moveAmountByCur.GBP,
+  };
+  const moveAmountUSD = moveAmountByCur.USD + moveAmountByCur.GBP * gbpToUsd;
+  const reconciliationUSD = reconciliationByCur.USD + reconciliationByCur.GBP * gbpToUsd;
 
   const placementReceivedByCur = sumByCurrency(
     filtered.filter(e => e.status === "Received" && normalizeServiceTypeValue(e.serviceType) === "Placement"),
@@ -521,6 +554,8 @@ export default function PaymentCalcPage() {
     filtered.filter(e => e.status === "Received" && normalizeServiceTypeValue(e.serviceType) === "New Placement"),
     "amount"
   );
+  const placementReceivedUSD = placementReceivedByCur.USD + placementReceivedByCur.GBP * gbpToUsd;
+  const newPlacementReceivedUSD = newPlacementReceivedByCur.USD + newPlacementReceivedByCur.GBP * gbpToUsd;
 
   /* ── Delete with fade ── */
   const handleDelete = (id, candidateName) => {
@@ -621,6 +656,7 @@ export default function PaymentCalcPage() {
       Month:                  e.month,
       Year:                   e.year,
       "Instance of Payment":  e.instance,
+      Actual:                 parseFloat(e.actual ?? e.amount) || 0,
       USD:                    parseFloat(e.amount) || 0,
       "Type of Service":      normalizeServiceTypeValue(e.serviceType),
       Status:                 e.status,
@@ -684,28 +720,38 @@ export default function PaymentCalcPage() {
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Total Value</div>
-          <div className="kpi-value" style={{ color: "var(--mint)" }}><MoneyStack usd={totalValueByCur.USD} gbp={totalValueByCur.GBP} decimals={2} /></div>
+          <div className="kpi-value" style={{ color: "var(--mint)" }}>{fmtMoneyC(totalValueUSD, "USD", 2)}</div>
           <div className="kpi-sub">across {filtered.length} {filtered.length === 1 ? "entry" : "entries"}</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Received</div>
-          <div className="kpi-value" style={{ color: "#4ade80" }}><MoneyStack usd={totalPaidByCur.USD} gbp={totalPaidByCur.GBP} decimals={2} /></div>
-          <div className="kpi-sub">{totalValue > 0 ? Math.round((totalPaid / totalValue) * 100) : 0}% received</div>
+          <div className="kpi-value" style={{ color: "#4ade80" }}>{fmtMoneyC(totalPaidUSD, "USD", 2)}</div>
+          <div className="kpi-sub">{totalValueUSD > 0 ? Math.round((totalPaidUSD / totalValueUSD) * 100) : 0}% received</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Outstanding</div>
-          <div className="kpi-value" style={{ color: "#fbbf24" }}><MoneyStack usd={totalDueByCur.USD} gbp={totalDueByCur.GBP} decimals={2} /></div>
+          <div className="kpi-value" style={{ color: "#fbbf24" }}>{fmtMoneyC(totalDueUSD, "USD", 2)}</div>
           <div className="kpi-sub">pending collection</div>
         </div>
         <div className="kpi-card" style={{ background: "#fff1f2", borderColor: "#fecaca" }}>
           <div className="kpi-label" style={{ color: "#b91c1c" }}>Move</div>
           <div className="kpi-value" style={{ color: "#991b1b", fontSize: 26 }}>{moveUniqueCandidates}</div>
           <div className="kpi-sub" style={{ color: "#831843" }}>count of candidates</div>
-          <div style={{ marginTop: 10, fontSize: 13, color: "#7f1d1d", fontWeight: 600 }}><MoneyStack usd={moveAmountByCur.USD} gbp={moveAmountByCur.GBP} decimals={2} /></div>
+          <div style={{ marginTop: 10, fontSize: 13, color: "#7f1d1d", fontWeight: 600 }}>{fmtMoneyC(moveAmountUSD, "USD", 2)}</div>
+        </div>
+        <div className="kpi-card" style={{ background: "#f0f9ff", borderColor: "#bfdbfe" }}>
+          <div className="kpi-label" style={{ color: "#2563eb" }}>Actual</div>
+          <div className="kpi-value" style={{ color: "#1d4ed8", fontSize: 26 }}>{fmtMoneyC(totalActualUSD, "USD", 2)}</div>
+          <div className="kpi-sub" style={{ color: "#2563eb" }}>current actual value</div>
+        </div>
+        <div className="kpi-card" style={{ background: "#ecfccb", borderColor: "#bbf7d0" }}>
+          <div className="kpi-label" style={{ color: "#166534" }}>Reconciliation</div>
+          <div className="kpi-value" style={{ color: "#15803d", fontSize: 26 }}>{fmtMoneyC(reconciliationUSD, "USD", 2)}</div>
+          <div className="kpi-sub" style={{ color: "#166534" }}>Received + Outstanding + Moved</div>
         </div>
         <div className="kpi-card" style={{ background: "#faf5ff", borderColor: "#ddd6fe" }}>
           <div className="kpi-label" style={{ color: "#5b21b6" }}>Placement</div>
-          <div className="kpi-value" style={{ color: "#4c1d95", fontSize: 26 }}><MoneyStack usd={placementReceivedByCur.USD} gbp={placementReceivedByCur.GBP} decimals={2} /></div>
+          <div className="kpi-value" style={{ color: "#4c1d95", fontSize: 26 }}>{fmtMoneyC(placementReceivedUSD, "USD", 2)}</div>
           <div className="kpi-sub" style={{ color: "#5b21b6" }}>received amount</div>
         </div>
         <div className="kpi-card" style={{ background: "#eef2ff", borderColor: "#c7d2fe" }}>
@@ -877,6 +923,7 @@ export default function PaymentCalcPage() {
                 <th onClick={() => toggleSort("month")}>Month{sortIcon("month")}</th>
                 <th onClick={() => toggleSort("year")}>Year{sortIcon("year")}</th>
                 <th onClick={() => toggleSort("instance")}>Instance of Payment{sortIcon("instance")}</th>
+                <th onClick={() => toggleSort("actual")}>Actual{sortIcon("actual")}</th>
                 <th onClick={() => toggleSort("amount")}>USD{sortIcon("amount")}</th>
                 <th onClick={() => toggleSort("serviceType")}>Type of Service{sortIcon("serviceType")}</th>
                 <th onClick={() => toggleSort("status")}>Status{sortIcon("status")}</th>
@@ -886,143 +933,171 @@ export default function PaymentCalcPage() {
               </tr>
             </thead>
             <tbody>
-              {paginatedRows.map((entry, idx) => (
-                <tr
-                  key={entry.id}
-                  style={{
-                    opacity: fadingIds.has(entry.id) ? 0 : 1,
-                    transition: "opacity 0.2s ease",
-                    background: entry.status === "Move" ? "rgba(248, 113, 113, 0.12)" : selected.has(entry.id) ? "var(--surface-2)" : undefined,
-                  }}
-                >
-                  <td style={{ textAlign: "center" }}>
-                    <input
-                      type="checkbox"
-                      checked={selected.has(entry.id)}
-                      onChange={() => toggleRow(entry.id)}
-                      style={{ width: 14, height: 14, cursor: "pointer" }}
-                    />
-                  </td>
-                  <td style={{ color: "var(--text-dim)", fontSize: 11 }}>{(page - 1) * pageSize + idx + 1}</td>
-                  <td style={{ fontWeight: 500, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {entry.company || "—"}
-                  </td>
-                  <td style={{ fontWeight: 600, color: "var(--mint)" }}>{entry.candidate || "—"}</td>
-                  <td>
-                    <DateInput
-                      value={entry.poDate}
-                      onChange={v => { if (v !== entry.poDate) updateEntry(entry.id, { poDate: v }); }}
-                      className="tbl-input"
-                      style={{ minWidth: 132 }}
-                    />
-                  </td>
-                  <td style={{ color: "var(--text-muted)" }}>{entry.month}</td>
-                  <td style={{ color: "var(--text-muted)" }}>{entry.year}</td>
-                  <td>
-                    <select
-                      className="tbl-select"
-                      value={entry.instance || "First Half"}
-                      onChange={e => updateEntry(entry.id, { instance: e.target.value })}
-                    >
-                      {INSTANCE_OPTIONS.map(o => <option key={o}>{o}</option>)}
-                    </select>
-                  </td>
-                  <td>
-                    {editingUSD === entry.id ? (
+              {paginatedRows.map((entry, idx) => {
+                const actualValue = parseFloat(entry.actual ?? entry.amount) || 0;
+                const usdValue = parseFloat(entry.amount) || 0;
+
+                const rowBackground =
+                  entry.status === "Move"
+                    ? "rgba(248, 113, 113, 0.12)"
+                    : selected.has(entry.id)
+                      ? "var(--surface-2)"
+                      : actualValue > usdValue
+                        ? "rgba(248, 113, 113, 0.12)"
+                        : actualValue < usdValue
+                          ? "rgba(34, 197, 94, 0.12)"
+                          : undefined;
+
+                return (
+                  <tr
+                    key={entry.id}
+                    style={{
+                      opacity: fadingIds.has(entry.id) ? 0 : 1,
+                      transition: "opacity 0.2s ease",
+                      background: rowBackground,
+                    }}
+                  >
+                    <td style={{ textAlign: "center" }}>
                       <input
-                        type="number"
-                        className="tbl-input"
-                        style={{ minWidth: 80 }}
-                        value={usdDraft}
-                        onChange={e => setUSDDraft(e.target.value)}
-                        onBlur={() => handleUSDBlur(entry)}
-                        onKeyDown={e => e.key === "Enter" && handleUSDBlur(entry)}
-                        autoFocus
+                        type="checkbox"
+                        checked={selected.has(entry.id)}
+                        onChange={() => toggleRow(entry.id)}
+                        style={{ width: 14, height: 14, cursor: "pointer" }}
                       />
-                    ) : (
-                      <span
-                        onClick={() => handleUSDClick(entry)}
-                        style={{
-                          cursor: "text",
-                          fontVariantNumeric: "tabular-nums",
-                          fontWeight: 600,
-                          color: "var(--mint)",
-                          display: "inline-block",
-                          padding: "3px 6px",
-                          borderRadius: 4,
-                          transition: "background 0.15s",
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.background = "var(--surface-3)"}
-                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                        title="Click to edit"
-                      >
-                        {fmtMoneyC(entry.amount, currencyOf(entry), 2)}
-                      </span>
-                    )}
-                  </td>
-                  <td style={{ color: "var(--text-muted)", fontSize: 12 }}>
-                    <input
-                      list="svc-type-options"
-                      className="tbl-input"
-                      style={{ minWidth: 130 }}
-                      defaultValue={normalizeServiceTypeValue(entry.serviceType) || ""}
-                      placeholder="Type or pick…"
-                      onBlur={e => {
-                        const next = normalizeServiceTypeValue(e.target.value.trim());
-                        if (next !== normalizeServiceTypeValue(entry.serviceType || ""))
-                          updateEntry(entry.id, { serviceType: next });
-                      }}
-                    />
-                  </td>
-                  <td>
-                    <select
-                      className="tbl-select"
-                      value={entry.status}
-                      onChange={e => handleStatusChange(entry, e.target.value)}
-                      style={{ fontSize: 11 }}
-                    >
-                      {[
-                        "Pending",
-                        "Received",
-                        "Laid Off",
-                        "Default",
-                        "Move",
-                      ].map(s => <option key={s}>{s}</option>)}
-                    </select>
-                  </td>
-                  <td style={{ color: "var(--text-dim)", fontSize: 12, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {entry.type || "—"}
-                  </td>
-                  <td>
-                    <input
-                      className="tbl-input"
-                      style={{ minWidth: 100, maxWidth: 180 }}
-                      defaultValue={entry.notes || ""}
-                      placeholder="Add note…"
-                      onBlur={e => {
-                        if (e.target.value !== (entry.notes || ""))
-                          updateEntry(entry.id, { notes: e.target.value });
-                      }}
-                    />
-                  </td>
-                  <td>
-                    <button
-                      onClick={() => handleDelete(entry.id, entry.candidate)}
+                    </td>
+
+                    <td style={{ color: "var(--text-dim)", fontSize: 11 }}>
+                      {(page - 1) * pageSize + idx + 1}
+                    </td>
+
+                    <td
                       style={{
-                        background: "transparent", border: "none",
-                        color: "var(--text-dim)", cursor: "pointer",
-                        fontSize: 16, lineHeight: 1, padding: "4px 6px",
-                        borderRadius: 4, transition: "all 0.15s",
+                        fontWeight: 500,
+                        maxWidth: 160,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.color = "#f87171"; e.currentTarget.style.background = "rgba(248,113,113,0.1)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.color = "var(--text-dim)"; e.currentTarget.style.background = "transparent"; }}
-                      title="Delete entry"
                     >
-                      ×
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                      {entry.company || "—"}
+                    </td>
+
+                    <td style={{ fontWeight: 600, color: "var(--mint)" }}>
+                      {entry.candidate || "—"}
+                    </td>
+
+                    <td>
+                      <DateInput
+                        value={entry.poDate}
+                        onChange={v => {
+                          if (v !== entry.poDate)
+                            updateEntry(entry.id, { poDate: v });
+                        }}
+                        className="tbl-input"
+                        style={{ minWidth: 132 }}
+                      />
+                    </td>
+
+                    <td style={{ color: "var(--text-muted)" }}>
+                      {entry.month}
+                    </td>
+
+                    <td style={{ color: "var(--text-muted)" }}>
+                      {entry.year}
+                    </td>
+
+                    <td>
+                      <select
+                        className="tbl-select"
+                        value={entry.instance || "First Half"}
+                        onChange={e =>
+                          updateEntry(entry.id, { instance: e.target.value })
+                        }
+                      >
+                        {INSTANCE_OPTIONS.map(o => (
+                          <option key={o}>{o}</option>
+                        ))}
+                      </select>
+                    </td>
+
+                    <td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--text-dim)", fontWeight: 600 }}>
+                      {fmtMoneyC(entry.actual ?? entry.amount, currencyOf(entry), 2)}
+                    </td>
+
+                    <td>
+                      {/* USD column */}
+                      {editingUSD === entry.id ? (
+                        <input
+                          className="inline-cell-input"
+                          value={usdDraft}
+                          onChange={e => setUSDDraft(e.target.value)}
+                          onBlur={() => handleUSDBlur(entry)}
+                          onKeyDown={e => { if (e.key === "Enter") handleUSDBlur(entry); }}
+                          autoFocus
+                          style={{ minWidth: 100 }}
+                        />
+                      ) : (
+                        <span
+                          onClick={() => handleUSDClick(entry)}
+                          style={{ fontVariantNumeric: "tabular-nums", cursor: "pointer", color: "var(--text-main)", fontWeight: 700 }}
+                        >
+                          {fmtMoneyC(entry.amount, currencyOf(entry), 2)}
+                        </span>
+                      )}
+                    </td>
+
+                    <td>
+                      {/* Service Type */}
+                      <input
+                        list="svc-type-options"
+                        className="tbl-input"
+                        value={entry.serviceType || ""}
+                        onChange={e => updateEntry(entry.id, { serviceType: e.target.value })}
+                        style={{ minWidth: 120 }}
+                      />
+                    </td>
+
+                    <td>
+                      {/* Status */}
+                      <select
+                        className="tbl-select"
+                        value={entry.status || ""}
+                        onChange={e => handleStatusChange(entry, e.target.value)}
+                      >
+                        {ALL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </td>
+
+                    <td
+                      style={{
+                        color: "var(--text-dim)",
+                        fontSize: 12,
+                        maxWidth: 120,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {entry.type || "—"}
+                    </td>
+
+                    <td style={{ maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {entry.notes || "—"}
+                    </td>
+
+                    <td style={{ textAlign: "right" }}>
+                      <button
+                        className="btn-icon"
+                        title="Delete entry"
+                        onClick={() => handleDelete(entry.id, entry.candidate)}
+                        style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: 16 }}
+                      >
+                        🗑
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           <PaginationControls
