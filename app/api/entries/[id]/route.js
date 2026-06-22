@@ -13,7 +13,14 @@ export async function PATCH(request, { params }) {
         { status: 400 }
       );
     }
-    const entry = await updateEntry(params.id, parsed.data);
+
+    // EntryPatchSchema reuses EntrySchema, which has defaults for some fields.
+    // For PATCH, persist only keys that were explicitly sent by the client.
+    const patch = Object.fromEntries(
+      Object.entries(parsed.data).filter(([key]) => Object.prototype.hasOwnProperty.call(body, key))
+    );
+
+    const entry = await updateEntry(params.id, patch);
     if (!entry) {
       return NextResponse.json({ error: "Entry not found" }, { status: 404 });
     }

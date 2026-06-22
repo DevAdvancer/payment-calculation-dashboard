@@ -25,6 +25,8 @@ const PAYMENT_IMPORT_HEADERS = [
   "USD", "Actual", "Type of Service", "Status", "Type", "Remarks", "Client", "PO#",
 ];
 
+const PAYMENT_STATUS_OPTIONS = ["Received", "Pending", "Move", "Laid Off", "Default"];
+
 function cleanHeader(value) {
   return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
@@ -172,7 +174,7 @@ function mapPaymentImportRow(row, index, xlsxUtils) {
   const parts = dateParts(poDate);
   const amount = parseMoney(getCell(row, ["USD", "Amount", "amount", "Salary", "salary", "Total", "total", "Value", "value"]));
   const actualRaw = getCell(row, ["Actual", "actual"]);
-  const actual = actualRaw === "" || actualRaw == null ? amount : parseMoney(actualRaw);
+  const actual = actualRaw === "" || actualRaw == null ? 0 : parseMoney(actualRaw);
   const status = normalizePaymentStatus(getCell(row, ["Status", "status"]));
   const amounts = normalizePaymentImportAmounts({
     amount,
@@ -248,6 +250,7 @@ export default function PaymentCalcPage() {
   const [usdDraft, setUSDDraft]         = useState("");
   const [editingActual, setEditingActual] = useState(null);
   const [actualDraft, setActualDraft] = useState("");
+  const [showActualColumn, setShowActualColumn] = useState(false);
   const [gbpToUsd, setGbpToUsd]         = useState(1.35);
   const [pasteImport, setPasteImport]   = useState(null);
   const [selected, setSelected]         = useState(new Set());
@@ -361,7 +364,22 @@ export default function PaymentCalcPage() {
       const m = String(s || "").match(/^(\d{2})-(\d{2})-(\d{4})$/);
       return m ? new Date(+m[3], +m[1] - 1, +m[2]).getTime() : 0;
     };
+    
+    // Helper: check if row has changed color (Actual !== USD)
+    const hasChangedColor = (e) => {
+      const actualVal = parseFloat(e.actual) || 0;
+      const usdVal = parseFloat(e.amount) || 0;
+      return actualVal !== usdVal;
+    };
+
     return [...filtered].sort((a, b) => {
+      // First priority: pin colored (changed) rows to top
+      const aColored = hasChangedColor(a);
+      const bColored = hasChangedColor(b);
+      if (aColored && !bColored) return -1;
+      if (!aColored && bColored) return 1;
+
+      // Within each group, apply regular sort order
       let av = a[sortKey] ?? "", bv = b[sortKey] ?? "";
       if (["amount", "paid", "due"].includes(sortKey)) {
         av = parseFloat(av) || 0; bv = parseFloat(bv) || 0;
@@ -488,7 +506,7 @@ export default function PaymentCalcPage() {
 
   const handleActualClick = (entry) => {
     setEditingActual(entry.id);
-    setActualDraft(String(entry.actual ?? entry.amount));
+    setActualDraft(String(entry.actual ?? 0));
   };
 
   const handleActualBlur = async (entry) => {
@@ -558,7 +576,7 @@ export default function PaymentCalcPage() {
   const totalActualByCur = sumByCurrency(
     filtered.map(e => ({
         ...e,
-        actual: e.actual ?? e.amount
+      actual: e.actual ?? 0
     })),
     "actual"
 );
@@ -567,16 +585,37 @@ export default function PaymentCalcPage() {
   const totalDueUSD      = totalDueByCur.USD   + totalDueByCur.GBP * gbpToUsd;
   const totalActualUSD   = totalActualByCur.USD + totalActualByCur.GBP * gbpToUsd;
 
+  const recurringPlacementEntries = filtered.filter(
+    e => normalizeServiceTypeValue(e.serviceType) === "Placement"
+  );
+  const recurringPaymentByCur = sumByCurrency(
+    recurringPlacementEntries.map(e => ({
+      ...e,
+      amount: e.actual ?? 0
+    })),
+    "amount"
+  );
+  const recurringPaymentUSD = recurringPaymentByCur.USD + recurringPaymentByCur.GBP * gbpToUsd;
+
   /* ── Move / Placement / New Placement metrics */
   const moveEntries = filtered.filter(e => e.status === "Move");
   const moveUniqueCandidates = new Set(moveEntries.map(e => (e.candidate || "").trim().toLowerCase())).size;
   const moveAmountByCur = sumByCurrency(moveEntries, "amount");
 
+  /* ── Laid Off and Default amounts for reconciliation ── */
+  const laidOffEntries = filtered.filter(e => e.status === "Laid Off");
+  const laidOffAmountByCur = sumByCurrency(laidOffEntries, "amount");
+
+  const defaultEntries = filtered.filter(e => e.status === "Default");
+  const defaultAmountByCur = sumByCurrency(defaultEntries, "amount");
+
   const reconciliationByCur = {
-    USD: totalPaidByCur.USD + totalDueByCur.USD + moveAmountByCur.USD,
-    GBP: totalPaidByCur.GBP + totalDueByCur.GBP + moveAmountByCur.GBP,
+    USD: totalPaidByCur.USD + totalDueByCur.USD + moveAmountByCur.USD + laidOffAmountByCur.USD + defaultAmountByCur.USD,
+    GBP: totalPaidByCur.GBP + totalDueByCur.GBP + moveAmountByCur.GBP + laidOffAmountByCur.GBP + defaultAmountByCur.GBP,
   };
   const moveAmountUSD = moveAmountByCur.USD + moveAmountByCur.GBP * gbpToUsd;
+  const laidOffAmountUSD = laidOffAmountByCur.USD + laidOffAmountByCur.GBP * gbpToUsd;
+  const defaultAmountUSD = defaultAmountByCur.USD + defaultAmountByCur.GBP * gbpToUsd;
   const reconciliationUSD = reconciliationByCur.USD + reconciliationByCur.GBP * gbpToUsd;
 
   const placementReceivedByCur = sumByCurrency(
@@ -690,7 +729,7 @@ export default function PaymentCalcPage() {
       Month:                  e.month,
       Year:                   e.year,
       "Instance of Payment":  e.instance,
-      Actual:                 parseFloat(e.actual ?? e.amount) || 0,
+      Actual:                 parseFloat(e.actual) || 0,
       USD:                    parseFloat(e.amount) || 0,
       "Type of Service":      normalizeServiceTypeValue(e.serviceType),
       Status:                 e.status,
@@ -746,51 +785,64 @@ export default function PaymentCalcPage() {
       </div>
 
       {/* KPI Strip — reflects active filters */}
-      <div className="kpi-strip">
-        <div className="kpi-card">
+      <div className="kpi-strip" style={{ display: "grid", gridTemplateColumns: "repeat(8, minmax(0, 1fr))", gap: 8, marginBottom: 10 }}>
+        <div className="kpi-card" style={{ minWidth: 0, padding: "10px 12px" }}>
           <div className="kpi-label">Entries</div>
-          <div className="kpi-value">{filtered.length}</div>
+          <div className="kpi-value" style={{ fontSize: 18 }}>{filtered.length}</div>
           <div className="kpi-sub">of {entries.length} total</div>
         </div>
-        <div className="kpi-card">
-          <div className="kpi-label">Total Value</div>
-          <div className="kpi-value" style={{ color: "var(--mint)" }}>{fmtMoneyC(totalValueUSD, "USD", 2)}</div>
-          <div className="kpi-sub">across {filtered.length} {filtered.length === 1 ? "entry" : "entries"}</div>
+        <div className="kpi-card" style={{ minWidth: 0, padding: "10px 12px" }}>
+          <div className="kpi-label">Recurring Payment</div>
+          <div className="kpi-value" style={{ color: "var(--mint)", fontSize: 18 }}>{fmtMoneyC(recurringPaymentUSD, "USD", 2)}</div>
+          <div className="kpi-sub">across {recurringPlacementEntries.length} {recurringPlacementEntries.length === 1 ? "entry" : "entries"}</div>
         </div>
-        <div className="kpi-card">
+        <div className="kpi-card" style={{ minWidth: 0, padding: "10px 12px" }}>
           <div className="kpi-label">Received</div>
-          <div className="kpi-value" style={{ color: "#4ade80" }}>{fmtMoneyC(totalPaidUSD, "USD", 2)}</div>
+          <div className="kpi-value" style={{ color: "#4ade80", fontSize: 18 }}>{fmtMoneyC(totalPaidUSD, "USD", 2)}</div>
           <div className="kpi-sub">{totalValueUSD > 0 ? Math.round((totalPaidUSD / totalValueUSD) * 100) : 0}% received</div>
         </div>
-        <div className="kpi-card">
+        <div className="kpi-card" style={{ minWidth: 0, padding: "10px 12px" }}>
           <div className="kpi-label">Outstanding</div>
-          <div className="kpi-value" style={{ color: "#fbbf24" }}>{fmtMoneyC(totalDueUSD, "USD", 2)}</div>
+          <div className="kpi-value" style={{ color: "#fbbf24", fontSize: 18 }}>{fmtMoneyC(totalDueUSD, "USD", 2)}</div>
           <div className="kpi-sub">pending collection</div>
         </div>
-        <div className="kpi-card" style={{ background: "#fff1f2", borderColor: "#fecaca" }}>
-          <div className="kpi-label" style={{ color: "#b91c1c" }}>Move</div>
-          <div className="kpi-value" style={{ color: "#991b1b", fontSize: 26 }}>{moveUniqueCandidates}</div>
-          <div className="kpi-sub" style={{ color: "#831843" }}>count of candidates</div>
-          <div style={{ marginTop: 10, fontSize: 13, color: "#7f1d1d", fontWeight: 600 }}>{fmtMoneyC(moveAmountUSD, "USD", 2)}</div>
+        <div className="kpi-card" style={{ minWidth: 0, padding: "10px 12px", background: "#fff1f2", borderColor: "#fecaca" }}>
+          <div className="kpi-label" style={{ color: "#b91c1c" }}>Move / Laid Off / Default</div>
+          <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, paddingTop: 0 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#991b1b" }}>Move</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#7f1d1d", fontVariantNumeric: "tabular-nums" }}>{fmtMoneyC(moveAmountUSD, "USD", 2)}</span>
+            </div>
+            <div style={{ height: 1, background: "#fecaca" }} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#991b1b" }}>Laid Off</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#7f1d1d", fontVariantNumeric: "tabular-nums" }}>{fmtMoneyC(laidOffAmountUSD, "USD", 2)}</span>
+            </div>
+            <div style={{ height: 1, background: "#fecaca" }} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#991b1b" }}>Default</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#7f1d1d", fontVariantNumeric: "tabular-nums" }}>{fmtMoneyC(defaultAmountUSD, "USD", 2)}</span>
+            </div>
+          </div>
         </div>
-        <div className="kpi-card" style={{ background: "#f0f9ff", borderColor: "#bfdbfe" }}>
+        {/* <div className="kpi-card" style={{ background: "#f0f9ff", borderColor: "#bfdbfe" }}>
           <div className="kpi-label" style={{ color: "#2563eb" }}>Actual</div>
           <div className="kpi-value" style={{ color: "#1d4ed8", fontSize: 26 }}>{fmtMoneyC(totalActualUSD, "USD", 2)}</div>
           <div className="kpi-sub" style={{ color: "#2563eb" }}>current actual value</div>
-        </div>
-        <div className="kpi-card" style={{ background: "#ecfccb", borderColor: "#bbf7d0" }}>
+        </div> */}
+        <div className="kpi-card" style={{ minWidth: 0, padding: "10px 12px", background: "#ecfccb", borderColor: "#bbf7d0" }}>
           <div className="kpi-label" style={{ color: "#166534" }}>Reconciliation</div>
-          <div className="kpi-value" style={{ color: "#15803d", fontSize: 26 }}>{fmtMoneyC(reconciliationUSD, "USD", 2)}</div>
-          <div className="kpi-sub" style={{ color: "#166534" }}>Received + Outstanding + Moved</div>
+          <div className="kpi-value" style={{ color: "#15803d", fontSize: 18 }}>{fmtMoneyC(reconciliationUSD, "USD", 2)}</div>
+          <div className="kpi-sub" style={{ color: "#166534" }}>Received + Outstanding + Moved + Laid Off + Default</div>
         </div>
-        <div className="kpi-card" style={{ background: "#faf5ff", borderColor: "#ddd6fe" }}>
+        <div className="kpi-card" style={{ minWidth: 0, padding: "10px 12px", background: "#faf5ff", borderColor: "#ddd6fe" }}>
           <div className="kpi-label" style={{ color: "#5b21b6" }}>Placement</div>
-          <div className="kpi-value" style={{ color: "#4c1d95", fontSize: 26 }}>{fmtMoneyC(placementReceivedUSD, "USD", 2)}</div>
+          <div className="kpi-value" style={{ color: "#4c1d95", fontSize: 18 }}>{fmtMoneyC(placementReceivedUSD, "USD", 2)}</div>
           <div className="kpi-sub" style={{ color: "#5b21b6" }}>received amount</div>
         </div>
-        <div className="kpi-card" style={{ background: "#eef2ff", borderColor: "#c7d2fe" }}>
+        <div className="kpi-card" style={{ minWidth: 0, padding: "10px 12px", background: "#eef2ff", borderColor: "#c7d2fe" }}>
           <div className="kpi-label" style={{ color: "#4338ca" }}>New Placement</div>
-          <div className="kpi-value" style={{ color: "#312e81", fontSize: 26 }}><MoneyStack usd={newPlacementReceivedByCur.USD} gbp={newPlacementReceivedByCur.GBP} decimals={2} /></div>
+          <div className="kpi-value" style={{ color: "#312e81", fontSize: 18 }}><MoneyStack usd={newPlacementReceivedByCur.USD} gbp={newPlacementReceivedByCur.GBP} decimals={2} /></div>
           <div className="kpi-sub" style={{ color: "#4338ca" }}>received amount</div>
         </div>
       </div>
@@ -957,8 +1009,56 @@ export default function PaymentCalcPage() {
                 <th onClick={() => toggleSort("month")}>Month{sortIcon("month")}</th>
                 <th onClick={() => toggleSort("year")}>Year{sortIcon("year")}</th>
                 <th onClick={() => toggleSort("instance")}>Instance of Payment{sortIcon("instance")}</th>
-                <th onClick={() => toggleSort("actual")}>Actual{sortIcon("actual")}</th>
-                <th onClick={() => toggleSort("amount")}>USD{sortIcon("amount")}</th>
+                {showActualColumn && (
+                  <th>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowActualColumn(false);
+                      }}
+                      style={{
+                        padding: "4px 8px",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        background: "#ffffff",
+                        color: "#1f2937",
+                        border: "1px solid #d1d5db",
+                        borderRadius: 8,
+                        cursor: "pointer",
+                      }}
+                      title="Hide Actual column"
+                    >
+                      Actual {sortIcon("actual")}
+                    </button>
+                  </th>
+                )}
+                <th onClick={() => toggleSort("amount")}>
+                  {!showActualColumn && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowActualColumn(true);
+                      }}
+                      style={{
+                        marginRight: 8,
+                        padding: "4px 8px",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        background: "#ffffff",
+                        color: "#1f2937",
+                        border: "1px solid #d1d5db",
+                        borderRadius: 8,
+                        cursor: "pointer",
+                      }}
+                      title="Show Actual column"
+                    >
+                      Show Actual
+                    </button>
+                  )}
+                  USD{sortIcon("amount")}
+                </th>
                 <th onClick={() => toggleSort("serviceType")}>Type of Service{sortIcon("serviceType")}</th>
                 <th onClick={() => toggleSort("status")}>Status{sortIcon("status")}</th>
                 <th onClick={() => toggleSort("type")}>Type{sortIcon("type")}</th>
@@ -968,7 +1068,7 @@ export default function PaymentCalcPage() {
             </thead>
             <tbody>
               {paginatedRows.map((entry, idx) => {
-                const actualValue = parseFloat(entry.actual ?? entry.amount) || 0;
+                const actualValue = parseFloat(entry.actual) || 0;
                 const usdValue = parseFloat(entry.amount) || 0;
 
                 const rowBackground =
@@ -1054,41 +1154,43 @@ export default function PaymentCalcPage() {
                       </select>
                     </td>
 
-                    <td>
-                      {editingActual === entry.id ? (
-                        <input
-                          className="inline-cell-input"
-                          value={actualDraft}
-                          onChange={(e) => setActualDraft(e.target.value)}
-                          onBlur={() => handleActualBlur(entry)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              handleActualBlur(entry);
-                            }
-                          }}
-                          autoFocus
-                          style={{
-                            minWidth: 100,
-                            textAlign: "right",
-                          }}
-                        />
-                      ) : (
-                        <span
-                          onClick={() => handleActualClick(entry)}
-                          style={{
-                            cursor: "pointer",
-                            fontWeight: 600,
-                            fontVariantNumeric: "tabular-nums",
-                          }}
-                        >
-                          {fmtMoneyC(
-                            entry.actual ?? entry.amount,
-                            currencyOf(entry),
-                            2
-                          )}
-                        </span>
-                      )}
-                    </td>
+                    {showActualColumn && (
+                      <td>
+                        {editingActual === entry.id ? (
+                          <input
+                            className="inline-cell-input"
+                            value={actualDraft}
+                            onChange={(e) => setActualDraft(e.target.value)}
+                            onBlur={() => handleActualBlur(entry)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                handleActualBlur(entry);
+                              }
+                            }}
+                            autoFocus
+                            style={{
+                              minWidth: 100,
+                              textAlign: "right",
+                            }}
+                          />
+                        ) : (
+                          <span
+                            onClick={() => handleActualClick(entry)}
+                            style={{
+                              cursor: "pointer",
+                              fontWeight: 600,
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            {fmtMoneyC(
+                              entry.actual ?? 0,
+                              currencyOf(entry),
+                              2
+                            )}
+                          </span>
+                        )}
+                      </td>
+                    )}
 
                     <td>
                       {/* USD column */}
@@ -1130,7 +1232,7 @@ export default function PaymentCalcPage() {
                         value={entry.status || ""}
                         onChange={e => handleStatusChange(entry, e.target.value)}
                       >
-                        {ALL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                        {PAYMENT_STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                     </td>
 
