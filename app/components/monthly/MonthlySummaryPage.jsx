@@ -43,6 +43,7 @@ export default function SummaryPage() {
   }, []);
 
   const toUsd = (money) => (money?.USD || 0) + (money?.GBP || 0) * gbpToUsd;
+
   
   /* ── Filter option sets, derived from current data ── */
   const years = useMemo(
