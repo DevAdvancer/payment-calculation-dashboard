@@ -145,7 +145,7 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
           value={filters.status}
           onChange={set("status")}
         >
-          <option value="">All Statuses</option>
+          <option value="">All Status</option>
           {ALL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
 

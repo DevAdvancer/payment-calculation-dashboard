@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import * as XLSX from "xlsx";
 import useDashboardStore, { MONTH_NAMES, fmtMoneyC, currencyOf } from "@/lib/use-store";
 import MoneyStack from "@/app/components/MoneyStack";
@@ -25,6 +25,25 @@ export default function SummaryPage() {
     month: currentMonth,
     company: "",
   });
+  const [gbpToUsd, setGbpToUsd] = useState(1.35);
+
+  useEffect(() => {
+    const fetchRate = async () => {
+      try {
+        const res = await fetch("/api/exchange");
+        if (!res.ok) throw new Error("Rate fetch failed");
+        const data = await res.json();
+        const rate = parseFloat(data?.rate);
+        if (!isNaN(rate) && rate > 0) setGbpToUsd(rate);
+      } catch (err) {
+        console.warn("Failed to load GBP to USD rate", err);
+      }
+    };
+    fetchRate();
+  }, []);
+
+  const toUsd = (money) => (money?.USD || 0) + (money?.GBP || 0) * gbpToUsd;
+
   
   /* ── Filter option sets, derived from current data ── */
   const years = useMemo(
@@ -93,6 +112,30 @@ export default function SummaryPage() {
       }
     }
     return acc;
+  }, [pivot]);
+
+  /* ── Table rows merged by month name (combine duplicate months across years) ── */
+  const monthMergedPivot = useMemo(() => {
+    const map = new Map();
+    for (const r of pivot) {
+      let bucket = map.get(r.month);
+      if (!bucket) {
+        bucket = {
+          month: r.month,
+          pending: { USD: 0, GBP: 0 },
+          received: { USD: 0, GBP: 0 },
+          total: { USD: 0, GBP: 0 },
+        };
+        map.set(r.month, bucket);
+      }
+      bucket.pending.USD += r.pending.USD;
+      bucket.pending.GBP += r.pending.GBP;
+      bucket.received.USD += r.received.USD;
+      bucket.received.GBP += r.received.GBP;
+      bucket.total.USD += r.total.USD;
+      bucket.total.GBP += r.total.GBP;
+    }
+    return MONTH_NAMES.filter((m) => map.has(m)).map((m) => map.get(m));
   }, [pivot]);
 
   const totalPending = useMemo(() => {
@@ -180,24 +223,15 @@ export default function SummaryPage() {
     return sum;
   }, [placementPivot]);
 
-  /* ── Chart values (USD-equivalent: USD + GBP just for the bar height ranking) ── */
-  const chartMax = useMemo(() => {
-    let m = 0;
-    for (const r of pivot) {
-      const t = r.total.USD + r.total.GBP;
-      if (t > m) m = t;
-    }
-    return m || 1;
-  }, [pivot]);
+  const pendingReceivedPie = useMemo(() => ([
+    { label: "Pending", color: "#f59e0b", value: toUsd(totalPending) },
+    { label: "Received", color: "#4ade80", value: toUsd(totalReceived) },
+  ]), [totalPending, totalReceived, gbpToUsd]);
 
-  const placementChartMax = useMemo(() => {
-    let m = 0;
-    for (const r of placementPivot) {
-      const t = r.placement.USD + r.placement.GBP + r.newPlacement.USD + r.newPlacement.GBP;
-      if (t > m) m = t;
-    }
-    return m || 1;
-  }, [placementPivot]);
+  const placementPie = useMemo(() => ([
+    { label: "Placement", color: "#6366f1", value: toUsd(totalPlacement) },
+    { label: "New Placement", color: "#14b8a6", value: toUsd(totalNewPlacement) },
+  ]), [totalPlacement, totalNewPlacement, gbpToUsd]);
 
   /* ── Excel export ── */
   const handleExport = () => {
@@ -226,7 +260,7 @@ export default function SummaryPage() {
   };
 
   if (loading) return (
-    <div className="page-inner">
+    <div className="page-inner" style={{ padding: "16px 20px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--text-muted)", padding: "40px 0" }}>
         <div style={{ width: 18, height: 18, border: "2px solid var(--teal)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
         Loading…
@@ -235,15 +269,15 @@ export default function SummaryPage() {
   );
 
   return (
-    <div className="page-inner">
+    <div className="page-inner" style={{ padding: "16px 20px" }}>
       {/* Header */}
-      <div className="page-header">
+      <div className="page-header" style={{ marginBottom: 10 }}>
         <h1 className="page-title"><span>Summary</span></h1>
         <p className="page-subtitle">Pivot of Pending vs Received per month, filterable by year, month, and company</p>
       </div>
 
       {/* Filter row */}
-      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 24, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
         <FilterSelect label="Year" value={filters.year} onChange={v => setFilters(f => ({ ...f, year: v }))}>
           <option value="">All</option>
           {years.map(y => <option key={y} value={y}>{y}</option>)}
@@ -271,11 +305,11 @@ export default function SummaryPage() {
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 16, marginBottom: 24 }}>
-        <SummaryCard label="Pending" color="#f59e0b" amount={totalPending} />
-        <SummaryCard label="Received" color="#4ade80" amount={totalReceived} />
-        <SummaryCard label="New Placement" color="#14b8a6" amount={totalNewPlacement} />
-        <SummaryCard label="Placement" color="#6366f1" amount={totalPlacement} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10, marginBottom: 12 }}>
+        <SummaryCard label="Pending" color="#f59e0b" amountUsd={toUsd(totalPending)} />
+        <SummaryCard label="Received" color="#4ade80" amountUsd={toUsd(totalReceived)} />
+        <SummaryCard label="New Placement" color="#14b8a6" amountUsd={toUsd(totalNewPlacement)} />
+        <SummaryCard label="Placement" color="#6366f1" amountUsd={toUsd(totalPlacement)} />
       </div>
 
       {pivot.length === 0 ? (
@@ -286,19 +320,19 @@ export default function SummaryPage() {
         </div>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 16, marginBottom: 28 }}>
-            <div className="summary-chart-panel" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", padding: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Pending vs Received</div>
-              <BarChart pivot={pivot} max={chartMax} pendingColor="#f59e0b" receivedColor="#4ade80" pendingLabel="Pending" receivedLabel="Received" />
-              <div style={{ display: "flex", gap: 14, fontSize: 11, color: "var(--text-muted)", marginTop: 14, justifyContent: "flex-start" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginBottom: 12 }}>
+            <div className="summary-chart-panel" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", padding: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Pending vs Received</div>
+              <PieChart slices={pendingReceivedPie} />
+              <div style={{ display: "flex", gap: 12, fontSize: 11, color: "var(--text-muted)", marginTop: 8, justifyContent: "flex-start" }}>
                 <Legend color="#f59e0b" label="Pending" />
                 <Legend color="#4ade80" label="Received" />
               </div>
             </div>
-            <div className="summary-chart-panel" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", padding: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>New vs Placement</div>
-              <BarChart pivot={placementPivot} max={placementChartMax} pendingColor="#6366f1" receivedColor="#14b8a6" pendingLabel="Placement" receivedLabel="New Placement" getPending={r => r.placement} getReceived={r => r.newPlacement} />
-              <div style={{ display: "flex", gap: 14, fontSize: 11, color: "var(--text-muted)", marginTop: 14, justifyContent: "flex-start" }}>
+            <div className="summary-chart-panel" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", padding: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>New vs Placement</div>
+              <PieChart slices={placementPie} />
+              <div style={{ display: "flex", gap: 12, fontSize: 11, color: "var(--text-muted)", marginTop: 8, justifyContent: "flex-start" }}>
                 <Legend color="#6366f1" label="Placement" />
                 <Legend color="#14b8a6" label="New Placement" />
               </div>
@@ -306,43 +340,43 @@ export default function SummaryPage() {
           </div>
 
           <div className="tbl-wrap summary-table-panel">
-            <table className="tbl" style={{ fontSize: 13 }}>
+            <table className="tbl" style={{ fontSize: 12 }}>
               <thead>
                 <tr>
-                  <th>Months</th>
-                  <th>Pending</th>
-                  <th>Received</th>
-                  <th>Grand Total</th>
+                  <th style={{ padding: "7px 12px" }}>Months</th>
+                  <th style={{ padding: "7px 12px" }}>Pending</th>
+                  <th style={{ padding: "7px 12px" }}>Received</th>
+                  <th style={{ padding: "7px 12px" }}>Grand Total</th>
                 </tr>
               </thead>
               <tbody>
-                {pivot.map(r => (
-                  <tr key={r.key}>
-                    <td style={{ fontWeight: 600, color: "var(--mint)" }}>{(r.key).split("-")[0]}</td>
-                    <td style={{ fontVariantNumeric: "tabular-nums" }}>
+                {monthMergedPivot.map(r => (
+                  <tr key={r.month}>
+                    <td style={{ fontWeight: 600, color: "var(--mint)", padding: "6px 12px" }}>{r.month}</td>
+                    <td style={{ fontVariantNumeric: "tabular-nums", padding: "6px 12px" }}>
                       {(r.pending.USD || r.pending.GBP)
                         ? <MoneyStack usd={r.pending.USD} gbp={r.pending.GBP} decimals={2} />
                         : <span style={{ color: "var(--text-dim)" }}>—</span>}
                     </td>
-                    <td style={{ fontVariantNumeric: "tabular-nums", color: "#4ade80" }}>
+                    <td style={{ fontVariantNumeric: "tabular-nums", color: "#4ade80", padding: "6px 12px" }}>
                       {(r.received.USD || r.received.GBP)
                         ? <MoneyStack usd={r.received.USD} gbp={r.received.GBP} decimals={2} />
                         : <span style={{ color: "var(--text-dim)" }}>—</span>}
                     </td>
-                    <td style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700 }}>
+                    <td style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700, padding: "6px 12px" }}>
                       <MoneyStack usd={r.total.USD} gbp={r.total.GBP} decimals={2} />
                     </td>
                   </tr>
                 ))}
                 <tr style={{ background: "rgba(125,226,209,0.06)", borderTop: "2px solid var(--border-md)" }}>
-                  <td style={{ fontWeight: 800 }}>Grand Total</td>
-                  <td style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>
+                  <td style={{ fontWeight: 800, padding: "6px 12px" }}>Grand Total</td>
+                  <td style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums", padding: "6px 12px" }}>
                     <MoneyStack usd={grand.pending.USD} gbp={grand.pending.GBP} decimals={2} />
                   </td>
-                  <td style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums", color: "#4ade80" }}>
+                  <td style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums", color: "#4ade80", padding: "6px 12px" }}>
                     <MoneyStack usd={grand.received.USD} gbp={grand.received.GBP} decimals={2} />
                   </td>
-                  <td style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>
+                  <td style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums", padding: "6px 12px" }}>
                     <MoneyStack usd={grand.total.USD} gbp={grand.total.GBP} decimals={2} />
                   </td>
                 </tr>
@@ -369,12 +403,11 @@ function FilterSelect({ label, value, onChange, children }) {
   );
 }
 
-function SummaryCard({ label, color, amount }) {
-  const total = (amount.USD || 0) + (amount.GBP || 0);
+function SummaryCard({ label, color, amountUsd }) {
   return (
-    <div className="kpi-card" style={{ minHeight: 118, padding: 18, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".08em" }}>{label}</div>
-      <div style={{ fontSize: 26, fontWeight: 700, color }}>{fmtMoneyC(total, "USD", 2)}</div>
+    <div className="kpi-card" style={{ minHeight: 88, padding: 12, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".08em" }}>{label}</div>
+      <div style={{ fontSize: 18, fontWeight: 700, color }}>{fmtMoneyC(amountUsd, "USD", 2)}</div>
     </div>
   );
 }
@@ -388,57 +421,50 @@ function Legend({ color, label }) {
   );
 }
 
-/* SVG bar chart: paired Pending (amber) + Received (green) bars per month bucket. */
-function BarChart({ pivot, max, pendingColor = "#fbbf24", receivedColor = "#4ade80", pendingLabel = "Pending", receivedLabel = "Received", getPending = r => r.pending, getReceived = r => r.received }) {
-  const W = 380, H = 180, padL = 36, padR = 8, padT = 8, padB = 26;
-  const innerW = W - padL - padR;
-  const innerH = H - padT - padB;
-  const groupW = innerW / Math.max(1, pivot.length);
-  const barW   = Math.max(4, (groupW - 6) / 2);
-  const yFor   = (v) => padT + innerH - (v / max) * innerH;
+function polar(cx, cy, r, angle) {
+  const rad = (angle - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
 
+function arcPath(cx, cy, r, startAngle, endAngle) {
+  const start = polar(cx, cy, r, endAngle);
+  const end = polar(cx, cy, r, startAngle);
+  const large = endAngle - startAngle <= 180 ? "0" : "1";
+  return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${large} 0 ${end.x} ${end.y} Z`;
+}
+
+function PieChart({ slices }) {
+  const W = 360;
+  const H = 140;
+  const cx = 180;
+  const cy = 70;
+  const radius = 52;
+  const total = slices.reduce((sum, s) => sum + (s.value || 0), 0);
+
+  if (!total) {
+    return (
+      <div style={{ height: 140, display: "grid", placeItems: "center", color: "var(--text-muted)", fontSize: 12 }}>
+        No data
+      </div>
+    );
+  }
+
+  let start = 0;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="xMidYMid meet" style={{ display: "block" }}>
-      {[0, 0.25, 0.5, 0.75, 1].map((t, i) => {
-        const y = padT + innerH * (1 - t);
-        const lbl = max * t;
-        const compact = lbl >= 1000 ? `${Math.round(lbl / 1000)}k` : Math.round(lbl);
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="140" preserveAspectRatio="xMidYMid meet" style={{ display: "block" }}>
+      {slices.map((slice) => {
+        const sweep = (slice.value / total) * 360;
+        const end = start + sweep;
+        const path = arcPath(cx, cy, radius, start, end);
+        const currentStart = start;
+        start = end;
         return (
-          <g key={i}>
-            <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="var(--border)" strokeWidth="1" />
-            <text x={padL - 4} y={y + 3} textAnchor="end" fontSize="9" fill="var(--text-muted)" fontFamily="ui-monospace, monospace">{compact}</text>
-          </g>
+          <path key={`${slice.label}-${currentStart}`} d={path} fill={slice.color}>
+            <title>{slice.label}: {fmtMoneyC(slice.value, "USD", 2)}</title>
+          </path>
         );
       })}
-
-      {pivot.map((r, i) => {
-        const x0 = padL + groupW * i + 3;
-        const pendV = (() => {
-          const p = getPending(r);
-          return (p.USD || 0) + (p.GBP || 0);
-        })();
-        const recvV = (() => {
-          const v = getReceived(r);
-          return (v.USD || 0) + (v.GBP || 0);
-        })();
-        return (
-          <g key={r.key}>
-            {pendV > 0 && (
-              <rect x={x0} y={yFor(pendV)} width={barW} height={padT + innerH - yFor(pendV)} fill={pendingColor} rx="1.5">
-                <title>{r.key} · {pendingLabel}</title>
-              </rect>
-            )}
-            {recvV > 0 && (
-              <rect x={x0 + barW + 2} y={yFor(recvV)} width={barW} height={padT + innerH - yFor(recvV)} fill={receivedColor} rx="1.5">
-                <title>{r.key} · {receivedLabel}</title>
-              </rect>
-            )}
-            <text x={x0 + barW} y={H - padB + 11} textAnchor="middle" fontSize="9" fill="var(--text-muted)" fontFamily="ui-monospace, monospace">
-              {r.key}
-            </text>
-          </g>
-        );
-      })}
+      <circle cx={cx} cy={cy} r="24" fill="var(--surface)" />
     </svg>
   );
 }
