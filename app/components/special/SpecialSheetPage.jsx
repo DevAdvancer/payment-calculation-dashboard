@@ -2,7 +2,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import useDashboardStore, {
-  ALL_STATUSES,
   INSTANCE_OPTIONS,
   LAIDOFF_STATUSES,
   MONTH_NAMES,
@@ -227,7 +226,9 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
     return [{ label: "Defaulters", count: entries.length, sum: sumSplit(entries) }];
   }, [entries, isLaidOff]);
 
-  const statusOptions = isLaidOff ? ["Laid Off"] : ALL_STATUSES;
+  const statusOptions = isLaidOff
+    ? ["Laid Off", "Received", "Pending"]
+    : ["Pending", "Received", "Default"];
 
   /* ── Export ── */
   const handleExport = () => {
@@ -585,7 +586,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
                     </select>
                   </td>
                   <td style={{ fontWeight: 600, color: "var(--mint)", fontVariantNumeric: "tabular-nums" }}>
-                    {fmtMoneyC(entry.amount, currencyOf(entry), 0)}
+                    {fmtMoneyC(entry.amount, currencyOf(entry), 2)}
                   </td>
                   <td style={{ color: "var(--text-muted)", fontSize: 12 }}>{entry.serviceType}</td>
                   <td>

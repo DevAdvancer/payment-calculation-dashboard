@@ -45,11 +45,12 @@ test("spreadsheet status aliases normalize to app statuses", () => {
 });
 
 test("status changes route entries to the correct page bucket", () => {
-  assert.equal(scopeForStatusUpdate("payment", "Received"), "");
-  assert.equal(scopeForStatusUpdate("payment", "BGV Fail"), "");
-  assert.equal(scopeForStatusUpdate("laidoff", "Received"), "");
-  assert.equal(scopeForStatusUpdate("", "Received"), "");
-  assert.equal(scopeForStatusUpdate(null, "Default"), "");
+  assert.equal(scopeForStatusUpdate("payment", "Received"), "payment");
+  assert.equal(scopeForStatusUpdate("payment", "Pending"), "payment");
+  assert.equal(scopeForStatusUpdate("payment", "BGV Fail"), "laidoff");
+  assert.equal(scopeForStatusUpdate("laidoff", "Received"), "payment");
+  assert.equal(scopeForStatusUpdate("", "Received"), "payment");
+  assert.equal(scopeForStatusUpdate(null, "Default"), "defaulter");
   assert.equal(scopeForStatusUpdate("po-details", "Pending"), "po-details");
 
   assert.equal(routeBucketForEntry({ status: "Default" }), "defaulter");

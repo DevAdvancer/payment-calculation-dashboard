@@ -229,10 +229,12 @@ function clipboardRowsToObjects(text) {
 }
 
 export default function PaymentCalcPage() {
-  const { getActive, getCandidateNames, updateEntry, updateStatus, bulkCreate, deleteEntry, bulkDelete, importEntries, showToast, loading, navigate } =
+  const { getActive, getLaidOff, getDefaulters, getCandidateNames, updateEntry, updateStatus, createEntry, deleteEntry, bulkDelete, importEntries, showToast, loading, navigate } =
     useDashboardStore();
 
   const entries       = getActive();
+  const laidOffRows   = getLaidOff();
+  const defaulterRows = getDefaulters();
   const allNames      = getCandidateNames();
   const now           = new Date();
   const currentMonth  = MONTH_NAMES[now.getMonth()];
@@ -462,35 +464,51 @@ export default function PaymentCalcPage() {
           return;
       }
 
-      const { currentIndex } = pendingMove;
-      const affected = sorted.slice(currentIndex);
+        const { currentIndex } = pendingMove;
+        const anchor = pendingMove.entry || sorted[currentIndex];
+        const candidateKey = String(anchor?.candidate || "").trim().toLowerCase();
+        const sameCandidateBelow = sorted
+        .slice(currentIndex + 1)
+        .filter((row) => String(row.candidate || "").trim().toLowerCase() === candidateKey);
 
-      for (let i = 0; i < affected.length; i++) {
-          const row = affected[i];
+        const cloneDate = toMMDDYYYY(baseDate);
+        const cloneParts = dateParts(cloneDate);
 
-          const newDate = addMonths(baseDate, i);
+        const clonedRow = await createEntry({
+          ...anchor,
+          id: String(Date.now()) + "-move",
+          poDate: cloneDate,
+          month: cloneParts.month,
+          year: cloneParts.year,
+          instance: cloneParts.instance,
+          paid: 0,
+          due: parseFloat(anchor?.amount) || 0,
+          status: "Pending",
+          sheetScope: "payment",
+        });
+
+        if (!clonedRow) return;
+
+        await updateEntry(anchor.id, {
+          status: "Move",
+          paid: 0,
+          due: parseFloat(anchor.amount) || 0,
+          sheetScope: "payment",
+        });
+
+        for (let i = 0; i < sameCandidateBelow.length; i++) {
+          const row = sameCandidateBelow[i];
+          const newDate = addMonths(baseDate, i + 1);
           const poDate = toMMDDYYYY(newDate);
-          const parts = dateParts(poDate);
 
-          if (i === 0) {
-              await updateEntry(row.id, {
-                  poDate,
-                  month: parts.month,
-                  year: parts.year,
-                  instance: parts.instance,
-                  status: "Move",
-                  sheetScope: "payment",
-              });
-          } else {
-              await updateEntry(row.id, {
-                  poDate,
-                  month: parts.month,
-                  year: parts.year,
-                  instance: parts.instance,
-                  sheetScope: "payment",
-              });
-          }
-      }
+          await updateEntry(row.id, {
+            poDate,
+            status: "Pending",
+            paid: 0,
+            due: parseFloat(row.amount) || 0,
+            sheetScope: "payment",
+          });
+        }
 
       setPendingMove(null);
       setMoveDateIso("");
@@ -603,11 +621,9 @@ export default function PaymentCalcPage() {
   const moveAmountByCur = sumByCurrency(moveEntries, "amount");
 
   /* ── Laid Off and Default amounts for reconciliation ── */
-  const laidOffEntries = filtered.filter(e => e.status === "Laid Off");
-  const laidOffAmountByCur = sumByCurrency(laidOffEntries, "amount");
+  const laidOffAmountByCur = sumByCurrency(laidOffRows, "amount");
 
-  const defaultEntries = filtered.filter(e => e.status === "Default");
-  const defaultAmountByCur = sumByCurrency(defaultEntries, "amount");
+  const defaultAmountByCur = sumByCurrency(defaulterRows, "amount");
 
   const reconciliationByCur = {
     USD: totalPaidByCur.USD + totalDueByCur.USD + moveAmountByCur.USD + laidOffAmountByCur.USD + defaultAmountByCur.USD,
