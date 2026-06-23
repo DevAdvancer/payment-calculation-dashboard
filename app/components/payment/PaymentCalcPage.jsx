@@ -229,10 +229,12 @@ function clipboardRowsToObjects(text) {
 }
 
 export default function PaymentCalcPage() {
-  const { getActive, getCandidateNames, updateEntry, updateStatus, createEntry, deleteEntry, bulkDelete, importEntries, showToast, loading, navigate } =
+  const { getActive, getLaidOff, getDefaulters, getCandidateNames, updateEntry, updateStatus, createEntry, deleteEntry, bulkDelete, importEntries, showToast, loading, navigate } =
     useDashboardStore();
 
   const entries       = getActive();
+  const laidOffRows   = getLaidOff();
+  const defaulterRows = getDefaulters();
   const allNames      = getCandidateNames();
   const now           = new Date();
   const currentMonth  = MONTH_NAMES[now.getMonth()];
@@ -619,11 +621,9 @@ export default function PaymentCalcPage() {
   const moveAmountByCur = sumByCurrency(moveEntries, "amount");
 
   /* ── Laid Off and Default amounts for reconciliation ── */
-  const laidOffEntries = filtered.filter(e => e.status === "Laid Off");
-  const laidOffAmountByCur = sumByCurrency(laidOffEntries, "amount");
+  const laidOffAmountByCur = sumByCurrency(laidOffRows, "amount");
 
-  const defaultEntries = filtered.filter(e => e.status === "Default");
-  const defaultAmountByCur = sumByCurrency(defaultEntries, "amount");
+  const defaultAmountByCur = sumByCurrency(defaulterRows, "amount");
 
   const reconciliationByCur = {
     USD: totalPaidByCur.USD + totalDueByCur.USD + moveAmountByCur.USD + laidOffAmountByCur.USD + defaultAmountByCur.USD,
