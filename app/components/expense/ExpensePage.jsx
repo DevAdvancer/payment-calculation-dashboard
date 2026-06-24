@@ -12,8 +12,14 @@ import DateInput from "@/app/components/DateInput";
 import MoneyStack from "@/app/components/MoneyStack";
 
 const STATUS_OPTIONS = ["Pending", "Paid", "Reimbursed", "Cancelled"];
+const CURRENCY_OPTIONS = ["USD", "GBP", "INR"];
 const DEFAULT_CATEGORIES = ["Salaries", "Rent", "Utilities", "Software", "Marketing", "Travel", "Office", "Tax", "Misc"];
 const PAYMENT_METHODS    = ["Bank Transfer", "Credit Card", "Cash", "Cheque", "Wire", "Other"];
+
+function normalizeExpenseCurrency(value) {
+  const currency = String(value || "USD").trim().toUpperCase();
+  return CURRENCY_OPTIONS.includes(currency) ? currency : "USD";
+}
 
 function toMMDDYYYY(date) {
   if (!date) return "";
@@ -102,19 +108,19 @@ export default function ExpensePage() {
     if (filters.status)   rows = rows.filter(e => e.status   === filters.status);
     if (filters.month)    rows = rows.filter(e => e.month    === filters.month);
     if (filters.year)     rows = rows.filter(e => String(e.year) === String(filters.year));
-    if (filters.currency) rows = rows.filter(e => (e.currency || "USD") === filters.currency);
+    if (filters.currency) rows = rows.filter(e => normalizeExpenseCurrency(e.currency) === filters.currency);
     return rows;
   }, [expenses, search, filters]);
 
   /* ── KPI totals split by currency for stacked display */
   const totals = useMemo(() => {
     const out = {
-      amount: { USD: 0, GBP: 0 },
-      paid:   { USD: 0, GBP: 0 },
-      due:    { USD: 0, GBP: 0 },
+      amount: { USD: 0, GBP: 0, INR: 0 },
+      paid:   { USD: 0, GBP: 0, INR: 0 },
+      due:    { USD: 0, GBP: 0, INR: 0 },
     };
     for (const e of filtered) {
-      const cur = (e.currency || "USD") === "GBP" ? "GBP" : "USD";
+      const cur = normalizeExpenseCurrency(e.currency);
       out.amount[cur] += parseFloat(e.amount) || 0;
       out.paid[cur]   += parseFloat(e.paid)   || 0;
       out.due[cur]    += (parseFloat(e.amount) || 0) - (parseFloat(e.paid) || 0);
@@ -141,7 +147,7 @@ export default function ExpensePage() {
       description:   row.description || "",
       amount:        String(row.amount || ""),
       paid:          String(row.paid   || ""),
-      currency:      row.currency     || "USD",
+      currency:      normalizeExpenseCurrency(row.currency),
       status:        row.status       || "Pending",
       paymentMethod: row.paymentMethod || "Bank Transfer",
       reference:     row.reference    || "",
@@ -240,7 +246,7 @@ export default function ExpensePage() {
             description:   r.Description || null,
             amount, paid,
             due:           Math.max(0, amount - paid),
-            currency:      r.Currency    || "USD",
+            currency:      normalizeExpenseCurrency(r.Currency),
             status:        normalizeExpenseStatus(r.Status),
             paymentMethod: r["Payment Method"] || null,
             reference:     r.Reference   || null,
@@ -337,6 +343,7 @@ export default function ExpensePage() {
           <option value="">Both</option>
           <option value="USD">USD</option>
           <option value="GBP">GBP</option>
+          <option value="INR">INR</option>
         </SelectChip>
       </div>
 
@@ -369,7 +376,7 @@ export default function ExpensePage() {
             <tbody>
               {sorted.map((e, idx) => {
                 const due = Math.max(0, (parseFloat(e.amount)||0) - (parseFloat(e.paid)||0));
-                const cur = (e.currency || "USD") === "GBP" ? "GBP" : "USD";
+                const cur = normalizeExpenseCurrency(e.currency);
                 return (
                   <tr key={e.id}>
                     <td style={{ color: "var(--text-dim)", fontSize: 11 }}>{idx + 1}</td>
@@ -430,9 +437,10 @@ export default function ExpensePage() {
                 <input value={draft.vendor} onChange={e => setDraft(d => ({ ...d, vendor: e.target.value }))} style={inputStyle} placeholder="e.g. AWS, Office Landlord" />
               </Field>
               <Field label="Currency">
-                <select value={draft.currency} onChange={e => setDraft(d => ({ ...d, currency: e.target.value }))} style={inputStyle}>
+                <select value={normalizeExpenseCurrency(draft.currency)} onChange={e => setDraft(d => ({ ...d, currency: e.target.value }))} style={inputStyle}>
                   <option value="USD">USD ($)</option>
                   <option value="GBP">GBP (£)</option>
+                  <option value="INR">INR (₹)</option>
                 </select>
               </Field>
               <Field label={`Amount (${currencySymbol(draft.currency)})`} required>

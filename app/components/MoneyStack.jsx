@@ -11,22 +11,31 @@ import { fmtMoneyC } from "@/lib/use-store";
  *   <MoneyStack usd={12000} gbp={8500}  />   →   $12,000.00
  *                                              £8,500.00
  */
-export default function MoneyStack({ usd, gbp, decimals = 2, color }) {
+export default function MoneyStack({ usd, gbp, inr, decimals = 2, color }) {
   const u = parseFloat(usd) || 0;
   const g = parseFloat(gbp) || 0;
-  const both = u !== 0 && g !== 0;
+  const i = parseFloat(inr) || 0;
+  const entries = [
+    { code: "USD", value: u },
+    { code: "GBP", value: g },
+    { code: "INR", value: i },
+  ].filter((item) => item.value !== 0);
+
+  const both = entries.length > 1;
 
   if (!both) {
-    const value = u !== 0
-      ? fmtMoneyC(u, "USD", decimals)
-      : fmtMoneyC(g, "GBP", decimals);
+    const single = entries[0];
+    const value = single ? fmtMoneyC(single.value, single.code, decimals) : fmtMoneyC(0, "USD", decimals);
     return <span style={{ color }}>{value}</span>;
   }
 
   return (
     <span style={{ display: "inline-flex", flexDirection: "column", lineHeight: 1.05, color }}>
-      <span>{fmtMoneyC(u, "USD", decimals)}</span>
-      <span style={{ fontSize: "0.72em", opacity: 0.75 }}>{fmtMoneyC(g, "GBP", decimals)}</span>
+      {entries.map((item, index) => (
+        <span key={item.code} style={{ fontSize: index === 0 ? undefined : "0.72em", opacity: index === 0 ? 1 : 0.75 }}>
+          {fmtMoneyC(item.value, item.code, decimals)}
+        </span>
+      ))}
     </span>
   );
 }

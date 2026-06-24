@@ -43,6 +43,7 @@ export default function SummaryPage() {
   }, []);
 
   const toUsd = (money) => (money?.USD || 0) + (money?.GBP || 0) * gbpToUsd;
+  const toUsdAmount = (amount, currency) => (currency === "GBP" ? amount * gbpToUsd : amount);
 
   
   /* ── Filter option sets, derived from current data ── */
@@ -156,6 +157,40 @@ export default function SummaryPage() {
     return sum;
   }, [pivot]);
 
+  const companyPendingReceived = useMemo(() => {
+    const map = new Map();
+
+    for (const e of filtered) {
+      const company = e.company?.trim() || "Unknown";
+      let bucket = map.get(company);
+      if (!bucket) {
+        bucket = {
+          company,
+          pending: 0,
+          received: 0,
+          total: 0,
+        };
+        map.set(company, bucket);
+      }
+
+      const cur = currencyOf(e);
+      const amount = parseFloat(e.amount) || 0;
+      const paid = parseFloat(e.paid) || 0;
+      const usdAmount = toUsdAmount(e.status === RECEIVED_STATUS ? paid : amount, cur);
+
+      if (e.status === RECEIVED_STATUS) {
+        bucket.received += usdAmount;
+      } else {
+        bucket.pending += usdAmount;
+      }
+      bucket.total += usdAmount;
+    }
+
+    return [...map.values()]
+      .sort((a, b) => b.total - a.total || a.company.localeCompare(b.company))
+      .slice(0, 8);
+  }, [filtered, gbpToUsd]);
+
   function normalizeServiceTypeValue(value) {
     if (!value) return "";
 
@@ -223,15 +258,43 @@ export default function SummaryPage() {
     return sum;
   }, [placementPivot]);
 
-  const pendingReceivedPie = useMemo(() => ([
-    { label: "Pending", color: "#f59e0b", value: toUsd(totalPending) },
-    { label: "Received", color: "#4ade80", value: toUsd(totalReceived) },
-  ]), [totalPending, totalReceived, gbpToUsd]);
+  const companyPlacement = useMemo(() => {
+    const map = new Map();
 
-  const placementPie = useMemo(() => ([
-    { label: "Placement", color: "#6366f1", value: toUsd(totalPlacement) },
-    { label: "New Placement", color: "#14b8a6", value: toUsd(totalNewPlacement) },
-  ]), [totalPlacement, totalNewPlacement, gbpToUsd]);
+    for (const e of filtered) {
+      if (e.status !== RECEIVED_STATUS) continue;
+
+      const type = normalizeServiceTypeValue(e.serviceType);
+      if (!type) continue;
+
+      const company = e.company?.trim() || "Unknown";
+      let bucket = map.get(company);
+      if (!bucket) {
+        bucket = {
+          company,
+          placement: 0,
+          newPlacement: 0,
+          total: 0,
+        };
+        map.set(company, bucket);
+      }
+
+      const cur = currencyOf(e);
+      const amount = parseFloat(e.amount) || 0;
+      const usdAmount = toUsdAmount(amount, cur);
+
+      if (type === "Placement") {
+        bucket.placement += usdAmount;
+      } else if (type === "New Placement") {
+        bucket.newPlacement += usdAmount;
+      }
+      bucket.total += usdAmount;
+    }
+
+    return [...map.values()]
+      .sort((a, b) => b.total - a.total || a.company.localeCompare(b.company))
+      .slice(0, 8);
+  }, [filtered, gbpToUsd]);
 
   /* ── Excel export ── */
   const handleExport = () => {
@@ -322,17 +385,29 @@ export default function SummaryPage() {
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginBottom: 12 }}>
             <div className="summary-chart-panel" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", padding: 14 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Pending vs Received</div>
-              <PieChart slices={pendingReceivedPie} />
-              <div style={{ display: "flex", gap: 12, fontSize: 11, color: "var(--text-muted)", marginTop: 8, justifyContent: "flex-start" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Company-wise Pending vs Received</div>
+              <BarChart
+                rows={companyPendingReceived}
+                series={[
+                  { key: "pending", label: "Pending", color: "#f59e0b" },
+                  { key: "received", label: "Received", color: "#4ade80" },
+                ]}
+              />
+              <div style={{ display: "flex", gap: 12, fontSize: 11, color: "var(--text-muted)", marginTop: 8, justifyContent: "flex-start", flexWrap: "wrap" }}>
                 <Legend color="#f59e0b" label="Pending" />
                 <Legend color="#4ade80" label="Received" />
               </div>
             </div>
             <div className="summary-chart-panel" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", padding: 14 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>New vs Placement</div>
-              <PieChart slices={placementPie} />
-              <div style={{ display: "flex", gap: 12, fontSize: 11, color: "var(--text-muted)", marginTop: 8, justifyContent: "flex-start" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Company-wise Placement vs New Placement</div>
+              <BarChart
+                rows={companyPlacement}
+                series={[
+                  { key: "placement", label: "Placement", color: "#6366f1" },
+                  { key: "newPlacement", label: "New Placement", color: "#14b8a6" },
+                ]}
+              />
+              <div style={{ display: "flex", gap: 12, fontSize: 11, color: "var(--text-muted)", marginTop: 8, justifyContent: "flex-start", flexWrap: "wrap" }}>
                 <Legend color="#6366f1" label="Placement" />
                 <Legend color="#14b8a6" label="New Placement" />
               </div>
@@ -421,50 +496,60 @@ function Legend({ color, label }) {
   );
 }
 
-function polar(cx, cy, r, angle) {
-  const rad = (angle - 90) * Math.PI / 180;
-  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
-}
-
-function arcPath(cx, cy, r, startAngle, endAngle) {
-  const start = polar(cx, cy, r, endAngle);
-  const end = polar(cx, cy, r, startAngle);
-  const large = endAngle - startAngle <= 180 ? "0" : "1";
-  return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${large} 0 ${end.x} ${end.y} Z`;
-}
-
-function PieChart({ slices }) {
-  const W = 360;
-  const H = 140;
-  const cx = 180;
-  const cy = 70;
-  const radius = 52;
-  const total = slices.reduce((sum, s) => sum + (s.value || 0), 0);
-
-  if (!total) {
+function BarChart({ rows, series }) {
+  if (!rows.length) {
     return (
       <div style={{ height: 140, display: "grid", placeItems: "center", color: "var(--text-muted)", fontSize: 12 }}>
-        No data
+        No company data
       </div>
     );
   }
 
-  let start = 0;
+  const maxValue = Math.max(
+    ...rows.flatMap((row) => series.map((item) => row[item.key] || 0)),
+    1
+  );
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="140" preserveAspectRatio="xMidYMid meet" style={{ display: "block" }}>
-      {slices.map((slice) => {
-        const sweep = (slice.value / total) * 360;
-        const end = start + sweep;
-        const path = arcPath(cx, cy, radius, start, end);
-        const currentStart = start;
-        start = end;
-        return (
-          <path key={`${slice.label}-${currentStart}`} d={path} fill={slice.color}>
-            <title>{slice.label}: {fmtMoneyC(slice.value, "USD", 2)}</title>
-          </path>
-        );
-      })}
-      <circle cx={cx} cy={cy} r="24" fill="var(--surface)" />
-    </svg>
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 12, overflowX: "auto", paddingBottom: 4 }}>
+      {rows.map((row) => (
+        <div key={row.company} style={{ minWidth: 72, flex: "1 0 72px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+          <div style={{ height: 180, width: "100%", display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 8, padding: "0 6px" }}>
+            {series.map((item) => {
+              const value = row[item.key] || 0;
+              const height = (value / maxValue) * 100;
+              return (
+                <div
+                  key={`${row.company}-${item.key}`}
+                  title={`${row.company} ${item.label}: ${fmtMoneyC(value, "USD", 2)}`}
+                  style={{
+                    width: 16,
+                    height: `${Math.max(height, value > 0 ? 4 : 0)}%`,
+                    minHeight: value > 0 ? 4 : 0,
+                    borderRadius: "8px 8px 2px 2px",
+                    background: item.color,
+                    boxShadow: value > 0 ? "0 8px 18px rgba(0,0,0,0.12)" : "none",
+                  }}
+                />
+              );
+            })}
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", textAlign: "center", lineHeight: 1.15, minHeight: 26 }} title={row.company}>
+            {row.company}
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+            {fmtMoneyC(row.total, "USD", 2)}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 10, color: "var(--text-muted)", width: "100%" }}>
+            {series.map((item) => (
+              <span key={`${row.company}-${item.label}`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, whiteSpace: "nowrap" }}>
+                <span style={{ width: 8, height: 8, borderRadius: 2, background: item.color, display: "inline-block" }} />
+                {fmtMoneyC(row[item.key] || 0, "USD", 2)}
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
