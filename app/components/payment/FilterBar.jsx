@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { MONTH_NAMES, ALL_STATUSES, INSTANCE_OPTIONS } from "@/lib/use-store";
+import { MONTH_NAMES, INSTANCE_OPTIONS } from "@/lib/use-store";
+import { periodOf } from "@/lib/period-utils";
 
 const EMPTY_FILTERS = {
   company:  "",
@@ -11,17 +12,88 @@ const EMPTY_FILTERS = {
   status:   "",
 };
 
+/* Canonical display order so the dropdown is stable regardless of
+   insertion order. Anything not in this list (e.g. a status someone
+   typed manually during an import) is still shown, but appended after
+   the known ones, alphabetically. */
+const STATUS_ORDER = [
+  "Pending",
+  "Received",
+  "Move",
+  "Laid Off",
+  "Offer Revoke",
+  "No Offer",
+  "Resigned",
+  "Contract End",
+  "BGV Fail",
+  "Default",
+];
+
 export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFilterChange }) {
-  /* Derive unique options from entries */
-  const companies = useMemo(() => [...new Set(entries.map((e) => e.company).filter(Boolean))].sort(), [entries]);
+  /* All dropdowns are derived dynamically from the actual entries so
+     each only lists values that exist in the data. The current
+     selection is always kept visible even if no row currently has
+     it (so clearing the last matching row doesn't silently drop
+     the filter). */
+
+  const companies = useMemo(() => {
+    const set = new Set(entries.map((e) => e.company).filter(Boolean));
+    if (filters.company) set.add(String(filters.company));
+    return [...set].sort();
+  }, [entries, filters.company]);
+
   const years = useMemo(() => {
-    const fromEntries = [...new Set(entries.map((e) => e.year).filter(Boolean))].sort((a, b) => b - a);
+    const set = new Set(entries.map((e) => e.year).filter(Boolean).map(String));
+    if (filters.year) set.add(String(filters.year));
     const currentYear = String(new Date().getFullYear());
-    if (!fromEntries.includes(currentYear)) {
-      return [currentYear, ...fromEntries];
+    if (!set.has(currentYear)) set.add(currentYear);
+    return [...set].sort((a, b) => Number(b) - Number(a));
+  }, [entries, filters.year]);
+
+  /* Month: combine the stored `e.month` AND the period derived from
+     `poDate` (via shared periodOf) so rows whose stored month is
+     blank or non-canonical still surface. */
+  const months = useMemo(() => {
+    const present = new Set();
+    for (const e of entries) {
+      const p = periodOf(e);
+      if (p.month) present.add(p.month);
+      if (e.month) {
+        const m = String(e.month).trim();
+        if (m) present.add(m);
+      }
     }
-    return fromEntries;
-  }, [entries]);
+    if (filters.month) present.add(String(filters.month));
+    const ordered = MONTH_NAMES.filter(m => present.has(m));
+    const extras  = [...present].filter(m => !MONTH_NAMES.includes(m)).sort((a, b) => a.localeCompare(b));
+    return [...ordered, ...extras];
+  }, [entries, filters.month]);
+
+  /* Instance: derived from entries (data may have only First Half or
+     only Second Half on this page). */
+  const instances = useMemo(() => {
+    const present = new Set(entries.map(e => String(e.instance || "").trim()).filter(Boolean));
+    if (filters.instance) present.add(String(filters.instance));
+    const ordered = INSTANCE_OPTIONS.filter(i => present.has(i));
+    const extras  = [...present].filter(i => !INSTANCE_OPTIONS.includes(i)).sort((a, b) => a.localeCompare(b));
+    return [...ordered, ...extras];
+  }, [entries, filters.instance]);
+
+  /* Status options are derived from the actual entries so the dropdown
+     only shows statuses that exist in the data. The current selection
+     is kept visible even if no row currently has it (e.g. the user
+     just cleared the only row of that status). */
+  const statuses = useMemo(() => {
+    const present = new Set(
+      entries.map(e => String(e.status || "").trim()).filter(Boolean)
+    );
+    if (filters.status) present.add(String(filters.status));
+    const ordered = STATUS_ORDER.filter(s => present.has(s));
+    const extras = [...present]
+      .filter(s => !STATUS_ORDER.includes(s))
+      .sort((a, b) => a.localeCompare(b));
+    return [...ordered, ...extras];
+  }, [entries, filters.status]);
 
   const set = (key) => (e) => {
     if (typeof onFilterChange === "function") {
@@ -116,7 +188,7 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
           onChange={set("month")}
         >
           <option value="">All Months</option>
-          {MONTH_NAMES.map((m) => <option key={m} value={m}>{m}</option>)}
+          {months.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
 
         {/* Year */}
@@ -136,17 +208,18 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
           onChange={set("instance")}
         >
           <option value="">All Instances</option>
-          {INSTANCE_OPTIONS.map((i) => <option key={i} value={i}>{i}</option>)}
+          {instances.map((i) => <option key={i} value={i}>{i}</option>)}
         </select>
 
-        {/* Status */}
+        {/* Status — options are derived from the actual entries so the
+            dropdown only lists statuses that exist in the data. */}
         <select
           className="filter-select"
           value={filters.status}
           onChange={set("status")}
         >
           <option value="">All Status</option>
-          {ALL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+          {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
 
         {/* Clear */}

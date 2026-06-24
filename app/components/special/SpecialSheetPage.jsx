@@ -15,6 +15,7 @@ import PaginationControls from "@/app/components/PaginationControls";
 import DeleteConfirmModal from "@/app/components/DeleteConfirmModal";
 import { normalizeCompanyName } from "@/lib/company-utils";
 import { normalizeSpecialSheetStatus } from "@/lib/status-utils";
+import { entryMatchesPeriod, periodOf } from "@/lib/period-utils";
 
 function statusBadgeClass(status) {
   if (status === "Received") return "badge-paid";
@@ -182,9 +183,42 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
     setSelected(new Set());
   }, [page, pageSize, type]);
 
-  /* ── Filter options ── */
-  const companies = [...new Set(rawEntries.map(e => e.company).filter(Boolean))].sort();
-  const years = [...new Set(rawEntries.map(e => e.year).filter(Boolean))].sort((a, b) => b - a);
+  /* ── Filter options — all derived dynamically from the actual
+     entries so the dropdowns only list values that exist in the data.
+     The current selection is always kept visible even if no row
+     currently has it (so clearing the last matching row doesn't
+     silently drop the filter). */
+  const companies = useMemo(() => {
+    const set = new Set(rawEntries.map(e => e.company).filter(Boolean));
+    if (filters.company) set.add(String(filters.company));
+    return [...set].sort();
+  }, [rawEntries, filters.company]);
+  const years = useMemo(() => {
+    const set = new Set(rawEntries.map(e => e.year).filter(Boolean).map(String));
+    if (filters.year) set.add(String(filters.year));
+    return [...set].sort((a, b) => Number(b) - Number(a));
+  }, [rawEntries, filters.year]);
+  /* Months: derive from entries' stored `e.month` AND from the period
+     derived from `poDate` (via the shared period matcher) so rows
+     whose stored month is blank or non-canonical still surface. */
+  const months = useMemo(() => {
+    const present = new Set();
+    for (const e of rawEntries) {
+      const p = periodOf(e);
+      if (p.month) present.add(p.month);
+      if (e.month) {
+        const m = String(e.month).trim();
+        if (m) present.add(m);
+      }
+    }
+    if (filters.month) present.add(String(filters.month));
+    /* Preserve the canonical 12-month order for known values; unknown
+       values (e.g. "september", "June") get appended in alphabetical
+       order. */
+    const ordered = MONTH_NAMES.filter(m => present.has(m));
+    const extras  = [...present].filter(m => !MONTH_NAMES.includes(m)).sort((a, b) => a.localeCompare(b));
+    return [...ordered, ...extras];
+  }, [rawEntries, filters.month]);
 
   /* ── Filtered entries ── */
   const entries = useMemo(() => {
@@ -197,8 +231,15 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
       );
     }
     if (filters.company) rows = rows.filter(e => e.company === filters.company);
-    if (filters.month) rows = rows.filter(e => e.month === filters.month);
-    if (filters.year) rows = rows.filter(e => String(e.year) === String(filters.year));
+    /* Month + year use the shared period matcher so this sheet stays
+       in lock-step with the Payment Calculation page's KPI strip.
+       Falls back to poDate when the stored month/year is blank or
+       stored in a non-canonical form. */
+    if (filters.month || filters.year) {
+      const m = filters.month || "";
+      const y = filters.year ? String(filters.year) : "";
+      rows = rows.filter(e => entryMatchesPeriod(e, m, y));
+    }
     return rows;
   }, [rawEntries, filters]);
 
@@ -213,17 +254,27 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
     return next;
   });
 
-  /* ── KPI data — totals split by currency for stacked display */
+  /* ── KPI data — count + total amount split by currency for stacked display */
   const sumSplit = (rows) => {
     const t = { USD: 0, GBP: 0 };
     for (const e of rows) t[currencyOf(e)] += parseFloat(e.amount) || 0;
     return t;
   };
+  /* True iff this KPI card should render the "Total amount" sub-block.
+     Defaulter rows always have an amount; Laid Off rows come from the
+     cascade (status=Pending with sheetScope=laidoff) and also have an
+     amount, so both pages show the total. */
+  const pHasAmount = (kpi) => kpi && kpi.sum && (kpi.sum.USD > 0 || kpi.sum.GBP > 0);
   const kpiData = useMemo(() => {
+    const sum = sumSplit(entries);
     if (isLaidOff) {
-      return [{ label: "Laid Off", count: entries.length }];
+      return [
+        { label: "Laid Off", count: entries.length, sum },
+      ];
     }
-    return [{ label: "Defaulters", count: entries.length, sum: sumSplit(entries) }];
+    return [
+      { label: "Defaulters", count: entries.length, sum },
+    ];
   }, [entries, isLaidOff]);
 
   const statusOptions = isLaidOff
@@ -373,12 +424,20 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
         Change status to a non-routed value to move them back to the active sheet.
       </div>
 
-      {/* KPI Strip */}
+      {/* KPI Strip — count + total amount (split by currency) */}
       <div className="kpi-strip special-kpi-strip">
         {kpiData.map(kpi => (
-          <div className="kpi-card special-kpi-card" key={kpi.label} style={{ minWidth: 160 }}>
+          <div className="kpi-card special-kpi-card" key={kpi.label} style={{ minWidth: 200 }}>
             <div className="kpi-label" style={{ fontSize: 13 }}>{kpi.label}</div>
-            <div className="kpi-value" style={{ fontSize: 26, marginBottom: 4 }}>{kpi.count}</div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginTop: 4, flexWrap: "wrap" }}>
+              <div className="kpi-value" style={{ fontSize: 26, lineHeight: 1.1 }}>{kpi.count}</div>
+              {pHasAmount(kpi) && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <div className="kpi-sub" style={{ fontSize: 11, color: "var(--text-muted)" }}>Total amount</div>
+                  <MoneyStack usd={kpi.sum.USD} gbp={kpi.sum.GBP} decimals={2} />
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -411,15 +470,15 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
           </svg>
           <select className="filter-select" value={filters.company} onChange={e => setFilters(f => ({ ...f, company: e.target.value }))}>
             <option value="">All Companies</option>
-            {companies.map(c => <option key={c}>{c}</option>)}
+            {companies.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
           <select className="filter-select" value={filters.month} onChange={e => setFilters(f => ({ ...f, month: e.target.value }))}>
             <option value="">All Months</option>
-            {MONTH_NAMES.map(m => <option key={m}>{m}</option>)}
+            {months.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
           <select className="filter-select" value={filters.year} onChange={e => setFilters(f => ({ ...f, year: e.target.value }))}>
             <option value="">All Years</option>
-            {years.map(y => <option key={y}>{y}</option>)}
+            {years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
           {Object.values(filters).some(Boolean) && (
             <button className="btn-ghost" style={{ padding: "4px 10px", fontSize: 11 }} onClick={() => setFilters({ search: "", company: "", month: "", year: "" })}>Clear</button>

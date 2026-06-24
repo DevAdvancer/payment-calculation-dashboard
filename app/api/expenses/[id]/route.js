@@ -4,6 +4,7 @@ import { updateExpense, deleteExpense } from "../../../../lib/expense-store";
 import { ExpensePatchSchema, formatValidationErrors } from "../../../../lib/schemas";
 
 export async function PATCH(request, { params }) {
+  const { id } = await params;
   try {
     const body = await request.json();
     const parsed = ExpensePatchSchema.safeParse(body);
@@ -13,7 +14,7 @@ export async function PATCH(request, { params }) {
         { status: 400 }
       );
     }
-    const expense = await updateExpense(params.id, parsed.data);
+    const expense = await updateExpense(id, parsed.data);
     if (!expense) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ expense });
   } catch (error) {
@@ -22,8 +23,9 @@ export async function PATCH(request, { params }) {
 }
 
 export async function DELETE(_request, { params }) {
+  const { id } = await params;
   try {
-    const deleted = await deleteExpense(params.id);
+    const deleted = await deleteExpense(id);
     if (!deleted) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ deleted });
   } catch (error) {

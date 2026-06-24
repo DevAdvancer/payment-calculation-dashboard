@@ -60,3 +60,65 @@ test("status changes route entries to the correct page bucket", () => {
   assert.equal(routeBucketForEntry({ status: "BGV Fail" }), "laidoff");
   assert.equal(routeBucketForEntry({ status: "Pending", sheetScope: "po-details" }), "po-details");
 });
+
+test("routeBucketForEntry respects sheetScope over status", () => {
+  /* When the cascade sweeps a Pending row onto the Laid Off page,
+     sheetScope becomes "laidoff" but status stays "Pending". The
+     row must surface on the Laid Off page, not the Payment page. */
+  assert.equal(
+    routeBucketForEntry({ status: "Pending", sheetScope: "laidoff" }),
+    "laidoff",
+    "Pending row with sheetScope=laidoff must route to the laidoff bucket"
+  );
+  assert.equal(
+    routeBucketForEntry({ status: "Received", sheetScope: "laidoff" }),
+    "laidoff",
+    "Received row with sheetScope=laidoff must route to the laidoff bucket"
+  );
+  assert.equal(
+    routeBucketForEntry({ status: "Move", sheetScope: "laidoff" }),
+    "laidoff",
+    "Move row with sheetScope=laidoff must route to the laidoff bucket"
+  );
+  /* Same idea for the defaulter bucket. */
+  assert.equal(
+    routeBucketForEntry({ status: "Default", sheetScope: "defaulter" }),
+    "defaulter"
+  );
+  assert.equal(
+    routeBucketForEntry({ status: "Pending", sheetScope: "defaulter" }),
+    "defaulter"
+  );
+  /* PO details always wins (it pins rows to the PO Details page). */
+  assert.equal(
+    routeBucketForEntry({ status: "Pending", sheetScope: "po-details" }),
+    "po-details"
+  );
+});
+
+test("planStatusUpdate + routeBucketForEntry end-to-end: Oct Laid Off sweeps Aug+Sep onto the laidoff bucket", async () => {
+  const { planStatusUpdate } = await import("../lib/status-cascade.js");
+  const entries = [
+    { id: "aug", candidate: "John", status: "Pending", sheetScope: "payment", amount: 1000, paid: 0, due: 1000, poDate: "08-01-2026" },
+    { id: "sep", candidate: "John", status: "Pending", sheetScope: "payment", amount: 1000, paid: 0, due: 1000, poDate: "09-01-2026" },
+    { id: "oct", candidate: "John", status: "Pending", sheetScope: "payment", amount: 1000, paid: 0, due: 1000, poDate: "10-01-2026" },
+  ];
+  const result = planStatusUpdate(entries, "oct", "Laid Off");
+
+  /* The clicked row's status becomes "Laid Off". */
+  const oct = result.find(e => e.id === "oct");
+  assert.equal(oct.status, "Laid Off");
+  assert.equal(oct.sheetScope, "laidoff");
+  assert.equal(routeBucketForEntry(oct), "laidoff");
+
+  /* The other Pending rows move to the laidoff sheet AND their
+     status becomes "Laid Off" (the terminator), so they surface
+     under the "Laid Off" filter on the Laid Off page. */
+  for (const id of ["aug", "sep"]) {
+    const row = result.find(e => e.id === id);
+    assert.equal(row.status, "Laid Off", `${id} status should become Laid Off`);
+    assert.equal(row.sheetScope, "laidoff", `${id} sheetScope should be laidoff`);
+    assert.equal(routeBucketForEntry(row), "laidoff",
+      `${id} should route to the laidoff bucket`);
+  }
+});

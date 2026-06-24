@@ -10,6 +10,7 @@ import useDashboardStore, {
   currencyOf,
   sumByCurrency,
 } from "@/lib/use-store";
+import { entryMatchesPeriod } from "@/lib/period-utils";
 import FilterBar from "./FilterBar";
 import DateInput from "@/app/components/DateInput";
 import MoneyStack from "@/app/components/MoneyStack";
@@ -335,15 +336,8 @@ export default function PaymentCalcPage() {
    *   • If a name was selected from the dropdown → exact-match only.
    *   • Otherwise typed search does substring (`includes`) matching. */
   const filtered = useMemo(() => {
-    const normalizeMonth = (val) => {
-      if (!val) return "";
-      const str = String(val).trim();
-      const key = str.slice(0, 3).toLowerCase();
-      const idx = MONTH_NAMES.findIndex((m) => m.toLowerCase().startsWith(key));
-      return idx === -1 ? str : MONTH_NAMES[idx];
-    };
-
-    const monthFilter = normalizeMonth(filters.month);
+    const monthFilter = filters.month || "";
+    const yearFilter  = filters.year  ? String(filters.year) : "";
     let rows = entries;
     if (selectedName) {
       const sel = selectedName.toLowerCase();
@@ -353,12 +347,27 @@ export default function PaymentCalcPage() {
       if (q) rows = rows.filter(e => (e.candidate || "").toLowerCase().includes(q));
     }
     if (filters.status)   rows = rows.filter(e => e.status === filters.status);
-    if (monthFilter)       rows = rows.filter(e => normalizeMonth(e.month) === monthFilter);
-    if (filters.year)     rows = rows.filter(e => String(e.year) === String(filters.year));
+    if (monthFilter || yearFilter) rows = rows.filter(e => entryMatchesPeriod(e, monthFilter, yearFilter));
     if (filters.instance) rows = rows.filter(e => e.instance === filters.instance);
     if (filters.company)  rows = rows.filter(e => e.company === filters.company);
     return rows;
   }, [entries, searchTerm, selectedName, filters]);
+
+  /* ── Stats scope — ALWAYS narrowed to the selected month + year,
+     regardless of the other filters. The KPI strip uses this so the
+     numbers always reflect "this month" totals even if the user
+     clears the company/status/search dropdowns.
+
+     IMPORTANT: this filter falls back to the row's `poDate` whenever
+     the stored `month`/`year` is missing or doesn't match the dropdown
+     value. Without that fallback, rows with a missing month/year (or
+     a typo'd value) would slip through the table's filter too, making
+     the table and the stats disagree. */
+  const statsRows = useMemo(() => {
+    const monthFilter = filters.month || "";
+    const yearFilter  = filters.year  ? String(filters.year) : "";
+    return entries.filter(e => entryMatchesPeriod(e, monthFilter, yearFilter));
+  }, [entries, filters.month, filters.year]);
 
   /* ── Sorting ── */
   const sorted = useMemo(() => {
@@ -587,12 +596,14 @@ export default function PaymentCalcPage() {
     return () => abort.abort();
   }, []);
 
-  /* ── KPIs (reflect active filters) — split by currency for stacked display */
-  const totalValueByCur = sumByCurrency(filtered, "amount");
-  const totalPaidByCur  = sumByCurrency(filtered, "paid");
-  const totalDueByCur   = sumByCurrency(filtered, "due");
+  /* ── KPIs (always scoped to the selected month + year, independent of
+     the other filters that drive the table) — split by currency for
+     stacked display. */
+  const totalValueByCur = sumByCurrency(statsRows, "amount");
+  const totalPaidByCur  = sumByCurrency(statsRows, "paid");
+  const totalDueByCur   = sumByCurrency(statsRows, "due");
   const totalActualByCur = sumByCurrency(
-    filtered.map(e => ({
+    statsRows.map(e => ({
         ...e,
       actual: e.actual ?? 0
     })),
@@ -603,7 +614,7 @@ export default function PaymentCalcPage() {
   const totalDueUSD      = totalDueByCur.USD   + totalDueByCur.GBP * gbpToUsd;
   const totalActualUSD   = totalActualByCur.USD + totalActualByCur.GBP * gbpToUsd;
 
-  const recurringPlacementEntries = filtered.filter(
+  const recurringPlacementEntries = statsRows.filter(
     e => normalizeServiceTypeValue(e.serviceType) === "Placement"
   );
   const recurringPaymentByCur = sumByCurrency(
@@ -616,14 +627,21 @@ export default function PaymentCalcPage() {
   const recurringPaymentUSD = recurringPaymentByCur.USD + recurringPaymentByCur.GBP * gbpToUsd;
 
   /* ── Move / Placement / New Placement metrics */
-  const moveEntries = filtered.filter(e => e.status === "Move");
+  const moveEntries = statsRows.filter(e => e.status === "Move");
   const moveUniqueCandidates = new Set(moveEntries.map(e => (e.candidate || "").trim().toLowerCase())).size;
   const moveAmountByCur = sumByCurrency(moveEntries, "amount");
 
-  /* ── Laid Off and Default amounts for reconciliation ── */
-  const laidOffAmountByCur = sumByCurrency(laidOffRows, "amount");
-
-  const defaultAmountByCur = sumByCurrency(defaulterRows, "amount");
+  /* ── Laid Off and Default amounts for reconciliation.
+     Both sheets come from the store with no month/year filter, so for
+     the KPI strip we narrow them down to the currently-selected period
+     (same scope as statsRows). The sheet pages themselves still show
+     everything. */
+  const monthScopeKpi = filters.month || "";
+  const yearScopeKpi  = filters.year  ? String(filters.year) : "";
+  const laidOffRowsInPeriod    = laidOffRows.filter(e => entryMatchesPeriod(e, monthScopeKpi, yearScopeKpi));
+  const defaulterRowsInPeriod  = defaulterRows.filter(e => entryMatchesPeriod(e, monthScopeKpi, yearScopeKpi));
+  const laidOffAmountByCur = sumByCurrency(laidOffRowsInPeriod, "amount");
+  const defaultAmountByCur = sumByCurrency(defaulterRowsInPeriod, "amount");
 
   const reconciliationByCur = {
     USD: totalPaidByCur.USD + totalDueByCur.USD + moveAmountByCur.USD + laidOffAmountByCur.USD + defaultAmountByCur.USD,
@@ -635,12 +653,12 @@ export default function PaymentCalcPage() {
   const reconciliationUSD = reconciliationByCur.USD + reconciliationByCur.GBP * gbpToUsd;
 
   const placementReceivedByCur = sumByCurrency(
-    filtered.filter(e => e.status === "Received" && normalizeServiceTypeValue(e.serviceType) === "Placement"),
+    statsRows.filter(e => e.status === "Received" && normalizeServiceTypeValue(e.serviceType) === "Placement"),
     "amount"
   );
 
   const newPlacementReceivedByCur = sumByCurrency(
-    filtered.filter(e => e.status === "Received" && normalizeServiceTypeValue(e.serviceType) === "New Placement"),
+    statsRows.filter(e => e.status === "Received" && normalizeServiceTypeValue(e.serviceType) === "New Placement"),
     "amount"
   );
   const placementReceivedUSD = placementReceivedByCur.USD + placementReceivedByCur.GBP * gbpToUsd;
@@ -803,9 +821,9 @@ export default function PaymentCalcPage() {
       {/* KPI Strip — reflects active filters */}
       <div className="kpi-strip" style={{ display: "grid", gridTemplateColumns: "repeat(8, minmax(0, 1fr))", gap: 8, marginBottom: 10 }}>
         <div className="kpi-card" style={{ minWidth: 0, padding: "10px 12px" }}>
-          <div className="kpi-label">Entries</div>
-          <div className="kpi-value" style={{ fontSize: 18 }}>{filtered.length}</div>
-          <div className="kpi-sub">of {entries.length} total</div>
+          <div className="kpi-label">Entries (this {filters.month || "month"})</div>
+          <div className="kpi-value" style={{ fontSize: 18 }}>{statsRows.length}</div>
+          <div className="kpi-sub">of {entries.length} total · showing {filtered.length} in table</div>
         </div>
         <div className="kpi-card" style={{ minWidth: 0, padding: "10px 12px" }}>
           <div className="kpi-label">Recurring Payment</div>
@@ -823,7 +841,7 @@ export default function PaymentCalcPage() {
           <div className="kpi-sub">pending collection</div>
         </div>
         <div className="kpi-card" style={{ minWidth: 0, padding: "10px 12px", background: "#fff1f2", borderColor: "#fecaca" }}>
-          <div className="kpi-label" style={{ color: "#b91c1c" }}>Move / Laid Off / Default</div>
+          <div className="kpi-label" style={{ color: "#b91c1c" }}>Move / Laid Off / Default (this {filters.month || "month"})</div>
           <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, paddingTop: 0 }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: "#991b1b" }}>Move</span>

@@ -4,6 +4,7 @@ import { updateEntry, deleteEntry, getHistory } from "../../../../lib/dashboard-
 import { EntryPatchSchema, formatValidationErrors } from "../../../../lib/schemas";
 
 export async function PATCH(request, { params }) {
+  const { id } = await params;
   try {
     const body = await request.json();
     const parsed = EntryPatchSchema.safeParse(body);
@@ -20,7 +21,7 @@ export async function PATCH(request, { params }) {
       Object.entries(parsed.data).filter(([key]) => Object.prototype.hasOwnProperty.call(body, key))
     );
 
-    const entry = await updateEntry(params.id, patch);
+    const entry = await updateEntry(id, patch);
     if (!entry) {
       return NextResponse.json({ error: "Entry not found" }, { status: 404 });
     }
@@ -31,8 +32,9 @@ export async function PATCH(request, { params }) {
 }
 
 export async function DELETE(_request, { params }) {
+  const { id } = await params;
   try {
-    const deleted = await deleteEntry(params.id);
+    const deleted = await deleteEntry(id);
     if (!deleted) {
       return NextResponse.json({ error: "Entry not found" }, { status: 404 });
     }
@@ -43,8 +45,9 @@ export async function DELETE(_request, { params }) {
 }
 
 export async function GET(_request, { params }) {
+  const { id } = await params;
   try {
-    const history = await getHistory(params.id);
+    const history = await getHistory(id);
     return NextResponse.json({ history });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

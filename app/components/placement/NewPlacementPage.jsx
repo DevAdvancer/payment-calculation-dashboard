@@ -142,10 +142,10 @@ export default function NewPlacementPage() {
     const instAmt   = (totalContractValue - upfrontFirst) / months;
     /* type retains the X% / N month info (parseable downstream).
        Service Type rule: first installment of any placement is
-       "Placement"; every subsequent installment is "Payment Collection". */
+       "Placement"; every subsequent installment is "New Placement". */
     const typeLabel = pct + "% in " + months + " months";
     const FIRST_SERVICE_TYPE = "Placement";
-    const REST_SERVICE_TYPE  = "Payment Collection";
+    const REST_SERVICE_TYPE  = "New Placement";
     const now      = Date.now();
     const entries  = [];
 
@@ -216,7 +216,7 @@ export default function NewPlacementPage() {
         due:         parseFloat(instAmt.toFixed(2)),
         status:      "Pending",
         /* UK row 0 is the placement's first installment → "Placement".
-           Every other loop row (USA + UK) is a subsequent payment → "Payment Collection". */
+           Every other loop row (USA + UK) is a subsequent payment → "New Placement". */
         serviceType: (isUK && i === 0) ? FIRST_SERVICE_TYPE : REST_SERVICE_TYPE,
         type:        typeLabel,
         notes:       (isUK && i === 0 && nrUpfront > 0)

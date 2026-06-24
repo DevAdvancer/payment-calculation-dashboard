@@ -13,7 +13,12 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en-US">
+    /* suppressHydrationWarning on <html> — browser extensions
+       (Scribe recorder, ColorZilla, etc.) inject attributes like
+       data-scribe-recorder-ready before React hydrates, which would
+       otherwise show up as a hydration mismatch. The <body> tag
+       continues to be reconciled normally. */
+    <html lang="en-US" suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );

@@ -9,6 +9,7 @@ import DeleteConfirmModal from "../DeleteConfirmModal";
 import { normalizeCompanyName } from "../../../lib/company-utils";
 import { normalizePaymentStatus } from "../../../lib/status-utils";
 import { isPoDetailsEntry } from "../../../lib/po-details-utils";
+import { entryMatchesPeriod, periodOf } from "../../../lib/period-utils";
 
 /* ─── Placement form constants (mirrors NewPlacementPage) ─── */
 const COMPANY_OPTIONS = [
@@ -305,12 +306,39 @@ export default function PODetailsPage() {
     () => entries.filter(isPoDetailsEntry),
     [entries]
   );
-  const filterOptions = useMemo(() => ({
-    companies: [...new Set(poEntries.map(e => e.company).filter(Boolean))].sort(),
-    months: [...new Set(poEntries.map(e => e.month).filter(Boolean))]
-      .sort((a, b) => MONTH_NAMES.indexOf(a) - MONTH_NAMES.indexOf(b)),
-    years: [...new Set(poEntries.map(e => e.year).filter(Boolean))].sort((a, b) => Number(b) - Number(a)),
-  }), [poEntries]);
+  const filterOptions = useMemo(() => {
+    /* Months: prefer the canonical MONTH_NAMES order for stored values;
+       include any non-canonical month string (e.g. "June", "sept")
+       appended alphabetically, and always keep the current filter
+       selection visible even if no row currently has it. */
+    const presentMonths = new Set();
+    for (const e of poEntries) {
+      const p = periodOf(e);
+      if (p.month) presentMonths.add(p.month);
+      if (e.month) {
+        const m = String(e.month).trim();
+        if (m) presentMonths.add(m);
+      }
+    }
+    if (poFilters.month) presentMonths.add(String(poFilters.month));
+    const orderedMonths = MONTH_NAMES.filter(m => presentMonths.has(m));
+    const extraMonths = [...presentMonths]
+      .filter(m => !MONTH_NAMES.includes(m))
+      .sort((a, b) => a.localeCompare(b));
+    const months = [...orderedMonths, ...extraMonths];
+
+    /* Companies / Years: derive from entries; keep the current
+       selection visible too. */
+    const companiesSet = new Set(poEntries.map(e => e.company).filter(Boolean));
+    if (poFilters.company) companiesSet.add(String(poFilters.company));
+    const companies = [...companiesSet].sort();
+
+    const yearsSet = new Set(poEntries.map(e => e.year).filter(Boolean).map(String));
+    if (poFilters.year) yearsSet.add(String(poFilters.year));
+    const years = [...yearsSet].sort((a, b) => Number(b) - Number(a));
+
+    return { companies, months, years };
+  }, [poEntries, poFilters.company, poFilters.month, poFilters.year]);
 
   const { pct, months } = parseAgreement(form.agreement, form.customPct, form.customMonths);
   const totalSalary = form.payStructure === "annual"
@@ -342,7 +370,7 @@ export default function PODetailsPage() {
     const instAmt   = (totalContractValue - upfrontFirst) / months;
     const typeLabel = `${pct}% in ${months} months`;
     const FIRST_SERVICE_TYPE = "Placement";
-    const REST_SERVICE_TYPE  = "Payment Collection";
+    const REST_SERVICE_TYPE  = "New Placement";
     const now = Date.now();
     const installments = [];
 
@@ -505,8 +533,14 @@ export default function PODetailsPage() {
 
     let arr = aggregated;
     if (poFilters.company) arr = arr.filter(r => r.company === poFilters.company);
-    if (poFilters.month) arr = arr.filter(r => r.month === poFilters.month);
-    if (poFilters.year) arr = arr.filter(r => String(r.year) === String(poFilters.year));
+    /* Month + year use the shared period matcher so this page stays
+       consistent with the Payment Calculation page's KPI strip and
+       the Laid Off / Defaulter sheets. */
+    if (poFilters.month || poFilters.year) {
+      const m = poFilters.month || "";
+      const y = poFilters.year ? String(poFilters.year) : "";
+      arr = arr.filter(r => entryMatchesPeriod(r, m, y));
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       arr = arr.filter(r =>
@@ -772,15 +806,15 @@ export default function PODetailsPage() {
           </div>
           <select className="filter-select" value={poFilters.company} onChange={e => setPoFilters(f => ({ ...f, company: e.target.value }))} style={{ height:29, fontSize:12 }}>
             <option value="">All Companies</option>
-            {filterOptions.companies.map(c => <option key={c}>{c}</option>)}
+            {filterOptions.companies.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
           <select className="filter-select" value={poFilters.month} onChange={e => setPoFilters(f => ({ ...f, month: e.target.value }))} style={{ height:29, fontSize:12 }}>
             <option value="">All Months</option>
-            {filterOptions.months.map(m => <option key={m}>{m}</option>)}
+            {filterOptions.months.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
           <select className="filter-select" value={poFilters.year} onChange={e => setPoFilters(f => ({ ...f, year: e.target.value }))} style={{ height:29, fontSize:12 }}>
             <option value="">All Years</option>
-            {filterOptions.years.map(y => <option key={y}>{y}</option>)}
+            {filterOptions.years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
           {Object.values(poFilters).some(Boolean) && (
             <button className="btn-toolbar" style={{ padding:"5px 10px", fontSize:12 }} onClick={() => setPoFilters({ company:"", month:"", year:"" })}>
