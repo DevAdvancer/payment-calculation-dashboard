@@ -12,7 +12,7 @@ import DateInput from "@/app/components/DateInput";
  * Quick single-row entry creator for the Payment Calculation page.
  * - Company: pick a known company OR "Other…" → free-text custom name
  *   (e.g. "Bridgepoint" for non-placement income).
- * - Currency: explicit USD/GBP picker so custom companies can be either.
+ * - Currency: explicit USD/GBP/INR picker so custom companies can be any supported currency.
  * - One DB row per submit (vs the multi-installment New Placement form).
  */
 const PRESET_COMPANIES = [
@@ -187,7 +187,7 @@ export default function QuickEntryModal({ onClose }) {
           {isCustomCompany && (
             <Field label="Currency" style={{ gridColumn: "1 / -1" }}>
               <div style={{ display: "flex", gap: 8 }}>
-                {["USD", "GBP"].map(c => (
+                {["USD", "GBP", "INR"].map(c => (
                   <button key={c} type="button"
                     onClick={() => set("currency", c)}
                     style={{
@@ -197,7 +197,7 @@ export default function QuickEntryModal({ onClose }) {
                       fontSize: 13, fontWeight: 600, cursor: "pointer",
                       fontFamily: "var(--font-body)",
                     }}>
-                    {c === "USD" ? "$ USD" : "£ GBP"}
+                    {c === "USD" ? "$ USD" : c === "GBP" ? "£ GBP" : "₹ INR"}
                   </button>
                 ))}
               </div>
