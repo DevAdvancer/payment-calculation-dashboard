@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { MONTH_NAMES, INSTANCE_OPTIONS } from "@/lib/use-store";
+import { MONTH_NAMES, INSTANCE_OPTIONS, SERVICE_TYPES } from "@/lib/use-store";
 import { periodOf } from "@/lib/period-utils";
 
 const EMPTY_FILTERS = {
@@ -10,6 +10,7 @@ const EMPTY_FILTERS = {
   year:     "",
   instance: "",
   status:   "",
+  serviceType: "",
 };
 
 /* Canonical display order so the dropdown is stable regardless of
@@ -94,6 +95,17 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
       .sort((a, b) => a.localeCompare(b));
     return [...ordered, ...extras];
   }, [entries, filters.status]);
+
+  const types = useMemo(() => {
+    const present = new Set(
+      entries.map(e => String(e.serviceType || "").trim()).filter(Boolean)
+      );
+    if (filters.serviceType) present.add(String(filters.serviceType));
+    const ordered = SERVICE_TYPES.filter(s => present.has(s));
+    const extras = [...present].filter(s => !SERVICE_TYPES.includes(s)).sort((a, b) => a.localeCompare(b));
+    return [...ordered, ...extras];
+  }, [entries, filters.serviceType]);
+
 
   const set = (key) => (e) => {
     if (typeof onFilterChange === "function") {
@@ -220,6 +232,16 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
         >
           <option value="">All Status</option>
           {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+
+        {/* Type of Service */}
+        <select
+          className="filter-select"
+          value={filters.serviceType}
+          onChange={set("serviceType")}
+        >
+          <option value="">All Types</option>
+          {types.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
 
         {/* Clear */}
