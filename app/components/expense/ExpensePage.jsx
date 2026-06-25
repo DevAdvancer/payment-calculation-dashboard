@@ -281,9 +281,9 @@ export default function ExpensePage() {
       <div className="kpi-strip" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
         {[
           { label: "Records",   value: <>{filtered.length}</>,                                                color: "var(--text)" },
-          { label: "Spend",     value: <MoneyStack usd={totals.amount.USD} gbp={totals.amount.GBP} decimals={0} />, color: "#ef4444" },
-          { label: "Paid Out",  value: <MoneyStack usd={totals.paid.USD}   gbp={totals.paid.GBP}   decimals={0} />, color: "#16a34a" },
-          { label: "Owed",      value: <MoneyStack usd={totals.due.USD}    gbp={totals.due.GBP}    decimals={0} />, color: "#d97706" },
+          { label: "Spend",     value: <MoneyStack usd={totals.amount.USD} gbp={totals.amount.GBP}  inr={totals.amount.INR} decimals={0} />, color: "#ef4444" },
+          { label: "Paid Out",  value: <MoneyStack usd={totals.paid.USD} gbp={totals.paid.GBP}  inr={totals.paid.INR} decimals={0} />, color: "#16a34a" },
+          { label: "Owed",      value: <MoneyStack usd={totals.due.USD} gbp={totals.due.GBP}  inr={totals.due.INR} decimals={0} />, color: "#d97706" },
         ].map((k) => (
           <div key={k.label} className="kpi-card" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 16px" }}>
             <div className="kpi-label" style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text-muted)", marginBottom: 4 }}>{k.label}</div>

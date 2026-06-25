@@ -108,7 +108,7 @@ Untouched rows are returned reference-equal so the caller can detect changes by 
 
 ### Currency
 
-`currencyOf(entryOrCompany)` in `lib/use-store.js` resolves "USD" or "GBP". It prefers an explicit `entry.currency` (used when a new placement is created via the Create-Entry modal), otherwise it derives from the company name: "vizva-uk" / "vizva uk ltd" → GBP, everything else → USD.
+`currencyOf(entryOrCompany)` in `lib/use-store.js` resolves "USD" or "GBP" or "INR". It prefers an explicit `entry.currency` (used when a new placement is created via the Create-Entry modal), otherwise it derives from the company name: "vizva-uk" / "vizva uk ltd" → GBP, everything else → USD.
 
 ### Company normalization
 
