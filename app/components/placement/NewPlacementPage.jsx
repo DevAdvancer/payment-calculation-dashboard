@@ -123,9 +123,9 @@ export default function NewPlacementPage() {
   const computeInstallments = () => {
     if (!totalContractValue) return [];
 
-    /* First-payment date resolution:
+    /* Second-payment date resolution:
      *   1. DOJ if provided
-     *   2. Manual First Payment Date if provided
+     *   2. Manual Second Payment Date if provided
      *   3. Otherwise: today + 45 days, snapped forward to next 7/15/21
      */
     let firstPaymentDate;
@@ -144,8 +144,8 @@ export default function NewPlacementPage() {
        Service Type rule: first installment of any placement is
        "Placement"; every subsequent installment is "New Placement". */
     const typeLabel = pct + "% in " + months + " months";
-    const FIRST_SERVICE_TYPE = "Placement";
-    const REST_SERVICE_TYPE  = "New Placement";
+    const FIRST_SERVICE_TYPE = "New Placement";
+    const REST_SERVICE_TYPE  = "Placement";
     const now      = Date.now();
     const entries  = [];
 
@@ -403,7 +403,7 @@ export default function NewPlacementPage() {
               <DateInput value={form.dateOfJoining} onChange={v => set("dateOfJoining", v)} style={inputStyle} />
             </Field>
             {!form.dateOfJoining && (
-              <Field label="Manual First Payment Date">
+              <Field label="Manual Second Payment Date">
                 <DateInput value={form.manualPayStart} onChange={v => set("manualPayStart", v)} style={inputStyle} />
               </Field>
             )}

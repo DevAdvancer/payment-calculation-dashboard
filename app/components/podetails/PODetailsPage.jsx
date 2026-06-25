@@ -369,8 +369,8 @@ export default function PODetailsPage() {
 
     const instAmt   = (totalContractValue - upfrontFirst) / months;
     const typeLabel = `${pct}% in ${months} months`;
-    const FIRST_SERVICE_TYPE = "Placement";
-    const REST_SERVICE_TYPE  = "New Placement";
+    const FIRST_SERVICE_TYPE = "New Placement";
+    const REST_SERVICE_TYPE  = "Placement";
     const now = Date.now();
     const installments = [];
 

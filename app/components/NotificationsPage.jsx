@@ -5,7 +5,7 @@ import useDashboardStore from "../../lib/use-store";
 export default function NotificationsPage() {
   const notifications = useDashboardStore((s) => s.notifications);
   const markNotificationRead = useDashboardStore((s) => s.markNotificationRead);
-
+  const deleteSpecificNotification = useDashboardStore((s) => s.deleteSpecificNotification);
   const sortedNotifications = [...notifications].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return (
@@ -71,6 +71,35 @@ export default function NotificationsPage() {
                   }}
                 >
                   {isRead ? "Read" : "Mark as Read"}
+                </button>
+                <button
+                  onClick={() => deleteSpecificNotification(notif.id)}
+                  style={{
+                    background: "#ef4444",
+                    color: "#ffffff",
+                    border: "none",
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "50%",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    fontSize: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.2s ease",
+                    boxShadow: "0 2px 6px rgba(239, 68, 68, 0.25)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#dc2626";
+                    e.currentTarget.style.transform = "scale(1.05)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#ef4444";
+                    e.currentTarget.style.transform = "scale(1)";
+                  }}
+                >
+                  ✕
                 </button>
               </div>
             );

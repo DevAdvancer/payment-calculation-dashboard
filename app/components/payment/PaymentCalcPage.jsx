@@ -257,6 +257,8 @@ export default function PaymentCalcPage() {
   const [gbpToUsd, setGbpToUsd]         = useState(1.35);
   const [pasteImport, setPasteImport]   = useState(null);
   const [selected, setSelected]         = useState(new Set());
+  const [editingRemarks, setEditingRemarks] = useState(null);
+  const [remarksDraft, setRemarksDraft] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState({
     isOpen: false,
     title: "",
@@ -605,7 +607,7 @@ export default function PaymentCalcPage() {
   const totalActualByCur = sumByCurrency(
     statsRows.map(e => ({
         ...e,
-      actual: e.actual ?? 0
+      actual: (e.actual || e.amount) ?? 0
     })),
     "actual"
 );
@@ -776,6 +778,19 @@ export default function PaymentCalcPage() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Payment Calc");
     XLSX.writeFile(wb, `Payment_Calc_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
+  const handleRemarksClick = (entry) => {
+    setEditingRemarks(entry.id);
+    setRemarksDraft(entry.notes || "");
+  };
+
+  const handleRemarksBlur = async (entry) => {
+    await updateEntry(entry.id, {
+      notes: remarksDraft,
+    });
+
+    setEditingRemarks(null);
   };
 
   const handleUSDClick = (entry) => {
@@ -1283,8 +1298,40 @@ export default function PaymentCalcPage() {
                       {entry.type || "—"}
                     </td>
 
-                    <td style={{ maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {entry.notes || "—"}
+                    <td
+                      style={{
+                        maxWidth: 260,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {editingRemarks === entry.id ? (
+                        <input
+                          className="inline-cell-input"
+                          value={remarksDraft}
+                          onChange={(e) => setRemarksDraft(e.target.value)}
+                          onBlur={() => handleRemarksBlur(entry)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              handleRemarksBlur(entry);
+                            }
+                          }}
+                          autoFocus
+                          style={{ minWidth: 220 }}
+                        />
+                      ) : (
+                        <span
+                          onClick={() => handleRemarksClick(entry)}
+                          style={{
+                            cursor: "pointer",
+                            display: "inline-block",
+                            width: "100%",
+                          }}
+                        >
+                          {entry.notes || "—"}
+                        </span>
+                      )}
                     </td>
 
                     <td style={{ textAlign: "right" }}>
