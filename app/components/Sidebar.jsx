@@ -50,7 +50,7 @@ export default function Sidebar() {
           </svg>
         </div>
         <span style={{ fontSize:11, fontWeight:700, color:"#fff", letterSpacing:"-0.01em", lineHeight:1.3 }}>
-          Placement<br/>Management System
+          Financial<br/>Management System
         </span>
       </div>
 

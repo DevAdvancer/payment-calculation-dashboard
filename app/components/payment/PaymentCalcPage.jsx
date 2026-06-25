@@ -245,7 +245,7 @@ export default function PaymentCalcPage() {
   const [selectedName, setSelectedName] = useState(null);   // exact-match lock when user picks from dropdown
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showQuickEntry, setShowQuickEntry] = useState(false);
-  const [filters, setFilters]           = useState({ company: "", month: currentMonth, year: currentYear, instance: "", status: "" });
+  const [filters, setFilters]           = useState({ company: "", month: currentMonth, year: currentYear, instance: "", status: "", serviceType: "" });
   const [sortKey, setSortKey]           = useState("poDate");
   const [sortDir, setSortDir]           = useState("asc");
   const [fadingIds, setFadingIds]       = useState(new Set());
@@ -352,6 +352,7 @@ export default function PaymentCalcPage() {
     if (monthFilter || yearFilter) rows = rows.filter(e => entryMatchesPeriod(e, monthFilter, yearFilter));
     if (filters.instance) rows = rows.filter(e => e.instance === filters.instance);
     if (filters.company)  rows = rows.filter(e => e.company === filters.company);
+    if (filters.serviceType) rows = rows.filter(e => normalizeServiceTypeValue(e.serviceType) === filters.serviceType);
     return rows;
   }, [entries, searchTerm, selectedName, filters]);
 
@@ -659,12 +660,26 @@ export default function PaymentCalcPage() {
     "amount"
   );
 
+  const placementPendingByCur = sumByCurrency(
+    statsRows.filter(e => e.status === "Pending" && normalizeServiceTypeValue(e.serviceType) === "Placement"),
+    "amount"
+  );
+
   const newPlacementReceivedByCur = sumByCurrency(
     statsRows.filter(e => e.status === "Received" && normalizeServiceTypeValue(e.serviceType) === "New Placement"),
     "amount"
   );
+
+  const newPlacementPendingByCur = sumByCurrency(
+    statsRows.filter(e => e.status === "Pending" && normalizeServiceTypeValue(e.serviceType) === "New Placement"),
+    "amount"
+  );
+
   const placementReceivedUSD = placementReceivedByCur.USD + placementReceivedByCur.GBP * gbpToUsd;
   const newPlacementReceivedUSD = newPlacementReceivedByCur.USD + newPlacementReceivedByCur.GBP * gbpToUsd;
+
+  const placementPendingUSD = placementPendingByCur.USD + placementPendingByCur.GBP * gbpToUsd;
+  const newPlacementPendingUSD = newPlacementPendingByCur.USD + newPlacementPendingByCur.GBP * gbpToUsd;
 
   /* ── Delete with fade ── */
   const handleDelete = (id, candidateName) => {
@@ -888,11 +903,17 @@ export default function PaymentCalcPage() {
           <div className="kpi-label" style={{ color: "#5b21b6" }}>Placement</div>
           <div className="kpi-value" style={{ color: "#4c1d95", fontSize: 18 }}>{fmtMoneyC(placementReceivedUSD, "USD", 2)}</div>
           <div className="kpi-sub" style={{ color: "#5b21b6" }}>received amount</div>
+          <hr />
+          <div className="kpi-value" style={{ color: "#4c1d95", fontSize: 18 }}>{fmtMoneyC(placementPendingUSD, "USD", 2)}</div>
+          <div className="kpi-sub" style={{ color: "#5b21b6" }}>pending amount</div>
         </div>
-        <div className="kpi-card" style={{ minWidth: 0, padding: "10px 12px", background: "#eef2ff", borderColor: "#c7d2fe" }}>
+          <div className="kpi-card" style={{ minWidth: 0, padding: "10px 12px", background: "#eef2ff", borderColor: "#c7d2fe" }}>
           <div className="kpi-label" style={{ color: "#4338ca" }}>New Placement</div>
           <div className="kpi-value" style={{ color: "#312e81", fontSize: 18 }}><MoneyStack usd={newPlacementReceivedByCur.USD} gbp={newPlacementReceivedByCur.GBP} decimals={2} /></div>
           <div className="kpi-sub" style={{ color: "#4338ca" }}>received amount</div>
+          <hr />
+          <div className="kpi-value" style={{ color: "#312e81", fontSize: 18 }}><MoneyStack usd={newPlacementPendingByCur.USD} gbp={newPlacementPendingByCur.GBP} decimals={2} /></div>
+          <div className="kpi-sub" style={{ color: "#4338ca" }}>pending amount</div>
         </div>
       </div>
 
