@@ -6,13 +6,47 @@ export default function NotificationsPage() {
   const notifications = useDashboardStore((s) => s.notifications);
   const markNotificationRead = useDashboardStore((s) => s.markNotificationRead);
   const deleteSpecificNotification = useDashboardStore((s) => s.deleteSpecificNotification);
+  const deleteAllNotifications = useDashboardStore((s) => s.deleteAllNotifications);
   const sortedNotifications = [...notifications].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return (
     <div className="page-inner">
-      <div className="page-header">
-        <h1 className="page-title">All <span>Notifications</span></h1>
-        <p className="page-subtitle">Review payment completion alerts and mark them as read.</p>
+      <div className="page-header" style={{display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 20}}>
+        <div>
+          <h1 className="page-title">All <span>Notifications</span></h1>
+          <p className="page-subtitle">Review payment completion alerts and mark them as read.</p>
+        </div>
+        <div>
+          <button
+            onClick={() => deleteAllNotifications()}
+            style={{
+              background: "#ef4444",
+              color: "#ffffff",
+              border: "none",
+              height: "50px",
+              padding: "10px",
+              borderRadius: "9px",
+              cursor: "pointer",
+              fontWeight: 700,
+              fontSize: "16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.2s ease",
+              boxShadow: "0 2px 6px rgba(239, 68, 68, 0.25)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#dc2626";
+              e.currentTarget.style.transform = "scale(1.05)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#ef4444";
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+          >
+            DELETE ALL
+          </button>
+        </div>
       </div>
 
       {sortedNotifications.length === 0 ? (

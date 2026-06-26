@@ -849,7 +849,7 @@ export default function PaymentCalcPage() {
       </div>
 
       {/* KPI Strip — reflects active filters */}
-      <div className="kpi-strip" style={{ display: "grid", gridTemplateColumns: "repeat(8, minmax(0, 1fr))", gap: 8, marginBottom: 10 }}>
+      <div className="kpi-strip-mobile">
         <div className="kpi-card" style={{ minWidth: 0, padding: "10px 12px" }}>
           <div className="kpi-label">Entries (this {filters.month || "month"})</div>
           <div className="kpi-value" style={{ fontSize: 18 }}>{statsRows.length}</div>
