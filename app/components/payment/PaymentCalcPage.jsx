@@ -367,21 +367,10 @@ export default function PaymentCalcPage() {
     return rows;
   }, [entries, searchTerm, selectedName, filters]);
 
-  /* ── Stats scope — ALWAYS narrowed to the selected month + year,
-     regardless of the other filters. The KPI strip uses this so the
-     numbers always reflect "this month" totals even if the user
-     clears the company/status/search dropdowns.
-
-     IMPORTANT: this filter falls back to the row's `poDate` whenever
-     the stored `month`/`year` is missing or doesn't match the dropdown
-     value. Without that fallback, rows with a missing month/year (or
-     a typo'd value) would slip through the table's filter too, making
-     the table and the stats disagree. */
-  const statsRows = useMemo(() => {
-    const monthFilter = filters.month || "";
-    const yearFilter  = filters.year  ? String(filters.year) : "";
-    return entries.filter(e => entryMatchesPeriod(e, monthFilter, yearFilter));
-  }, [entries, filters.month, filters.year]);
+  /* ── Stats scope — Now tied to the fully filtered table rows,
+     so the KPI strip dynamically updates when users change Company,
+     Status, Instance, or text search, not just Month/Year. */
+  const statsRows = filtered;
 
   /* ── Sorting ── */
   const sorted = useMemo(() => {
