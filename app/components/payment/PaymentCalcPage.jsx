@@ -3,6 +3,7 @@ import { useState, useRef, useMemo, useEffect } from "react";
 import * as XLSX from "xlsx";
 import useDashboardStore, {
   ALL_STATUSES,
+  LAIDOFF_STATUSES,
   INSTANCE_OPTIONS,
   MONTH_NAMES,
   fmtMoney,
@@ -241,7 +242,7 @@ export default function PaymentCalcPage() {
   const currentMonth  = MONTH_NAMES[now.getMonth()];
   const currentYear   = String(now.getFullYear());
 
-  const [searchTerm, setSearchTerm]     = useState("");
+  const [searchTerm, setSearchTerm]     = useState("ajaj");
   const [selectedName, setSelectedName] = useState(null);   // exact-match lock when user picks from dropdown
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showQuickEntry, setShowQuickEntry] = useState(false);
@@ -327,9 +328,19 @@ export default function PaymentCalcPage() {
   const candidateSummary = useMemo(() => {
     if (!exactMatch) return null;
     const rows = entries.filter(e => (e.candidate || "").trim().toLowerCase() === exactMatch.toLowerCase());
-    const totalValue = rows.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-    const totalPaid  = rows.reduce((s, e) => s + (parseFloat(e.paid)   || 0), 0);
-    const totalDue   = rows.reduce((s, e) => s + (parseFloat(e.due)    || 0), 0);
+    const totalDue   = rows.reduce((s, e) => {
+      if (e.status === "Pending") {
+        return s + (parseFloat(e.due) || 0);
+      }
+      return s;
+    }, 0);
+    const totalPaid  = rows.reduce((s, e) => {
+      if (e.status === "Received") {
+        return s + (parseFloat(e.paid) || 0);
+      }
+      return s;
+    }, 0);
+    const totalValue = totalPaid + totalDue;
     const currency   = currencyOf(rows[0]);                             // candidate → single currency
     return { count: rows.length, totalValue, totalPaid, totalDue, currency };
   }, [exactMatch, entries]);
@@ -1141,16 +1152,19 @@ export default function PaymentCalcPage() {
                 const actualValue = parseFloat(entry.actual) || 0;
                 const usdValue = parseFloat(entry.amount) || 0;
 
+                const isTerminalStatus = LAIDOFF_STATUSES.includes(entry.status) || entry.status === "Default";
                 const rowBackground =
-                  entry.status === "Move"
-                    ? "rgba(248, 113, 113, 0.12)"
-                    : selected.has(entry.id)
-                      ? "var(--surface-2)"
-                      : actualValue > usdValue
-                        ? "rgba(248, 113, 113, 0.12)"
-                        : actualValue < usdValue
-                          ? "rgba(34, 197, 94, 0.12)"
-                          : undefined;
+                  isTerminalStatus
+                    ? "rgba(220, 38, 38, 0.18)"   // solid red — Laid Off / Default anchor row
+                    : entry.status === "Move"
+                      ? "rgba(248, 113, 113, 0.12)"
+                      : selected.has(entry.id)
+                        ? "var(--surface-2)"
+                        : actualValue > usdValue
+                          ? "rgba(248, 113, 113, 0.12)"
+                          : actualValue < usdValue
+                            ? "rgba(34, 197, 94, 0.12)"
+                            : undefined;
 
                 return (
                   <tr
@@ -1159,6 +1173,7 @@ export default function PaymentCalcPage() {
                       opacity: fadingIds.has(entry.id) ? 0 : 1,
                       transition: "opacity 0.2s ease",
                       background: rowBackground,
+                      ...(isTerminalStatus ? { borderLeft: "3px solid #dc2626" } : {}),
                     }}
                   >
                     <td style={{ textAlign: "center" }}>
