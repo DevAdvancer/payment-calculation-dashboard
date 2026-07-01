@@ -3,6 +3,7 @@ import { useState, useRef, useMemo, useEffect } from "react";
 import * as XLSX from "xlsx";
 import useDashboardStore, {
   ALL_STATUSES,
+  LAIDOFF_STATUSES,
   INSTANCE_OPTIONS,
   MONTH_NAMES,
   fmtMoney,
@@ -241,7 +242,7 @@ export default function PaymentCalcPage() {
   const currentMonth  = MONTH_NAMES[now.getMonth()];
   const currentYear   = String(now.getFullYear());
 
-  const [searchTerm, setSearchTerm]     = useState("");
+  const [searchTerm, setSearchTerm]     = useState("ajaj");
   const [selectedName, setSelectedName] = useState(null);   // exact-match lock when user picks from dropdown
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showQuickEntry, setShowQuickEntry] = useState(false);
@@ -327,9 +328,19 @@ export default function PaymentCalcPage() {
   const candidateSummary = useMemo(() => {
     if (!exactMatch) return null;
     const rows = entries.filter(e => (e.candidate || "").trim().toLowerCase() === exactMatch.toLowerCase());
-    const totalValue = rows.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-    const totalPaid  = rows.reduce((s, e) => s + (parseFloat(e.paid)   || 0), 0);
-    const totalDue   = rows.reduce((s, e) => s + (parseFloat(e.due)    || 0), 0);
+    const totalDue   = rows.reduce((s, e) => {
+      if (e.status === "Pending") {
+        return s + (parseFloat(e.due) || 0);
+      }
+      return s;
+    }, 0);
+    const totalPaid  = rows.reduce((s, e) => {
+      if (e.status === "Received") {
+        return s + (parseFloat(e.paid) || 0);
+      }
+      return s;
+    }, 0);
+    const totalValue = totalPaid + totalDue;
     const currency   = currencyOf(rows[0]);                             // candidate → single currency
     return { count: rows.length, totalValue, totalPaid, totalDue, currency };
   }, [exactMatch, entries]);
@@ -356,21 +367,10 @@ export default function PaymentCalcPage() {
     return rows;
   }, [entries, searchTerm, selectedName, filters]);
 
-  /* ── Stats scope — ALWAYS narrowed to the selected month + year,
-     regardless of the other filters. The KPI strip uses this so the
-     numbers always reflect "this month" totals even if the user
-     clears the company/status/search dropdowns.
-
-     IMPORTANT: this filter falls back to the row's `poDate` whenever
-     the stored `month`/`year` is missing or doesn't match the dropdown
-     value. Without that fallback, rows with a missing month/year (or
-     a typo'd value) would slip through the table's filter too, making
-     the table and the stats disagree. */
-  const statsRows = useMemo(() => {
-    const monthFilter = filters.month || "";
-    const yearFilter  = filters.year  ? String(filters.year) : "";
-    return entries.filter(e => entryMatchesPeriod(e, monthFilter, yearFilter));
-  }, [entries, filters.month, filters.year]);
+  /* ── Stats scope — Now tied to the fully filtered table rows,
+     so the KPI strip dynamically updates when users change Company,
+     Status, Instance, or text search, not just Month/Year. */
+  const statsRows = filtered;
 
   /* ── Sorting ── */
   const sorted = useMemo(() => {
@@ -849,7 +849,7 @@ export default function PaymentCalcPage() {
       </div>
 
       {/* KPI Strip — reflects active filters */}
-      <div className="kpi-strip" style={{ display: "grid", gridTemplateColumns: "repeat(8, minmax(0, 1fr))", gap: 8, marginBottom: 10 }}>
+      <div className="kpi-strip-mobile">
         <div className="kpi-card" style={{ minWidth: 0, padding: "10px 12px" }}>
           <div className="kpi-label">Entries (this {filters.month || "month"})</div>
           <div className="kpi-value" style={{ fontSize: 18 }}>{statsRows.length}</div>
@@ -1141,16 +1141,19 @@ export default function PaymentCalcPage() {
                 const actualValue = parseFloat(entry.actual) || 0;
                 const usdValue = parseFloat(entry.amount) || 0;
 
+                const isTerminalStatus = LAIDOFF_STATUSES.includes(entry.status) || entry.status === "Default";
                 const rowBackground =
-                  entry.status === "Move"
-                    ? "rgba(248, 113, 113, 0.12)"
-                    : selected.has(entry.id)
-                      ? "var(--surface-2)"
-                      : actualValue > usdValue
-                        ? "rgba(248, 113, 113, 0.12)"
-                        : actualValue < usdValue
-                          ? "rgba(34, 197, 94, 0.12)"
-                          : undefined;
+                  isTerminalStatus
+                    ? "rgba(220, 38, 38, 0.18)"   // solid red — Laid Off / Default anchor row
+                    : entry.status === "Move"
+                      ? "rgba(248, 113, 113, 0.12)"
+                      : selected.has(entry.id)
+                        ? "var(--surface-2)"
+                        : actualValue > usdValue
+                          ? "rgba(248, 113, 113, 0.12)"
+                          : actualValue < usdValue
+                            ? "rgba(34, 197, 94, 0.12)"
+                            : undefined;
 
                 return (
                   <tr
@@ -1159,6 +1162,7 @@ export default function PaymentCalcPage() {
                       opacity: fadingIds.has(entry.id) ? 0 : 1,
                       transition: "opacity 0.2s ease",
                       background: rowBackground,
+                      ...(isTerminalStatus ? { borderLeft: "3px solid #dc2626" } : {}),
                     }}
                   >
                     <td style={{ textAlign: "center" }}>

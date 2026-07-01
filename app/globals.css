@@ -404,6 +404,22 @@ body {
 .po-summary-card.accent-blue  .value { color: var(--color-accent); }
 .po-summary-card.accent-red   .value { color: var(--color-danger); }
 
+
+/* kpi-strip-mobile */
+.kpi-strip-mobile {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+/* Mobile only */
+@media (max-width: 767px) {
+  .kpi-strip-mobile {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* ───────────────────────────────────────────────────────────
    MOBILE RESPONSIVENESS — narrow viewport rules
    ─────────────────────────────────────────────────────────── */
