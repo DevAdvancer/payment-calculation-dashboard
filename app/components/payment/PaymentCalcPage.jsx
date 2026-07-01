@@ -620,13 +620,7 @@ export default function PaymentCalcPage() {
   const recurringPlacementEntries = statsRows.filter(
     e => normalizeServiceTypeValue(e.serviceType) === "Placement"
   );
-  const recurringPaymentByCur = sumByCurrency(
-    recurringPlacementEntries.map(e => ({
-      ...e,
-      amount: e.actual ?? 0
-    })),
-    "amount"
-  );
+  const recurringPaymentByCur = sumByCurrency(recurringPlacementEntries, "amount");
   const recurringPaymentUSD = recurringPaymentByCur.USD + recurringPaymentByCur.GBP * gbpToUsd;
 
   /* ── Move / Laid Off / Default metrics calculated directly from the active payment page entries (statsRows) */
@@ -837,7 +831,7 @@ export default function PaymentCalcPage() {
       <style>{`
         .kpi-grid-container {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
           gap: 16px;
           margin-bottom: 24px;
         }
@@ -867,7 +861,7 @@ export default function PaymentCalcPage() {
       <style>{`
         .kpi-grid-container {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
           gap: 16px;
           margin-bottom: 24px;
         }
@@ -897,7 +891,7 @@ export default function PaymentCalcPage() {
       <style>{`
         .kpi-grid-container {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
           gap: 16px;
           margin-bottom: 24px;
         }
@@ -927,7 +921,7 @@ export default function PaymentCalcPage() {
       <style>{`
         .kpi-grid-container {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
           gap: 16px;
           margin-bottom: 24px;
         }
@@ -968,7 +962,7 @@ export default function PaymentCalcPage() {
         
         {/* Card 1: Entries */}
         <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px" }}>
-          <div className="kpi-label" style={{ fontSize: 10, color: "var(--color-ink-subtle)" }}>
+          <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>
             Entries<br />
             ({filters.month ? filters.month.toUpperCase() : "ALL"})
           </div>
@@ -977,29 +971,54 @@ export default function PaymentCalcPage() {
           <div className="kpi-sub" style={{ fontSize: 11, color: "var(--color-ink-subtle)" }}>showing {filtered.length} in table</div>
         </div>
 
-        {/* Card 2: New Placement */}
-        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px" }}>
-          <div className="kpi-label" style={{ fontSize: 10, color: "var(--color-ink-subtle)" }}>New Placement</div>
-          <div style={{ display: "grid", gap: 6, marginTop: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
-              <span style={{ color: "var(--color-ink-subtle)" }}>Received</span>
-              <span style={{ fontWeight: 600, color: "var(--color-ink)", fontFamily: "var(--font-mono)" }}>
+        {/* Card 2: New Placement + Reconciliation */}
+        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", borderColor: "#bbf7d0" }}>
+          <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>RECONCILIATION</div>
+          {/* Reconciliation section (top) */}
+          <div className="kpi-value" style={{ color: "#15803d", fontSize: 20, margin: "4px 0" }}>
+            {fmtMoneyC(recurringPaymentUSD - placementReceivedUSD, "USD", 2)}
+          </div>
+          <div className="kpi-sub" style={{ fontSize: 10, color: "#166534", marginBottom: 6 }}>
+            Recurring – Placement received
+          </div>
+          {/* <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            background: "rgba(245, 158, 11, 0.15)",
+            color: "#b45309",
+            padding: "4px 8px",
+            borderRadius: 6,
+            fontSize: 11,
+            fontWeight: 700,
+            marginBottom: 8,
+          }}>
+            <span>Difference</span>
+            <span>{fmtMoneyC(recurringPaymentUSD - placementReceivedUSD, "USD", 2)}</span>
+          </div> */}
+          <hr style={{ border: "none", borderTop: "1px solid #bbf7d0", margin: "8px 0" }} />
+          {/* New Placement Received / Pending (bottom — mirroring Card 3) */}
+          <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>New Placement</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 4 }}>
+            <div>
+              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)" }}>Received</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1e3a8a", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(newPlacementReceivedUSD, "USD", 2)}
-              </span>
+              </div>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
-              <span style={{ color: "var(--color-ink-subtle)" }}>Pending</span>
-              <span style={{ fontWeight: 600, color: "var(--color-ink)", fontFamily: "var(--font-mono)" }}>
+            <div>
+              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)" }}>Pending</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#b45309", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(newPlacementPendingUSD, "USD", 2)}
-              </span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Card 3: Recurring Payment + Placement */}
         <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px" }}>
-          <div className="kpi-label" style={{ fontSize: 10, color: "var(--color-ink-subtle)" }}>Recurring Payment</div>
-          <div className="kpi-value" style={{ color: "var(--color-primary)", fontSize: 22, margin: "4px 0" }}>
+          <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>Recurring Payment</div>
+          <div className="kpi-value" style={{ color: "blue", fontSize: 22, margin: "4px 0" }}>
             {fmtMoneyC(recurringPaymentUSD, "USD", 2)}
           </div>
           <div className="kpi-sub" style={{ fontSize: 11, color: "var(--color-ink-subtle)", marginBottom: 12 }}>
@@ -1011,7 +1030,7 @@ export default function PaymentCalcPage() {
             <div>
               <div style={{ fontSize: 10, color: "var(--color-ink-subtle)" }}>Received</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#1e3a8a", fontFamily: "var(--font-mono)" }}>
-                {fmtMoneyC(placementReceivedUSD, "USD", 0)}
+                {fmtMoneyC(placementReceivedUSD, "USD", 2)}
               </div>
               <span style={{
                 display: "inline-block",
@@ -1029,7 +1048,7 @@ export default function PaymentCalcPage() {
             <div>
               <div style={{ fontSize: 10, color: "var(--color-ink-subtle)" }}>Pending</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#b45309", fontFamily: "var(--font-mono)" }}>
-                {fmtMoneyC(placementPendingUSD, "USD", 0)}
+                {fmtMoneyC(placementPendingUSD, "USD", 2)}
               </div>
               <span style={{
                 display: "inline-block",
@@ -1049,12 +1068,12 @@ export default function PaymentCalcPage() {
 
         {/* Card 4: Total Payment Status */}
         <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px" }}>
-          <div className="kpi-label" style={{ fontSize: 10, color: "var(--color-ink-subtle)" }}>Total Payment Status</div>
+          <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>Total Payment Status</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
             <div>
               <div style={{ fontSize: 10, color: "var(--color-ink-subtle)" }}>Total received</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#16a34a", fontFamily: "var(--font-mono)" }}>
-                {fmtMoneyC(totalPaidUSD, "USD", 0)}
+                {fmtMoneyC(totalPaidUSD, "USD", 2)}
               </div>
               <span style={{
                 display: "inline-block",
@@ -1072,7 +1091,7 @@ export default function PaymentCalcPage() {
             <div>
               <div style={{ fontSize: 10, color: "var(--color-ink-subtle)" }}>Total outstanding</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#b45309", fontFamily: "var(--font-mono)" }}>
-                {fmtMoneyC(totalDueUSD, "USD", 0)}
+                {fmtMoneyC(totalDueUSD, "USD", 2)}
               </div>
               <span style={{
                 display: "inline-block",
@@ -1099,7 +1118,7 @@ export default function PaymentCalcPage() {
 
         {/* Card 5: Move / Laid Off / Default */}
         <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", background: "#fff1f2", borderColor: "#fecaca" }}>
-          <div className="kpi-label" style={{ fontSize: 10, color: "#b91c1c" }}>Move / Laid Off / Default</div>
+          <div className="kpi-label" style={{ fontSize: 10, color: "#b91c1c", fontWeight: "bold" }}>Move / Laid Off / Default</div>
           <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
               <span style={{ color: "#374151" }}>Move</span>
@@ -1128,32 +1147,6 @@ export default function PaymentCalcPage() {
             <span style={{ fontSize: 14, fontWeight: 700, color: "#b91c1c", fontFamily: "var(--font-mono)" }}>
               {fmtMoneyC(moveAmountUSD + laidOffAmountUSD + defaultAmountUSD, "USD", 2)}
             </span>
-          </div>
-        </div>
-
-        {/* Card 6: Reconciliation */}
-        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", background: "#ecfccb", borderColor: "#bbf7d0" }}>
-          <div className="kpi-label" style={{ fontSize: 10, color: "#166534" }}>Reconciliation</div>
-          <div className="kpi-value" style={{ color: "#15803d", fontSize: 22, margin: "6px 0" }}>
-            {fmtMoneyC(recurringPaymentUSD - placementReceivedUSD, "USD", 2)}
-          </div>
-          <div className="kpi-sub" style={{ fontSize: 11, color: "#166534" }}>
-            Recurring - Placement received
-          </div>
-          <hr style={{ border: "none", borderTop: "1px solid #bbf7d0", margin: "12px 0 8px 0" }} />
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            background: "rgba(245, 158, 11, 0.15)",
-            color: "#b45309",
-            padding: "6px 10px",
-            borderRadius: 6,
-            fontSize: 12,
-            fontWeight: 700
-          }}>
-            <span>Difference</span>
-            <span>{fmtMoneyC(recurringPaymentUSD - placementReceivedUSD, "USD", 0)}</span>
           </div>
         </div>
 

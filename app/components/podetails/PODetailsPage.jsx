@@ -851,9 +851,9 @@ export default function PODetailsPage() {
       <div className="podetails-summary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
         {[
           { label: "Candidates",     count: true,                                                                color: "var(--color-ink)" },
-          { label: "Total Contract", money: summary.totalValue,                                                  color: "var(--color-accent)" },
-          { label: "Received",       money: summary.totalPaid,                                                   color: "#16a34a" },
-          { label: "Outstanding",    money: summary.totalBal,                                                    color: "#d97706" },
+          // { label: "Total Contract", money: summary.totalValue,                                                  color: "var(--color-accent)" },
+          // { label: "Received",       money: summary.totalPaid,                                                   color: "#16a34a" },
+          // { label: "Outstanding",    money: summary.totalBal,                                                    color: "#d97706" },
         ].map((k) => (
           <div key={k.label} className="podetails-summary-card" style={{
             background: "var(--color-surface)", border: "1px solid var(--color-border)",
