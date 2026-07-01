@@ -242,7 +242,7 @@ export default function PaymentCalcPage() {
   const currentMonth  = MONTH_NAMES[now.getMonth()];
   const currentYear   = String(now.getFullYear());
 
-  const [searchTerm, setSearchTerm]     = useState("");
+  const [searchTerm, setSearchTerm]     = useState("ajaj");
   const [selectedName, setSelectedName] = useState(null);   // exact-match lock when user picks from dropdown
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showQuickEntry, setShowQuickEntry] = useState(false);
@@ -834,6 +834,95 @@ export default function PaymentCalcPage() {
       <datalist id="svc-type-options">
         {serviceTypeOptions.map(o => <option key={o} value={o} />)}
       </datalist>
+      <style>{`
+        .kpi-grid-container {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+        .mobile-only-title {
+          display: none;
+        }
+        @media (max-width: 600px) {
+          .kpi-grid-container {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 10px !important;
+          }
+          .kpi-grid-container > :nth-child(n+3) {
+            grid-column: span 2 !important;
+          }
+          .mobile-only-title {
+            display: inline !important;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-ink);
+          }
+          .desktop-only-title {
+            display: none !important;
+          }
+        }
+      `}</style>
+
+      <style>{`
+        .kpi-grid-container {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+        .mobile-only-title {
+          display: none;
+        }
+        @media (max-width: 768px) {
+          .kpi-grid-container {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 10px !important;
+          }
+          .kpi-grid-container > :nth-child(n+3) {
+            grid-column: span 2 !important;
+          }
+          .mobile-only-title {
+            display: inline !important;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-ink);
+          }
+          .desktop-only-title {
+            display: none !important;
+          }
+        }
+      `}</style>
+
+      <style>{`
+        .kpi-grid-container {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+        .mobile-only-title {
+          display: none;
+        }
+        @media (max-width: 768px) {
+          .kpi-grid-container {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 10px !important;
+          }
+          .kpi-grid-container > :nth-child(n+3) {
+            grid-column: span 2 !important;
+          }
+          .mobile-only-title {
+            display: inline !important;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-ink);
+          }
+          .desktop-only-title {
+            display: none !important;
+          }
+        }
+      `}</style>
 
       <style>{`
         .kpi-grid-container {
