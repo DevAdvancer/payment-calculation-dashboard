@@ -242,7 +242,7 @@ export default function PaymentCalcPage() {
   const currentMonth  = MONTH_NAMES[now.getMonth()];
   const currentYear   = String(now.getFullYear());
 
-  const [searchTerm, setSearchTerm]     = useState("ajaj");
+  const [searchTerm, setSearchTerm]     = useState("");
   const [selectedName, setSelectedName] = useState(null);   // exact-match lock when user picks from dropdown
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showQuickEntry, setShowQuickEntry] = useState(false);
