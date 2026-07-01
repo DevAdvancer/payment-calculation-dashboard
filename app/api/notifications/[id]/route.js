@@ -1,11 +1,23 @@
 import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
-import { markNotificationRead, deleteNotification } from "../../../../lib/dashboard-store.js";
+import { markNotificationRead, deleteNotification, updateNotificationNoc } from "../../../../lib/dashboard-store.js";
 
-/* PATCH /api/notifications/[id] — mark a single notification as read */
+/* PATCH /api/notifications/[id]
+   - No body  → mark as read
+   - Body { noc: true } → mark NOC generated */
 export async function PATCH(request, { params }) {
   try {
     const { id } = await params;
+    let body = {};
+    try { body = await request.json(); } catch (_) {}
+
+    if (body?.noc === true) {
+      const updated = await updateNotificationNoc(id);
+      if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({ notification: updated });
+    }
+
+    // Default: mark as read
     const updated = await markNotificationRead(id);
     if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ notification: updated });
