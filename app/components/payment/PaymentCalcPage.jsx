@@ -602,19 +602,19 @@ export default function PaymentCalcPage() {
   /* ── KPIs (always scoped to the selected month + year, independent of
      the other filters that drive the table) — split by currency for
      stacked display. */
-  const totalValueByCur = sumByCurrency(statsRows, "amount");
-  const totalPaidByCur  = sumByCurrency(statsRows, "paid");
-  const totalDueByCur   = sumByCurrency(statsRows, "due");
+  // Outstanding only considers Pending, Received only considers Received.
+  const totalPaidByCur  = sumByCurrency(statsRows.filter(e => e.status === "Received"), "paid");
+  const totalDueByCur   = sumByCurrency(statsRows.filter(e => e.status === "Pending"), "due");
   const totalActualByCur = sumByCurrency(
     statsRows.map(e => ({
         ...e,
       actual: (e.actual || e.amount) ?? 0
     })),
     "actual"
-);
-  const totalValueUSD    = totalValueByCur.USD + totalValueByCur.GBP * gbpToUsd;
+  );
   const totalPaidUSD     = totalPaidByCur.USD  + totalPaidByCur.GBP * gbpToUsd;
   const totalDueUSD      = totalDueByCur.USD   + totalDueByCur.GBP * gbpToUsd;
+  const totalValueUSD    = totalPaidUSD + totalDueUSD; // Total Value is the sum of Received and Outstanding
   const totalActualUSD   = totalActualByCur.USD + totalActualByCur.GBP * gbpToUsd;
 
   const recurringPlacementEntries = statsRows.filter(
@@ -629,22 +629,15 @@ export default function PaymentCalcPage() {
   );
   const recurringPaymentUSD = recurringPaymentByCur.USD + recurringPaymentByCur.GBP * gbpToUsd;
 
-  /* ── Move / Placement / New Placement metrics */
+  /* ── Move / Laid Off / Default metrics calculated directly from the active payment page entries (statsRows) */
   const moveEntries = statsRows.filter(e => e.status === "Move");
-  const moveUniqueCandidates = new Set(moveEntries.map(e => (e.candidate || "").trim().toLowerCase())).size;
   const moveAmountByCur = sumByCurrency(moveEntries, "amount");
 
-  /* ── Laid Off and Default amounts for reconciliation.
-     Both sheets come from the store with no month/year filter, so for
-     the KPI strip we narrow them down to the currently-selected period
-     (same scope as statsRows). The sheet pages themselves still show
-     everything. */
-  const monthScopeKpi = filters.month || "";
-  const yearScopeKpi  = filters.year  ? String(filters.year) : "";
-  const laidOffRowsInPeriod    = laidOffRows.filter(e => entryMatchesPeriod(e, monthScopeKpi, yearScopeKpi));
-  const defaulterRowsInPeriod  = defaulterRows.filter(e => entryMatchesPeriod(e, monthScopeKpi, yearScopeKpi));
-  const laidOffAmountByCur = sumByCurrency(laidOffRowsInPeriod, "amount");
-  const defaultAmountByCur = sumByCurrency(defaulterRowsInPeriod, "amount");
+  const laidOffEntries = statsRows.filter(e => LAIDOFF_STATUSES.includes(e.status));
+  const laidOffAmountByCur = sumByCurrency(laidOffEntries, "amount");
+
+  const defaultEntries = statsRows.filter(e => e.status === "Default");
+  const defaultAmountByCur = sumByCurrency(defaultEntries, "amount");
 
   const reconciliationByCur = {
     USD: totalPaidByCur.USD + totalDueByCur.USD + moveAmountByCur.USD + laidOffAmountByCur.USD + defaultAmountByCur.USD,
@@ -852,6 +845,36 @@ export default function PaymentCalcPage() {
           display: none;
         }
         @media (max-width: 600px) {
+          .kpi-grid-container {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 10px !important;
+          }
+          .kpi-grid-container > :nth-child(n+3) {
+            grid-column: span 2 !important;
+          }
+          .mobile-only-title {
+            display: inline !important;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-ink);
+          }
+          .desktop-only-title {
+            display: none !important;
+          }
+        }
+      `}</style>
+
+      <style>{`
+        .kpi-grid-container {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+        .mobile-only-title {
+          display: none;
+        }
+        @media (max-width: 768px) {
           .kpi-grid-container {
             grid-template-columns: repeat(2, 1fr) !important;
             gap: 10px !important;
