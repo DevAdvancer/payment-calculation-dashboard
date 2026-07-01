@@ -28,7 +28,8 @@ function progressColor(pct) {
 }
 
 export default function CandidateHistoryPage() {
-  const { getCandidateNames, getByCandidate, updateEntry, updateStatus, addNotification, notifications, showToast, loading } =
+  const { getCandidateNames, getByCandidate, updateEntry, updateStatus, addNotification, notifications,
+          showToast, loading, nocTargetCandidate, nocTargetNotifId, markNotificationNoc, clearNocTarget } =
     useDashboardStore();
 
   const [search, setSearch] = useState("");
@@ -73,6 +74,14 @@ export default function CandidateHistoryPage() {
     setSearch(name);
     setDropdownOpen(false);
   };
+
+  /* ── Auto-select candidate when arriving from Notifications "Generate NOC" ── */
+  useEffect(() => {
+    if (nocTargetCandidate && allNames.includes(nocTargetCandidate)) {
+      selectCandidate(nocTargetCandidate);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nocTargetCandidate, allNames.length]);
 
   const notificationExists = (candidate) => {
     return notifications.some(n => n.type === "payment-complete" && n.candidate === candidate);
@@ -302,7 +311,19 @@ export default function CandidateHistoryPage() {
                     {pct}% Complete
                   </span>
                   {pct === 100 && (
-                    <button className="noc-btn" onClick={() => setShowNOC(true)}>
+                    <button className="noc-btn" onClick={() => {
+                      // Resolve the notification ID: prefer the one set by Notifications page,
+                      // otherwise find the payment-complete notification for this candidate
+                      const resolvedNotifId = nocTargetNotifId
+                        || (notifications.find(n => n.type === "payment-complete" && n.candidate === selected && !n.noc)?.id)
+                        || null;
+
+                      if (resolvedNotifId) {
+                        markNotificationNoc(resolvedNotifId);
+                      }
+                      clearNocTarget();
+                      setShowNOC(true);
+                    }}>
                       <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
                         <polyline points="14 2 14 8 20 8" />
