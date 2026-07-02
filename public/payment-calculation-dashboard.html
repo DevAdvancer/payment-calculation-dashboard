@@ -2892,7 +2892,7 @@
         }
 
         function renderMonthlySummary() {
-            const monthOrder = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sept","Oct","Nov","Dec"];
+            const monthOrder = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
             const fmt = v => '$' + Math.round(v || 0).toLocaleString();
             const setText = (id, value) => {
                 const el = document.getElementById(id);
@@ -3002,7 +3002,7 @@
         }
 
         function formatDate(dateObj) {
-            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             const day = dateObj.getDate();
             const suffix = (day % 10 === 1 && day !== 11) ? "st"
                 : (day % 10 === 2 && day !== 12) ? "nd"
@@ -3082,7 +3082,7 @@
 
             /* ── Auto-log payment schedule entries into Payment Calculation (poData) ── */
             (function() {
-                const schedMonths = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sept","Oct","Nov","Dec"];
+                const schedMonths = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
                 function snapDate(d) {
                     const day = d.getDate();
                     if (day <= 7)       d.setDate(7);
@@ -4142,7 +4142,7 @@
                 const parts = value.split('-').map(Number);
                 const parsed = parts.length === 3 ? new Date(parts[0], parts[1] - 1, parts[2]) : null;
                 if (parsed && !Number.isNaN(parsed.getTime())) {
-                    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'];
+                    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
                     entry.poDate = `${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}-${parsed.getFullYear()}`;
                     entry.month = monthNames[parsed.getMonth()];
                     entry.year = String(parsed.getFullYear());

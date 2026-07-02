@@ -145,7 +145,7 @@ function dateParts(poDate) {
   const m = String(poDate || "").match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
   if (!m) return { month: "", year: "", instance: "First Half" };
   const d = new Date(+m[3], +m[1] - 1, +m[2]);
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sept","Oct","Nov","Dec"];
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   return {
     month: months[d.getMonth()] || "",
     year: String(d.getFullYear()),

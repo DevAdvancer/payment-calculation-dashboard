@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { MONTH_NAMES, INSTANCE_OPTIONS, SERVICE_TYPES } from "@/lib/use-store";
-import { periodOf } from "@/lib/period-utils";
+import { periodOf, normalizeMonth } from "@/lib/period-utils";
 
 const EMPTY_FILTERS = {
   company:  "",
@@ -60,11 +60,11 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
       const p = periodOf(e);
       if (p.month) present.add(p.month);
       if (e.month) {
-        const m = String(e.month).trim();
+        const m = normalizeMonth(e.month);
         if (m) present.add(m);
       }
     }
-    if (filters.month) present.add(String(filters.month));
+    if (filters.month) present.add(normalizeMonth(filters.month));
     const ordered = MONTH_NAMES.filter(m => present.has(m));
     const extras  = [...present].filter(m => !MONTH_NAMES.includes(m)).sort((a, b) => a.localeCompare(b));
     return [...ordered, ...extras];
