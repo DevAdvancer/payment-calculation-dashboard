@@ -668,6 +668,10 @@ export default function PaymentCalcPage() {
   const placementPendingUSD = placementPendingByCur.USD + placementPendingByCur.GBP * gbpToUsd;
   const newPlacementPendingUSD = newPlacementPendingByCur.USD + newPlacementPendingByCur.GBP * gbpToUsd;
 
+  const totalNewPlacementUSD = newPlacementReceivedUSD + newPlacementPendingUSD;
+  const newPlacementReceivedPct = totalNewPlacementUSD > 0 ? Math.round((newPlacementReceivedUSD / totalNewPlacementUSD) * 100) : 0;
+  const newPlacementPendingPct = totalNewPlacementUSD > 0 ? Math.round((newPlacementPendingUSD / totalNewPlacementUSD) * 100) : 0;
+
   /* ── Delete with fade ── */
   const handleDelete = (id, candidateName) => {
     setDeleteConfirm({
@@ -834,126 +838,7 @@ export default function PaymentCalcPage() {
           grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
           gap: 16px;
           margin-bottom: 24px;
-        }
-        .mobile-only-title {
-          display: none;
-        }
-        @media (max-width: 600px) {
-          .kpi-grid-container {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 10px !important;
-          }
-          .kpi-grid-container > :nth-child(n+3) {
-            grid-column: span 2 !important;
-          }
-          .mobile-only-title {
-            display: inline !important;
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--color-ink);
-          }
-          .desktop-only-title {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      <style>{`
-        .kpi-grid-container {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-          gap: 16px;
-          margin-bottom: 24px;
-        }
-        .mobile-only-title {
-          display: none;
-        }
-        @media (max-width: 768px) {
-          .kpi-grid-container {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 10px !important;
-          }
-          .kpi-grid-container > :nth-child(n+3) {
-            grid-column: span 2 !important;
-          }
-          .mobile-only-title {
-            display: inline !important;
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--color-ink);
-          }
-          .desktop-only-title {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      <style>{`
-        .kpi-grid-container {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-          gap: 16px;
-          margin-bottom: 24px;
-        }
-        .mobile-only-title {
-          display: none;
-        }
-        @media (max-width: 768px) {
-          .kpi-grid-container {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 10px !important;
-          }
-          .kpi-grid-container > :nth-child(n+3) {
-            grid-column: span 2 !important;
-          }
-          .mobile-only-title {
-            display: inline !important;
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--color-ink);
-          }
-          .desktop-only-title {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      <style>{`
-        .kpi-grid-container {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-          gap: 16px;
-          margin-bottom: 24px;
-        }
-        .mobile-only-title {
-          display: none;
-        }
-        @media (max-width: 768px) {
-          .kpi-grid-container {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 10px !important;
-          }
-          .kpi-grid-container > :nth-child(n+3) {
-            grid-column: span 2 !important;
-          }
-          .mobile-only-title {
-            display: inline !important;
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--color-ink);
-          }
-          .desktop-only-title {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      <style>{`
-        .kpi-grid-container {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 16px;
-          margin-bottom: 24px;
+          max-width: 1200px;
         }
         .mobile-only-title {
           display: none;
@@ -991,7 +876,7 @@ export default function PaymentCalcPage() {
       <div className="kpi-grid-container">
         
         {/* Card 1: Entries */}
-        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px" }}>
+        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", borderColor: "#bbf7d0"}}>
           <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>
             Entries<br />
             ({filters.month ? filters.month.toUpperCase() : "ALL"})
@@ -1029,37 +914,67 @@ export default function PaymentCalcPage() {
           <hr style={{ border: "none", borderTop: "1px solid #bbf7d0", margin: "8px 0" }} />
           {/* New Placement Received / Pending (bottom — mirroring Card 3) */}
           <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>New Placement</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 4 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap"}}>
             <div>
-              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)" }}>Received</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1e3a8a", fontFamily: "var(--font-mono)" }}>
+              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "black", fontWeight: "bold" }}>Received</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#16a34a", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(newPlacementReceivedUSD, "USD", 2)}
               </div>
+              <span style={{
+                display: "inline-block",
+                marginTop: 4,
+                padding: "1px 6px",
+                fontSize: 10,
+                fontWeight: 700,
+                borderRadius: 4,
+                background: "rgba(59, 130, 246, 0.12)",
+                color: "#2563eb"
+              }}>
+                {newPlacementReceivedPct}%
+              </span>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)" }}>Pending</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#b45309", fontFamily: "var(--font-mono)" }}>
+              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "black", fontWeight: "bold" }}>Pending</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "red", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(newPlacementPendingUSD, "USD", 2)}
+              </div>
+              <span style={{
+                display: "inline-block",
+                marginTop: 4,
+                padding: "1px 6px",
+                fontSize: 10,
+                fontWeight: 700,
+                borderRadius: 4,
+                background: "rgba(245, 158, 11, 0.12)",
+                color: "#d97706"
+              }}>
+                {newPlacementPendingPct}%
+              </span>
+            </div>
+            <div>
+              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "black", fontWeight: "bold" }}>Total</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "blue", fontFamily: "var(--font-mono)" }}>
+                {fmtMoneyC(totalNewPlacementUSD, "USD", 2)}
               </div>
             </div>
           </div>
         </div>
 
         {/* Card 3: Recurring Payment + Placement */}
-        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px" }}>
+        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", borderColor: "#bbf7d0" }}>
           <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>Recurring Payment</div>
           <div className="kpi-value" style={{ color: "blue", fontSize: 22, margin: "4px 0" }}>
             {fmtMoneyC(recurringPaymentUSD, "USD", 2)}
           </div>
-          <div className="kpi-sub" style={{ fontSize: 11, color: "var(--color-ink-subtle)", marginBottom: 12 }}>
+          <div className="kpi-sub" style={{ fontSize: 10, marginBottom: 6, color: "black", fontWeight: "bold" }}>
             across {recurringPlacementEntries.length} {recurringPlacementEntries.length === 1 ? "entry" : "entries"}
           </div>
-          <hr style={{ border: "none", borderTop: "1px solid var(--color-border-light)", margin: "8px 0" }} />
-          <div className="kpi-label" style={{ fontSize: 9, color: "var(--color-ink-subtle)", marginTop: 6 }}>Placement</div>
+           <hr style={{ border: "none", borderTop: "1px solid #bbf7d0", margin: "8px 0" }} />
+          <div className="kpi-label" style={{ fontSize: 9, color: "var(--color-ink-subtle)", marginTop: 6, color: "black", fontWeight: "bold" }}>Placement</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 6 }}>
             <div>
-              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)" }}>Received</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#1e3a8a", fontFamily: "var(--font-mono)" }}>
+              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "black", fontWeight: "bold" }}>Received</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#16a34a", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(placementReceivedUSD, "USD", 2)}
               </div>
               <span style={{
@@ -1076,8 +991,8 @@ export default function PaymentCalcPage() {
               </span>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)" }}>Pending</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#b45309", fontFamily: "var(--font-mono)" }}>
+              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "black", fontWeight: "bold"}}>Pending</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "red", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(placementPendingUSD, "USD", 2)}
               </div>
               <span style={{
@@ -1097,11 +1012,19 @@ export default function PaymentCalcPage() {
         </div>
 
         {/* Card 4: Total Payment Status */}
-        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px" }}>
+        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", borderColor: "#bbf7d0" }}>
           <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>Total Payment Status</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
+          <div className="kpi-value" style={{ fontSize: 22, margin: "4px 0", color: "blue" }}>
+            {fmtMoneyC(totalValueUSD, "USD", 2)}
+          </div>
+          <div className="kpi-sub" style={{ fontSize: 10, color: "var(--color-ink-subtle)", marginBottom: 6, color: "black", fontWeight: "bold" }}>
+            Total
+          </div>
+           <hr style={{ border: "none", borderTop: "1px solid #bbf7d0", margin: "8px 0" }} />
+          <div className="kpi-label" style={{ fontSize: 9, color: "var(--color-ink-subtle)", marginTop: 6, color: "black", fontWeight: "bold" }}>Status</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 6 }}>
             <div>
-              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)" }}>Total received</div>
+              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "black", fontWeight: "bold"}}>Total received</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#16a34a", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(totalPaidUSD, "USD", 2)}
               </div>
@@ -1119,8 +1042,8 @@ export default function PaymentCalcPage() {
               </span>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)" }}>Total outstanding</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#b45309", fontFamily: "var(--font-mono)" }}>
+              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "black", fontWeight: "bold" }}>Total outstanding</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "red", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(totalDueUSD, "USD", 2)}
               </div>
               <span style={{
@@ -1136,13 +1059,6 @@ export default function PaymentCalcPage() {
                 {totalValueUSD > 0 ? Math.round((totalDueUSD / totalValueUSD) * 100) : 0}%
               </span>
             </div>
-          </div>
-          <hr style={{ border: "none", borderTop: "1px solid var(--color-border-light)", margin: "12px 0 8px 0" }} />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 11, color: "var(--color-ink-subtle)", fontWeight: 500 }}>Total</span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--color-ink)", fontFamily: "var(--font-mono)" }}>
-              {fmtMoneyC(totalValueUSD, "USD", 2)}
-            </span>
           </div>
         </div>
 
