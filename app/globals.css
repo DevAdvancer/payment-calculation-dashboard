@@ -57,11 +57,13 @@
   /* Legacy aliases for components using old var names */
   --bg: var(--color-bg);
   --surface: var(--color-surface);
+  --surface-1: var(--color-surface);
   --surface-2: var(--color-surface-2);
   --surface-3: var(--color-surface-2);
   --border: var(--color-border);
   --border-md: var(--color-border);
   --text: var(--color-ink);
+  --text-main: var(--color-ink);
   --text-muted: var(--color-ink-muted);
   --text-dim: var(--color-ink-subtle);
   --accent: var(--color-accent);
