@@ -386,7 +386,7 @@ export default function SummaryPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginBottom: 12 }}>
             <div className="summary-chart-panel" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", padding: 14 }}>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Company-wise Pending vs Received</div>
-              <BarChart
+              <LineChart
                 rows={companyPendingReceived}
                 series={[
                   { key: "pending", label: "Pending", color: "#f59e0b" },
@@ -400,7 +400,7 @@ export default function SummaryPage() {
             </div>
             <div className="summary-chart-panel" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", padding: 14 }}>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Company-wise Placement vs New Placement</div>
-              <BarChart
+              <LineChart
                 rows={companyPlacement}
                 series={[
                   { key: "placement", label: "Placement", color: "#6366f1" },
@@ -496,7 +496,7 @@ function Legend({ color, label }) {
   );
 }
 
-function BarChart({ rows, series }) {
+function LineChart({ rows, series }) {
   if (!rows.length) {
     return (
       <div style={{ height: 140, display: "grid", placeItems: "center", color: "var(--text-muted)", fontSize: 12 }}>
@@ -510,46 +510,136 @@ function BarChart({ rows, series }) {
     1
   );
 
+  const height = 180;
+  const padding = 20;
+  const chartHeight = height - padding * 2;
+  const leftPadding = 80;
+  const rightPadding = 40;
+  const chartWidth = 1000 - leftPadding - rightPadding;
+
+  const linesPoints = series.map((item) => {
+    return rows.map((row, i) => {
+      const value = row[item.key] || 0;
+      const x = rows.length > 1 ? leftPadding + (i / (rows.length - 1)) * chartWidth : leftPadding + chartWidth / 2;
+      const y = padding + chartHeight - (value / maxValue) * chartHeight;
+      return { x, y, value, company: row.company, label: item.label };
+    });
+  });
+
+  const formatAxisValue = (val) => {
+    if (val === 0) return "$0";
+    if (val >= 1e6) return `$${(val / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
+    if (val >= 1e3) return `$${(val / 1e3).toFixed(0)}K`;
+    return `$${Math.round(val)}`;
+  };
+
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 12, overflowX: "auto", paddingBottom: 4 }}>
-      {rows.map((row) => (
-        <div key={row.company} style={{ minWidth: 72, flex: "1 0 72px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-          <div style={{ height: 180, width: "100%", display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 8, padding: "0 6px" }}>
-            {series.map((item) => {
-              const value = row[item.key] || 0;
-              const height = (value / maxValue) * 100;
-              return (
-                <div
-                  key={`${row.company}-${item.key}`}
-                  title={`${row.company} ${item.label}: ${fmtMoneyC(value, "USD", 2)}`}
-                  style={{
-                    width: 16,
-                    height: `${Math.max(height, value > 0 ? 4 : 0)}%`,
-                    minHeight: value > 0 ? 4 : 0,
-                    borderRadius: "8px 8px 2px 2px",
-                    background: item.color,
-                    boxShadow: value > 0 ? "0 8px 18px rgba(0,0,0,0.12)" : "none",
-                  }}
-                />
-              );
-            })}
+    <div style={{ width: "100%", paddingBottom: 4 }}>
+      <svg width="100%" height={height} viewBox="0 0 1000 180" style={{ display: "block" }}>
+        {/* Horizontal grid lines and Y-axis text */}
+        {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+          const y = padding + chartHeight - ratio * chartHeight;
+          const val = maxValue * ratio;
+          return (
+            <g key={ratio}>
+              <line
+                x1={leftPadding}
+                y1={y}
+                x2={1000 - rightPadding}
+                y2={y}
+                stroke="var(--color-border-light)"
+                strokeDasharray="4 4"
+              />
+              <text
+                x={leftPadding - 8}
+                y={y + 4}
+                textAnchor="end"
+                fontSize="10"
+                fontWeight="600"
+                fill="var(--text-muted)"
+              >
+                {formatAxisValue(val)}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Solid Axes lines */}
+        <line
+          x1={leftPadding}
+          y1={padding}
+          x2={leftPadding}
+          y2={padding + chartHeight}
+          stroke="var(--color-border)"
+          strokeWidth="1.5"
+        />
+        <line
+          x1={leftPadding}
+          y1={padding + chartHeight}
+          x2={1000 - rightPadding}
+          y2={padding + chartHeight}
+          stroke="var(--color-border)"
+          strokeWidth="1.5"
+        />
+
+        {/* Lines */}
+        {linesPoints.map((points, seriesIdx) => {
+          const pointsStr = points.map((p) => `${p.x},${p.y}`).join(" ");
+          const color = series[seriesIdx].color;
+          return (
+            <polyline
+              key={seriesIdx}
+              points={pointsStr}
+              fill="none"
+              stroke={color}
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          );
+        })}
+
+        {/* Intersect circles */}
+        {linesPoints.map((points, seriesIdx) => {
+          const color = series[seriesIdx].color;
+          return points.map((p, i) => (
+            <circle
+              key={`${seriesIdx}-${i}`}
+              cx={p.x}
+              cy={p.y}
+              r="5"
+              fill={color}
+              stroke="var(--surface)"
+              strokeWidth="2"
+              title={`${p.company} ${p.label}: ${fmtMoneyC(p.value, "USD", 2)}`}
+              style={{ cursor: "pointer" }}
+            />
+          ));
+        })}
+      </svg>
+
+      <div style={{ display: "flex", justifyContent: "space-between", paddingLeft: "8%", paddingRight: "4%", marginTop: 8 }}>
+        {rows.map((row) => (
+          <div key={row.company} style={{ width: 0, flex: "0 0 0", overflow: "visible", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div style={{ width: 120, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", lineHeight: 1.15, minHeight: 26 }} title={row.company}>
+                {row.company}
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                {fmtMoneyC(row.total, "USD", 2)}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 10, color: "var(--text-muted)", width: "100%" }}>
+                {series.map((item) => (
+                  <span key={`${row.company}-${item.label}`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, whiteSpace: "nowrap" }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 2, background: item.color, display: "inline-block" }} />
+                    {fmtMoneyC(row[item.key] || 0, "USD", 2)}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", textAlign: "center", lineHeight: 1.15, minHeight: 26 }} title={row.company}>
-            {row.company}
-          </div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-            {fmtMoneyC(row.total, "USD", 2)}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 10, color: "var(--text-muted)", width: "100%" }}>
-            {series.map((item) => (
-              <span key={`${row.company}-${item.label}`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, whiteSpace: "nowrap" }}>
-                <span style={{ width: 8, height: 8, borderRadius: 2, background: item.color, display: "inline-block" }} />
-                {fmtMoneyC(row[item.key] || 0, "USD", 2)}
-              </span>
-            ))}
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
