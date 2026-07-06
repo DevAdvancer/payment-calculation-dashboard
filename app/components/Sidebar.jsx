@@ -43,11 +43,8 @@ export default function Sidebar() {
     <nav className={`sidebar${sidebarOpen ? " open" : ""}`}>
       {/* Brand */}
       <div style={{ display:"flex", alignItems:"center", gap:"10px", padding:"20px 16px 16px", borderBottom:"1px solid rgba(255,255,255,0.08)", flexShrink:0 }}>
-        <div style={{ width:34, height:34, background:"rgba(255,255,255,0.15)", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="2" y="7" width="20" height="14" rx="2"/>
-            <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-          </svg>
+        <div style={{ width:34, height:34, background:"rgba(255,255,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+          <img src="../../icon.png" width= {35} height={35} alt="Logo" srcSet="" />            
         </div>
         <span style={{ fontSize:11, fontWeight:700, color:"#fff", letterSpacing:"-0.01em", lineHeight:1.3 }}>
           Financial<br/>Management System
