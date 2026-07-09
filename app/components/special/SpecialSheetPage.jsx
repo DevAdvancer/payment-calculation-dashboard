@@ -425,7 +425,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
       </div>
 
       {/* KPI Strip — count + total amount (split by currency) */}
-      <div className="kpi-strip special-kpi-strip">
+      <div className="kpi-strip special-kpi-strip" style={{display: "flex", alignItems: "center", justifyContent: "space-between"}}>
         {kpiData.map(kpi => (
           <div className="kpi-card special-kpi-card" key={kpi.label} style={{ minWidth: 200 }}>
             <div className="kpi-label" style={{ fontSize: 13 }}>{kpi.label}</div>
@@ -440,6 +440,8 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
             </div>
           </div>
         ))}
+
+        <button style={{border: "2px solid var(--border)", padding: "16px", borderRadius: "var(--r-lg)", backgroundColor: "red", color: "white", fontFamily: "15px" }}>Defaulter's Entry</button>
       </div>
 
       {/* Filters + Export */}

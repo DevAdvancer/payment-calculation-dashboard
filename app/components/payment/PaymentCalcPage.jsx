@@ -11,7 +11,7 @@ import useDashboardStore, {
   currencyOf,
   sumByCurrency,
 } from "@/lib/use-store";
-import { entryMatchesPeriod } from "@/lib/period-utils";
+import { entryMatchesPeriod, periodOf } from "@/lib/period-utils";
 import FilterBar from "./FilterBar";
 import DateInput from "@/app/components/DateInput";
 import MoneyStack from "@/app/components/MoneyStack";
@@ -873,7 +873,7 @@ export default function PaymentCalcPage() {
       </div>
 
       {/* KPI Strip — consolidated and updated to match the specifications in the provided screenshots */}
-      <div className="kpi-grid-container">
+      <div className="kpi-grid-container" style={{ gap: "20px", minWidth:"fit-content" }}>
         
         {/* Card 1: Entries */}
         <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", borderColor: "#bbf7d0"}}>
@@ -887,7 +887,7 @@ export default function PaymentCalcPage() {
         </div>
 
         {/* Card 2: New Placement + Reconciliation */}
-        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", borderColor: "#bbf7d0" }}>
+        <div className="kpi-card" style={{ minWidth: "fit-content", padding: "12px 16px", borderColor: "#bbf7d0" }}>
           <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>RECONCILIATION</div>
           {/* Reconciliation section (top) */}
           <div className="kpi-value" style={{ color: "#15803d", fontSize: 20, margin: "4px 0" }}>
@@ -914,7 +914,7 @@ export default function PaymentCalcPage() {
           <hr style={{ border: "none", borderTop: "1px solid #bbf7d0", margin: "8px 0" }} />
           {/* New Placement Received / Pending (bottom — mirroring Card 3) */}
           <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>New Placement</div>
-          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap"}}>
+          <div style={{ display: "flex", justifyContent: "space-evenly", gap: "10px"}}>
             <div>
               <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "black", fontWeight: "bold" }}>Received</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#16a34a", fontFamily: "var(--font-mono)" }}>
@@ -1322,7 +1322,7 @@ export default function PaymentCalcPage() {
                 const actualValue = parseFloat(entry.actual) || 0;
                 const usdValue = parseFloat(entry.amount) || 0;
 
-                const isTerminalStatus = LAIDOFF_STATUSES.includes(entry.status) || entry.status === "Default";
+                const isTerminalStatus = LAIDOFF_STATUSES.includes(entry.status) || (entry.status === "Default" && periodOf(entry).month === currentMonth);
                 const rowBackground =
                   isTerminalStatus
                     ? "rgba(220, 38, 38, 0.18)"   // solid red — Laid Off / Default anchor row
