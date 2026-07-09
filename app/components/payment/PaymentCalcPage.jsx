@@ -11,7 +11,7 @@ import useDashboardStore, {
   currencyOf,
   sumByCurrency,
 } from "@/lib/use-store";
-import { entryMatchesPeriod } from "@/lib/period-utils";
+import { entryMatchesPeriod, periodOf } from "@/lib/period-utils";
 import FilterBar from "./FilterBar";
 import DateInput from "@/app/components/DateInput";
 import MoneyStack from "@/app/components/MoneyStack";
@@ -1322,7 +1322,7 @@ export default function PaymentCalcPage() {
                 const actualValue = parseFloat(entry.actual) || 0;
                 const usdValue = parseFloat(entry.amount) || 0;
 
-                const isTerminalStatus = LAIDOFF_STATUSES.includes(entry.status) || entry.status === "Default";
+                const isTerminalStatus = LAIDOFF_STATUSES.includes(entry.status) || (entry.status === "Default" && periodOf(entry).month === currentMonth);
                 const rowBackground =
                   isTerminalStatus
                     ? "rgba(220, 38, 38, 0.18)"   // solid red — Laid Off / Default anchor row
