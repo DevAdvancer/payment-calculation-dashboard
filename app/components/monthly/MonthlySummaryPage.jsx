@@ -22,7 +22,7 @@ export default function SummaryPage() {
   // const [filters, setFilters] = useState({ year: "", month: "", company: "" });
   const [filters, setFilters] = useState({
     year: currentYear,
-    // month: currentMonth,
+    month: "",
     company: "",
   });
   const [gbpToUsd, setGbpToUsd] = useState(1.35);
@@ -55,12 +55,16 @@ export default function SummaryPage() {
     () => [...new Set(entries.map(e => e.company).filter(Boolean))].sort(),
     [entries]
   );
+  const months = useMemo(
+    () => [...new Set(entries.map(e => e.month).filter(Boolean))].sort((a, b) => (MONTH_IDX[a] ?? 0) - (MONTH_IDX[b] ?? 0)),
+    [entries]
+  );
 
   /* ── Apply the three top filters ── */
   const filtered = useMemo(() => {
     let rows = entries;
     if (filters.year)    rows = rows.filter(e => String(e.year) === String(filters.year));
-    // if (filters.month)   rows = rows.filter(e => e.month === filters.month);
+    if (filters.month)   rows = rows.filter(e => e.month === filters.month);
     if (filters.company) rows = rows.filter(e => e.company === filters.company);
     return rows;
   }, [entries, filters]);
@@ -346,12 +350,16 @@ export default function SummaryPage() {
             <option value="">All</option>
             {years.map(y => <option key={y} value={y}>{y}</option>)}
           </FilterSelect>
+          <FilterSelect label="Month" value={filters.month} onChange={v => setFilters(f => ({ ...f, month: v }))}>
+            <option value="">All</option>
+            {months.map(m => <option key={m} value={m}>{m}</option>)}
+          </FilterSelect>
           <FilterSelect label="Company" value={filters.company} onChange={v => setFilters(f => ({ ...f, company: v }))}>
             <option value="">All</option>
             {companies.map(c => <option key={c} value={c}>{c}</option>)}
           </FilterSelect>
-          {(filters.year || filters.company) && (
-            <button onClick={() => setFilters({ year: "", company: "" })}
+          {(filters.year || filters.month || filters.company) && (
+            <button onClick={() => setFilters({ year: "", month: "", company: "" })}
               style={{ padding: "6px 12px", fontSize: 11, fontWeight: 600, border: "1px solid var(--border-md)", borderRadius: 8, background: "transparent", color: "var(--text-muted)", cursor: "pointer", fontFamily: "var(--font)" }}>
               Clear
             </button>
