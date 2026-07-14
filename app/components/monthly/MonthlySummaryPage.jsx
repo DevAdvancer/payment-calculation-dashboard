@@ -64,7 +64,7 @@ export default function SummaryPage() {
   const filtered = useMemo(() => {
     let rows = entries;
     if (filters.year)    rows = rows.filter(e => String(e.year) === String(filters.year));
-    if (filters.month)   rows = rows.filter(e => e.month === filters.month);
+    // if (filters.month)   rows = rows.filter(e => e.month === filters.month);
     if (filters.company) rows = rows.filter(e => e.company === filters.company);
     return rows;
   }, [entries, filters]);
