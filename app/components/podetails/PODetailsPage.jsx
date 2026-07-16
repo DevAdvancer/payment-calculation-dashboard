@@ -355,18 +355,7 @@ export default function PODetailsPage() {
   const computeInstallments = () => {
     if (!totalContractValue) return [];
 
-    /* First-payment date: DOJ → manual → today+45 (snapped to next 7/15/21) */
-    let firstPaymentDate;
-    if (form.dateOfJoining) {
-      firstPaymentDate = parseLocalDate(form.dateOfJoining);
-    } else if (form.manualPayStart) {
-      firstPaymentDate = parseLocalDate(form.manualPayStart);
-    } else {
-      firstPaymentDate = new Date();
-      firstPaymentDate.setDate(firstPaymentDate.getDate() + 45);
-      snapDate(firstPaymentDate);
-    }
-
+    const today = new Date();
     const instAmt   = (totalContractValue - upfrontFirst) / months;
     const typeLabel = `${pct}% in ${months} months`;
     const FIRST_SERVICE_TYPE = "New Placement";
@@ -380,9 +369,9 @@ export default function PODetailsPage() {
       installments.push({
         id: String(now + 1),
         candidate: form.candidateName, client: form.clientName, company: getOfficialName(form.companyGroup),
-        poDate: toMMDDYYYY(firstPaymentDate),
-        month: MONTH_NAMES[firstPaymentDate.getMonth()], year: String(firstPaymentDate.getFullYear()),
-        instance: firstPaymentDate.getDate() <= 15 ? "First Half" : "Second Half",
+        poDate: toMMDDYYYY(today),
+        month: MONTH_NAMES[today.getMonth()], year: String(today.getFullYear()),
+        instance: today.getDate() <= 15 ? "First Half" : "Second Half",
         amount: 1500, paid: 0, due: 1500, status: "Pending",
         serviceType: FIRST_SERVICE_TYPE, type: typeLabel,
         notes: nrUpfront > 0 ? `${cSym}${nrUpfront.toLocaleString()} (NR)` : "Non Upfront",
@@ -392,40 +381,37 @@ export default function PODetailsPage() {
       });
     }
 
-    /* runDate for the equal monthly installments. UK starts on the
-       firstPaymentDate; USA starts the month after. */
-    let runDate;
-    if (isUK) {
-      runDate = new Date(firstPaymentDate);
-    } else if (form.dateOfJoining) {
-      runDate = parseLocalDate(form.dateOfJoining);
-      runDate.setMonth(runDate.getMonth() + 1);
-    } else if (form.manualPayStart) {
-      runDate = parseLocalDate(form.manualPayStart);
-    } else {
-      runDate = new Date(firstPaymentDate);
-      runDate.setMonth(runDate.getMonth() + 1);
-    }
+    const doj = form.dateOfJoining ? parseLocalDate(form.dateOfJoining) : null;
+    let runDate = doj ? new Date(doj) : new Date(today);
 
     for (let i = 0; i < months; i++) {
-      if (!(isUK && i === 0)) snapDate(runDate);
+      const isFirstService = (isUK && i === 0);
+      let itemDate;
+      if (isFirstService) {
+        itemDate = new Date(today);
+      } else {
+        runDate.setMonth(runDate.getMonth() + 1);
+        snapDate(runDate);
+        itemDate = new Date(runDate);
+      }
       installments.push({
         id: String(now + 100 + i),
         candidate: form.candidateName, client: form.clientName, company: getOfficialName(form.companyGroup),
-        poDate: toMMDDYYYY(new Date(runDate)), month: MONTH_NAMES[runDate.getMonth()], year: String(runDate.getFullYear()),
-        instance: runDate.getDate() <= 15 ? "First Half" : "Second Half",
+        poDate: toMMDDYYYY(itemDate),
+        month: MONTH_NAMES[itemDate.getMonth()],
+        year: String(itemDate.getFullYear()),
+        instance: itemDate.getDate() <= 15 ? "First Half" : "Second Half",
         amount: parseFloat(instAmt.toFixed(2)), paid: 0, due: parseFloat(instAmt.toFixed(2)),
         status: "Pending",
-        serviceType: (isUK && i === 0) ? FIRST_SERVICE_TYPE : REST_SERVICE_TYPE,
+        serviceType: isFirstService ? FIRST_SERVICE_TYPE : REST_SERVICE_TYPE,
         type: typeLabel,
-        notes: (isUK && i === 0 && nrUpfront > 0)
+        notes: (isFirstService && nrUpfront > 0)
                  ? `${cSym}${nrUpfront.toLocaleString()} (NR)`
                  : `Installment ${i+1}`,
         signupDate: form.signupDate, placedDate: form.placedDate,
         closedBy: form.closedBy, placedBy: form.placedBy,
         reference: form.reference, location: form.location,
       });
-      runDate.setMonth(runDate.getMonth() + 1);
     }
     return installments;
   };
