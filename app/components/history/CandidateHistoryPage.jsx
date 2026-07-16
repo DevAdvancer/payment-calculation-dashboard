@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect, useRef, useMemo } from "react";
 import useDashboardStore, {
-  ALL_STATUSES,
   INSTANCE_OPTIONS,
   fmtMoney,
   fmtMoneyC,
   currencyOf,
 } from "@/lib/use-store";
 import NOCModal from "./NOCModal";
+
+const PAYMENT_STATUS_OPTIONS = ["Received", "Pending", "Move", "Laid Off", "Default"];
 import DateInput from "@/app/components/DateInput";
 
 function getInitials(name) {
@@ -52,8 +53,12 @@ export default function CandidateHistoryPage() {
   /* ── Selected candidate entries ── */
   const candidateEntries = selected ? getByCandidate(selected) : [];
   const totalAmount = candidateEntries.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-  const totalPaid   = candidateEntries.reduce((s, e) => s + (parseFloat(e.paid) || 0), 0);
-  const totalDue    = candidateEntries.reduce((s, e) => s + (parseFloat(e.due) || 0), 0);
+  const totalPaid   = candidateEntries
+    .filter(e => e.status === "Received")
+    .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+  const totalDue    = candidateEntries
+    .filter(e => e.status === "Pending")
+    .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
   const revenueLoss = candidateEntries
     .filter(e => ["Laid Off", "Offer Revoke", "No Offer", "Resigned", "Default"].includes(e.status))
     .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
@@ -404,10 +409,10 @@ export default function CandidateHistoryPage() {
                       {fmtMoneyC(entry.amount, currencyOf(entry), 0)}
                     </td>
                     <td style={{ color: "#4ade80", fontVariantNumeric: "tabular-nums" }}>
-                      {fmtMoneyC(entry.paid, currencyOf(entry), 0)}
+                      {fmtMoneyC(entry.status === "Received" ? entry.amount : 0, currencyOf(entry), 0)}
                     </td>
                     <td style={{ color: "#fbbf24", fontVariantNumeric: "tabular-nums" }}>
-                      {fmtMoneyC(entry.due, currencyOf(entry), 0)}
+                      {fmtMoneyC(entry.status === "Pending" ? entry.amount : 0, currencyOf(entry), 0)}
                     </td>
                     <td style={{ color: "var(--text-muted)", fontSize: 12 }}>{entry.serviceType}</td>
                     <td>
@@ -417,7 +422,7 @@ export default function CandidateHistoryPage() {
                         onChange={e => updateStatus(entry.id, e.target.value)}
                         style={{ fontSize: 11 }}
                       >
-                        {ALL_STATUSES.map(s => <option key={s}>{s}</option>)}
+                        {PAYMENT_STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
                       </select>
                     </td>
                     <td style={{ color: "var(--text-dim)", fontSize: 12 }}>{entry.type || "—"}</td>
