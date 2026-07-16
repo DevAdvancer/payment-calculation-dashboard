@@ -123,22 +123,7 @@ export default function NewPlacementPage() {
   const computeInstallments = () => {
     if (!totalContractValue) return [];
 
-    /* Second-payment date resolution:
-     *   1. DOJ if provided
-     *   2. Manual Second Payment Date if provided
-     *   3. Otherwise: today + 45 days, snapped forward to next 7/15/21
-     */
-    let firstPaymentDate;
-    if (form.dateOfJoining) {
-      firstPaymentDate = parseLocalDate(form.dateOfJoining);
-    } else if (form.manualPayStart) {
-      firstPaymentDate = parseLocalDate(form.manualPayStart);
-    } else {
-      firstPaymentDate = new Date();
-      firstPaymentDate.setDate(firstPaymentDate.getDate() + 45);
-      snapDate(firstPaymentDate);
-    }
-
+    const today = new Date();
     const instAmt   = (totalContractValue - upfrontFirst) / months;
     /* type retains the X% / N month info (parseable downstream).
        Service Type rule: first installment of any placement is
@@ -160,10 +145,10 @@ export default function NewPlacementPage() {
         candidate:   form.candidateName,
         client:      form.clientName,
         company:     getOfficialName(form.companyGroup),
-        poDate:      toMMDDYYYY(firstPaymentDate),
-        month:       MONTH_NAMES[firstPaymentDate.getMonth()],
-        year:        String(firstPaymentDate.getFullYear()),
-        instance:    firstPaymentDate.getDate() <= 15 ? "First Half" : "Second Half",
+        poDate:      toMMDDYYYY(today),
+        month:       MONTH_NAMES[today.getMonth()],
+        year:        String(today.getFullYear()),
+        instance:    today.getDate() <= 15 ? "First Half" : "Second Half",
         amount:      1500,
         paid:        0,
         due:         1500,
@@ -180,46 +165,37 @@ export default function NewPlacementPage() {
       });
     }
 
-    /* runDate for the equal monthly installments.
-     *   USA: starts the month AFTER the upfront (DOJ + 1 month, etc.) so
-     *        the $1,500 upfront sits on its own date.
-     *   UK : starts ON the firstPaymentDate itself — there's no upfront
-     *        row to "make room" for. */
-    let runDate;
-    if (isUK) {
-      runDate = new Date(firstPaymentDate);
-    } else if (form.dateOfJoining) {
-      runDate = parseLocalDate(form.dateOfJoining);
-      runDate.setMonth(runDate.getMonth() + 1);
-    } else if (form.manualPayStart) {
-      runDate = parseLocalDate(form.manualPayStart);
-    } else {
-      runDate = new Date(firstPaymentDate);
-      runDate.setMonth(runDate.getMonth() + 1);
-    }
+    const doj = form.dateOfJoining ? parseLocalDate(form.dateOfJoining) : null;
+    let runDate = doj ? new Date(doj) : new Date(today);
 
     for (let i = 0; i < months; i++) {
-      /* For UK row 0, keep the raw firstPaymentDate (today or DOJ) — don't
-         snap forward. Subsequent UK rows and all USA rows are snapped. */
-      if (!(isUK && i === 0)) snapDate(runDate);
+      const isFirstService = (isUK && i === 0);
+      let itemDate;
+      if (isFirstService) {
+        itemDate = new Date(today);
+      } else {
+        runDate.setMonth(runDate.getMonth() + 1);
+        snapDate(runDate);
+        itemDate = new Date(runDate);
+      }
       entries.push({
         id:          String(now + 100 + i),
         candidate:   form.candidateName,
         client:      form.clientName,
         company:     getOfficialName(form.companyGroup),
-        poDate:      toMMDDYYYY(new Date(runDate)),
-        month:       MONTH_NAMES[runDate.getMonth()],
-        year:        String(runDate.getFullYear()),
-        instance:    runDate.getDate() <= 15 ? "First Half" : "Second Half",
+        poDate:      toMMDDYYYY(itemDate),
+        month:       MONTH_NAMES[itemDate.getMonth()],
+        year:        String(itemDate.getFullYear()),
+        instance:    itemDate.getDate() <= 15 ? "First Half" : "Second Half",
         amount:      parseFloat(instAmt.toFixed(2)),
         paid:        0,
         due:         parseFloat(instAmt.toFixed(2)),
         status:      "Pending",
         /* UK row 0 is the placement's first installment → "Placement".
            Every other loop row (USA + UK) is a subsequent payment → "New Placement". */
-        serviceType: (isUK && i === 0) ? FIRST_SERVICE_TYPE : REST_SERVICE_TYPE,
+        serviceType: isFirstService ? FIRST_SERVICE_TYPE : REST_SERVICE_TYPE,
         type:        typeLabel,
-        notes:       (isUK && i === 0 && nrUpfront > 0)
+        notes:       (isFirstService && nrUpfront > 0)
                        ? `${cSym}${nrUpfront.toLocaleString()} (NR)`
                        : "Installment " + (i + 1),
         signupDate:  form.signupDate,
@@ -229,7 +205,6 @@ export default function NewPlacementPage() {
         reference:   form.reference,
         location:    form.location,
       });
-      runDate.setMonth(runDate.getMonth() + 1);
     }
 
     return entries;
