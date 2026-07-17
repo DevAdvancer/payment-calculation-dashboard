@@ -437,33 +437,24 @@ export default function PaymentCalcPage() {
 
   const handleStatusChange = (entry, nextStatus) => {
     if (nextStatus === "Move" && entry.status !== "Move") {
-      const currentMonthName = MONTH_NAMES[new Date().getMonth()];
-      const isMonthMatch = (entry.month || "").trim().toLowerCase() === currentMonthName.toLowerCase();
+      const currentIndex = sorted.findIndex(
+        (e) => String(e.id) === String(entry.id)
+      );
 
-      if (isMonthMatch) {
-        const currentIndex = sorted.findIndex(
-          (e) => String(e.id) === String(entry.id)
-        );
+      if (currentIndex === -1) return;
 
-        if (currentIndex === -1) return;
+      // Just remember which row was selected.
+      // Actual updates happen only after Confirm.
+      setPendingMove({
+        entry,
+        prevStatus: entry.status,
+        currentIndex,
+      });
 
-        // Just remember which row was selected.
-        // Actual updates happen only after Confirm.
-        setPendingMove({
-          entry,
-          prevStatus: entry.status,
-          currentIndex,
-        });
+      setMoveDateIso(toISODate(entry.poDate));
+      setMoveError("");
 
-        setMoveDateIso(toISODate(entry.poDate));
-        setMoveError("");
-
-        return;
-      } else {
-        // Just do a normal status change without duplicate creation or Move prompt flow
-        updateStatus(entry.id, nextStatus);
-        return;
-      }
+      return;
     }
 
     // Normal status changes.
@@ -495,20 +486,26 @@ export default function PaymentCalcPage() {
         const cloneDate = toMMDDYYYY(baseDate);
         const cloneParts = dateParts(cloneDate);
 
-        const clonedRow = await createEntry({
-          ...anchor,
-          id: String(Date.now()) + "-move",
-          poDate: cloneDate,
-          month: cloneParts.month,
-          year: cloneParts.year,
-          instance: cloneParts.instance,
-          paid: 0,
-          due: parseFloat(anchor?.amount) || 0,
-          status: "Pending",
-          sheetScope: "payment",
-        });
+        // Only create the duplicate entry if the month matches the current actual calendar month.
+        const currentMonthName = MONTH_NAMES[new Date().getMonth()];
+        const isMonthMatch = (anchor?.month || "").trim().toLowerCase() === currentMonthName.toLowerCase();
 
-        if (!clonedRow) return;
+        if (isMonthMatch) {
+          const clonedRow = await createEntry({
+            ...anchor,
+            id: String(Date.now()) + "-move",
+            poDate: cloneDate,
+            month: cloneParts.month,
+            year: cloneParts.year,
+            instance: cloneParts.instance,
+            paid: 0,
+            due: parseFloat(anchor?.amount) || 0,
+            status: "Pending",
+            sheetScope: "payment",
+          });
+
+          if (!clonedRow) return;
+        }
 
         await updateEntry(anchor.id, {
           status: "Move",
