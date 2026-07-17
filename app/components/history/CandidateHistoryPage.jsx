@@ -52,16 +52,16 @@ export default function CandidateHistoryPage() {
 
   /* ── Selected candidate entries ── */
   const candidateEntries = selected ? getByCandidate(selected) : [];
-  const totalAmount = candidateEntries.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
   const totalPaid   = candidateEntries
-    .filter(e => e.status === "Received")
-    .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+  .filter(e => e.status === "Received")
+  .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
   const totalDue    = candidateEntries
-    .filter(e => e.status === "Pending")
-    .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+  .filter(e => e.status === "Pending")
+  .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
   const revenueLoss = candidateEntries
-    .filter(e => ["Laid Off", "Offer Revoke", "No Offer", "Resigned", "Default"].includes(e.status))
-    .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+  .filter(e => ["Laid Off", "Offer Revoke", "No Offer", "Resigned", "Default"].includes(e.status))
+  .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+  const totalAmount = totalPaid + totalDue;
   const pct = totalAmount > 0 ? Math.round((totalPaid / totalAmount) * 100) : 0;
   const primaryCompany = candidateEntries[0]?.company || "";
   const primaryCurrency = currencyOf(primaryCompany);
@@ -288,7 +288,7 @@ export default function CandidateHistoryPage() {
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginLeft: "auto", alignItems: "center" }}>
                 <div style={{ background: "rgba(156,163,175,0.12)", border: "1px solid rgba(156,163,175,0.2)", borderRadius: "var(--r-lg)", padding: "8px 14px", textAlign: "center" }}>
                   <div style={{ fontSize: 9.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--text-muted)" }}>Total</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmtMoneyC(totalAmount, primaryCurrency, 0)}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmtMoneyC(totalPaid + totalDue, primaryCurrency, 0)}</div>
                 </div>
                 <div style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)", borderRadius: "var(--r-lg)", padding: "8px 14px", textAlign: "center" }}>
                   <div style={{ fontSize: 9.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "#4ade80" }}>Paid</div>
