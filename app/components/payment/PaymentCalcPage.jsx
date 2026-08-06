@@ -246,7 +246,7 @@ export default function PaymentCalcPage() {
   const [selectedName, setSelectedName] = useState(null);   // exact-match lock when user picks from dropdown
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showQuickEntry, setShowQuickEntry] = useState(false);
-  const [filters, setFilters]           = useState({ company: "", month: currentMonth, year: currentYear, instance: "", status: "", serviceType: "" });
+  const [filters, setFilters]           = useState({ company: [], month: [currentMonth], year: currentYear, instance: "", status: "", serviceType: "" });
   const [sortKey, setSortKey]           = useState("poDate");
   const [sortDir, setSortDir]           = useState("asc");
   const [fadingIds, setFadingIds]       = useState(new Set());
@@ -362,7 +362,7 @@ export default function PaymentCalcPage() {
     if (filters.status)   rows = rows.filter(e => e.status === filters.status);
     if (monthFilter || yearFilter) rows = rows.filter(e => entryMatchesPeriod(e, monthFilter, yearFilter));
     if (filters.instance) rows = rows.filter(e => e.instance === filters.instance);
-    if (filters.company)  rows = rows.filter(e => e.company === filters.company);
+    if (filters.company && filters.company.length > 0)  rows = rows.filter(e => filters.company.includes(e.company));
     if (filters.serviceType) rows = rows.filter(e => normalizeServiceTypeValue(e.serviceType) === filters.serviceType);
     return rows;
   }, [entries, searchTerm, selectedName, filters]);
@@ -495,20 +495,26 @@ export default function PaymentCalcPage() {
         const cloneDate = toMMDDYYYY(baseDate);
         const cloneParts = dateParts(cloneDate);
 
-        const clonedRow = await createEntry({
-          ...anchor,
-          id: String(Date.now()) + "-move",
-          poDate: cloneDate,
-          month: cloneParts.month,
-          year: cloneParts.year,
-          instance: cloneParts.instance,
-          paid: 0,
-          due: parseFloat(anchor?.amount) || 0,
-          status: "Pending",
-          sheetScope: "payment",
-        });
+        // Only create the duplicate entry if the month matches the current actual calendar month.
+        const currentMonthName = MONTH_NAMES[new Date().getMonth()];
+        const isMonthMatch = (anchor?.month || "").trim().toLowerCase() === currentMonthName.toLowerCase();
 
-        if (!clonedRow) return;
+        if (isMonthMatch) {
+          const clonedRow = await createEntry({
+            ...anchor,
+            id: String(Date.now()) + "-move",
+            poDate: cloneDate,
+            month: cloneParts.month,
+            year: cloneParts.year,
+            instance: cloneParts.instance,
+            paid: 0,
+            due: parseFloat(anchor?.amount) || 0,
+            status: "Pending",
+            sheetScope: "payment",
+          });
+
+          if (!clonedRow) return;
+        }
 
         await updateEntry(anchor.id, {
           status: "Move",
@@ -676,6 +682,8 @@ export default function PaymentCalcPage() {
 
   const placementPendingUSD = placementPendingByCur.USD + placementPendingByCur.GBP * gbpToUsd;
   const newPlacementPendingUSD = newPlacementPendingByCur.USD + newPlacementPendingByCur.GBP * gbpToUsd;
+
+  const totalRecurringPlacement = placementReceivedUSD + placementPendingUSD;
 
   const totalNewPlacementUSD = newPlacementReceivedUSD + newPlacementPendingUSD;
   const newPlacementReceivedPct = totalNewPlacementUSD > 0 ? Math.round((newPlacementReceivedUSD / totalNewPlacementUSD) * 100) : 0;
@@ -875,7 +883,19 @@ export default function PaymentCalcPage() {
       {/* Page Header */}
       <div className="page-header">
         <h1 className="page-title">
-          <span className="mobile-only-title">Dashboard · {filters.month ? (filters.month.charAt(0).toUpperCase() + filters.month.slice(1).toLowerCase()) : "All"}</span>
+          <span className="mobile-only-title">
+            Dashboard · {(() => {
+              if (!filters.month || filters.month.length === 0) return "All";
+              if (Array.isArray(filters.month)) {
+                if (filters.month.length === 1) {
+                  const m = filters.month[0];
+                  return m.charAt(0).toUpperCase() + m.slice(1).toLowerCase();
+                }
+                return `${filters.month.length} Months`;
+              }
+              return filters.month.charAt(0).toUpperCase() + filters.month.slice(1).toLowerCase();
+            })()}
+          </span>
           <span className="desktop-only-title">Payment <span>Calculation</span></span>
         </h1>
         <p className="page-subtitle desktop-only-title">Active payment entries — non-routed statuses only</p>
@@ -888,7 +908,13 @@ export default function PaymentCalcPage() {
         <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", borderColor: "#bbf7d0"}}>
           <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>
             Entries<br />
-            ({filters.month ? filters.month.toUpperCase() : "ALL"})
+            ({(() => {
+              if (!filters.month || filters.month.length === 0) return "ALL";
+              if (Array.isArray(filters.month)) {
+                return filters.month.map(m => m.toUpperCase()).join(", ");
+              }
+              return filters.month.toUpperCase();
+            })()})
           </div>
           <div className="kpi-value" style={{ fontSize: 24, margin: "8px 0" }}>{statsRows.length}</div>
           <div className="kpi-sub" style={{ fontSize: 11, color: "var(--color-ink-subtle)" }}>of {entries.length} total</div>
@@ -973,7 +999,7 @@ export default function PaymentCalcPage() {
         <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", borderColor: "#bbf7d0" }}>
           <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>Recurring Payment</div>
           <div className="kpi-value" style={{ color: "blue", fontSize: 22, margin: "4px 0" }}>
-            {fmtMoneyC(recurringPaymentUSD, "USD", 2)}
+            {fmtMoneyC(totalRecurringPlacement, "USD", 2)}
           </div>
           <div className="kpi-sub" style={{ fontSize: 10, marginBottom: 6, color: "black", fontWeight: "bold" }}>
             across {recurringPlacementEntries.length} {recurringPlacementEntries.length === 1 ? "entry" : "entries"}

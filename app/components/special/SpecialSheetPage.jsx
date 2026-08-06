@@ -16,6 +16,7 @@ import DeleteConfirmModal from "@/app/components/DeleteConfirmModal";
 import { normalizeCompanyName } from "@/lib/company-utils";
 import { normalizeSpecialSheetStatus } from "@/lib/status-utils";
 import { entryMatchesPeriod, periodOf } from "@/lib/period-utils";
+import MultiSelectDropdown from "@/app/components/MultiSelectDropdown";
 
 function statusBadgeClass(status) {
   if (status === "Received") return "badge-paid";
@@ -160,7 +161,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
   const fileRef = useRef();
   const pasteTargetRef = useRef();
 
-  const [filters, setFilters] = useState({ search: "", company: "", month: "", year: "" });
+  const [filters, setFilters] = useState({ search: "", company: [], month: [], year: "" });
   const [pasteImport, setPasteImport] = useState(null);
   const [selected, setSelected] = useState(new Set());
   const [deleteConfirm, setDeleteConfirm] = useState({
@@ -190,7 +191,13 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
      silently drop the filter). */
   const companies = useMemo(() => {
     const set = new Set(rawEntries.map(e => e.company).filter(Boolean));
-    if (filters.company) set.add(String(filters.company));
+    if (filters.company) {
+      if (Array.isArray(filters.company)) {
+        filters.company.forEach(c => set.add(String(c)));
+      } else {
+        set.add(String(filters.company));
+      }
+    }
     return [...set].sort();
   }, [rawEntries, filters.company]);
   const years = useMemo(() => {
@@ -211,7 +218,13 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
         if (m) present.add(m);
       }
     }
-    if (filters.month) present.add(String(filters.month));
+    if (filters.month) {
+      if (Array.isArray(filters.month)) {
+        filters.month.forEach(m => present.add(String(m)));
+      } else {
+        present.add(String(filters.month));
+      }
+    }
     /* Preserve the canonical 12-month order for known values; unknown
        values (e.g. "september", "June") get appended in alphabetical
        order. */
@@ -230,13 +243,15 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
         (e.poNum || "").toLowerCase().includes(q)
       );
     }
-    if (filters.company) rows = rows.filter(e => e.company === filters.company);
+    if (filters.company && filters.company.length > 0) {
+      rows = rows.filter(e => filters.company.includes(e.company));
+    }
     /* Month + year use the shared period matcher so this sheet stays
        in lock-step with the Payment Calculation page's KPI strip.
        Falls back to poDate when the stored month/year is blank or
        stored in a non-canonical form. */
-    if (filters.month || filters.year) {
-      const m = filters.month || "";
+    if ((filters.month && filters.month.length > 0) || filters.year) {
+      const m = filters.month || [];
       const y = filters.year ? String(filters.year) : "";
       rows = rows.filter(e => entryMatchesPeriod(e, m, y));
     }
@@ -470,20 +485,24 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
           <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ color: "var(--text-muted)", flexShrink: 0 }}>
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
           </svg>
-          <select className="filter-select" value={filters.company} onChange={e => setFilters(f => ({ ...f, company: e.target.value }))}>
-            <option value="">All Companies</option>
-            {companies.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <select className="filter-select" value={filters.month} onChange={e => setFilters(f => ({ ...f, month: e.target.value }))}>
-            <option value="">All Months</option>
-            {months.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
+          <MultiSelectDropdown
+            options={companies}
+            selected={Array.isArray(filters.company) ? filters.company : (filters.company ? [filters.company] : [])}
+            onChange={(val) => setFilters(f => ({ ...f, company: val }))}
+            placeholder="All Companies"
+          />
+          <MultiSelectDropdown
+            options={months}
+            selected={Array.isArray(filters.month) ? filters.month : (filters.month ? [filters.month] : [])}
+            onChange={(val) => setFilters(f => ({ ...f, month: val }))}
+            placeholder="All Months"
+          />
           <select className="filter-select" value={filters.year} onChange={e => setFilters(f => ({ ...f, year: e.target.value }))}>
             <option value="">All Years</option>
             {years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
-          {Object.values(filters).some(Boolean) && (
-            <button className="btn-ghost" style={{ padding: "4px 10px", fontSize: 11 }} onClick={() => setFilters({ search: "", company: "", month: "", year: "" })}>Clear</button>
+          {(filters.search || filters.year || (filters.company && filters.company.length > 0) || (filters.month && filters.month.length > 0)) && (
+            <button className="btn-ghost" style={{ padding: "4px 10px", fontSize: 11 }} onClick={() => setFilters({ search: "", company: [], month: [], year: "" })}>Clear</button>
           )}
         </div>
         {selected.size > 0 && (

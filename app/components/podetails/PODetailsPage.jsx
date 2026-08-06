@@ -10,6 +10,7 @@ import { normalizeCompanyName } from "../../../lib/company-utils";
 import { normalizePaymentStatus } from "../../../lib/status-utils";
 import { isPoDetailsEntry } from "../../../lib/po-details-utils";
 import { entryMatchesPeriod, periodOf } from "../../../lib/period-utils";
+import MultiSelectDropdown from "../MultiSelectDropdown";
 
 /* ─── Placement form constants (mirrors NewPlacementPage) ─── */
 const COMPANY_OPTIONS = [
@@ -254,7 +255,7 @@ export default function PODetailsPage() {
 
   const [sort, setSort]       = useState({ key:"candidate", dir:"asc" });
   const [search, setSearch]   = useState("");
-  const [poFilters, setPoFilters] = useState({ company: "", month: "", year: "" });
+  const [poFilters, setPoFilters] = useState({ company: [], month: [], year: "" });
   const [selected, setSelected] = useState(new Set());
   const [deleteConfirm, setDeleteConfirm] = useState({
     isOpen: false,
@@ -320,7 +321,13 @@ export default function PODetailsPage() {
         if (m) presentMonths.add(m);
       }
     }
-    if (poFilters.month) presentMonths.add(String(poFilters.month));
+    if (poFilters.month) {
+      if (Array.isArray(poFilters.month)) {
+        poFilters.month.forEach(m => presentMonths.add(String(m)));
+      } else {
+        presentMonths.add(String(poFilters.month));
+      }
+    }
     const orderedMonths = MONTH_NAMES.filter(m => presentMonths.has(m));
     const extraMonths = [...presentMonths]
       .filter(m => !MONTH_NAMES.includes(m))
@@ -330,7 +337,13 @@ export default function PODetailsPage() {
     /* Companies / Years: derive from entries; keep the current
        selection visible too. */
     const companiesSet = new Set(poEntries.map(e => e.company).filter(Boolean));
-    if (poFilters.company) companiesSet.add(String(poFilters.company));
+    if (poFilters.company) {
+      if (Array.isArray(poFilters.company)) {
+        poFilters.company.forEach(c => companiesSet.add(String(c)));
+      } else {
+        companiesSet.add(String(poFilters.company));
+      }
+    }
     const companies = [...companiesSet].sort();
 
     const yearsSet = new Set(poEntries.map(e => e.year).filter(Boolean).map(String));
@@ -518,12 +531,14 @@ export default function PODetailsPage() {
     });
 
     let arr = aggregated;
-    if (poFilters.company) arr = arr.filter(r => r.company === poFilters.company);
+    if (poFilters.company && poFilters.company.length > 0) {
+      arr = arr.filter(r => poFilters.company.includes(r.company));
+    }
     /* Month + year use the shared period matcher so this page stays
        consistent with the Payment Calculation page's KPI strip and
        the Laid Off / Defaulter sheets. */
-    if (poFilters.month || poFilters.year) {
-      const m = poFilters.month || "";
+    if ((poFilters.month && poFilters.month.length > 0) || poFilters.year) {
+      const m = poFilters.month || [];
       const y = poFilters.year ? String(poFilters.year) : "";
       arr = arr.filter(r => entryMatchesPeriod(r, m, y));
     }
@@ -790,20 +805,24 @@ export default function PODetailsPage() {
               onFocus={e => e.target.style.borderColor="var(--color-accent)"}
               onBlur={e => e.target.style.borderColor="var(--color-border)"} />
           </div>
-          <select className="filter-select" value={poFilters.company} onChange={e => setPoFilters(f => ({ ...f, company: e.target.value }))} style={{ height:29, fontSize:12 }}>
-            <option value="">All Companies</option>
-            {filterOptions.companies.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <select className="filter-select" value={poFilters.month} onChange={e => setPoFilters(f => ({ ...f, month: e.target.value }))} style={{ height:29, fontSize:12 }}>
-            <option value="">All Months</option>
-            {filterOptions.months.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
+          <MultiSelectDropdown
+            options={filterOptions.companies}
+            selected={Array.isArray(poFilters.company) ? poFilters.company : (poFilters.company ? [poFilters.company] : [])}
+            onChange={(val) => setPoFilters(f => ({ ...f, company: val }))}
+            placeholder="All Companies"
+          />
+          <MultiSelectDropdown
+            options={filterOptions.months}
+            selected={Array.isArray(poFilters.month) ? poFilters.month : (poFilters.month ? [poFilters.month] : [])}
+            onChange={(val) => setPoFilters(f => ({ ...f, month: val }))}
+            placeholder="All Months"
+          />
           <select className="filter-select" value={poFilters.year} onChange={e => setPoFilters(f => ({ ...f, year: e.target.value }))} style={{ height:29, fontSize:12 }}>
             <option value="">All Years</option>
             {filterOptions.years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
-          {Object.values(poFilters).some(Boolean) && (
-            <button className="btn-toolbar" style={{ padding:"5px 10px", fontSize:12 }} onClick={() => setPoFilters({ company:"", month:"", year:"" })}>
+          {(poFilters.year || (poFilters.company && poFilters.company.length > 0) || (poFilters.month && poFilters.month.length > 0)) && (
+            <button className="btn-toolbar" style={{ padding:"5px 10px", fontSize:12 }} onClick={() => setPoFilters({ company:[], month:[], year:"" })}>
               Clear
             </button>
           )}

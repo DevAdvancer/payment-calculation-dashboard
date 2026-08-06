@@ -3,10 +3,11 @@
 import { useMemo } from "react";
 import { MONTH_NAMES, INSTANCE_OPTIONS, SERVICE_TYPES } from "@/lib/use-store";
 import { periodOf, normalizeMonth } from "@/lib/period-utils";
+import MultiSelectDropdown from "@/app/components/MultiSelectDropdown";
 
 const EMPTY_FILTERS = {
-  company:  "",
-  month:    "",
+  company:  [],
+  month:    [],
   year:     "",
   instance: "",
   status:   "",
@@ -39,7 +40,13 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
 
   const companies = useMemo(() => {
     const set = new Set(entries.map((e) => e.company).filter(Boolean));
-    if (filters.company) set.add(String(filters.company));
+    if (filters.company) {
+      if (Array.isArray(filters.company)) {
+        filters.company.forEach(c => set.add(String(c)));
+      } else {
+        set.add(String(filters.company));
+      }
+    }
     return [...set].sort();
   }, [entries, filters.company]);
 
@@ -64,7 +71,13 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
         if (m) present.add(m);
       }
     }
-    if (filters.month) present.add(normalizeMonth(filters.month));
+    if (filters.month) {
+      if (Array.isArray(filters.month)) {
+        filters.month.forEach(m => present.add(normalizeMonth(m)));
+      } else {
+        present.add(normalizeMonth(filters.month));
+      }
+    }
     const ordered = MONTH_NAMES.filter(m => present.has(m));
     const extras  = [...present].filter(m => !MONTH_NAMES.includes(m)).sort((a, b) => a.localeCompare(b));
     return [...ordered, ...extras];
@@ -113,7 +126,10 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
     }
   };
 
-  const activeCount = Object.values(filters).filter(Boolean).length;
+  const activeCount = Object.entries(filters).filter(([key, val]) => {
+    if (Array.isArray(val)) return val.length > 0;
+    return Boolean(val);
+  }).length;
   const hasFilters = activeCount > 0;
 
   const clearAll = () => {
@@ -184,24 +200,28 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
         </span>
 
         {/* Company */}
-        <select
-          className="filter-select"
-          value={filters.company}
-          onChange={set("company")}
-        >
-          <option value="">All Companies</option>
-          {companies.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
+        <MultiSelectDropdown
+          options={companies}
+          selected={Array.isArray(filters.company) ? filters.company : (filters.company ? [filters.company] : [])}
+          onChange={(val) => {
+            if (typeof onFilterChange === "function") {
+              onFilterChange((prev) => ({ ...prev, company: val }));
+            }
+          }}
+          placeholder="All Companies"
+        />
 
         {/* Month */}
-        <select
-          className="filter-select"
-          value={filters.month}
-          onChange={set("month")}
-        >
-          <option value="">All Months</option>
-          {months.map((m) => <option key={m} value={m}>{m}</option>)}
-        </select>
+        <MultiSelectDropdown
+          options={months}
+          selected={Array.isArray(filters.month) ? filters.month : (filters.month ? [filters.month] : [])}
+          onChange={(val) => {
+            if (typeof onFilterChange === "function") {
+              onFilterChange((prev) => ({ ...prev, month: val }));
+            }
+          }}
+          placeholder="All Months"
+        />
 
         {/* Year */}
         <select

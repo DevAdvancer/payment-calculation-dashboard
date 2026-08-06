@@ -313,7 +313,8 @@ body {
 .filter-bar {
   display: flex; gap: var(--sp-2); flex-wrap: nowrap; align-items: center;
   background: var(--color-surface-2); border-bottom: 1px solid var(--color-border-light);
-  padding: 8px 14px; overflow-x: auto; white-space: nowrap;
+  padding: 8px 14px; overflow: visible; white-space: nowrap;
+  position: relative; z-index: 100;
 }
 .filter-bar label { font-size: 11px; font-weight: 600; color: var(--color-ink-muted); text-transform: uppercase; letter-spacing: .05em; }
 .filter-select, .filter-sel {
