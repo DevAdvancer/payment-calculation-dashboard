@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import useDashboardStore, { fmtMoney } from "@/lib/use-store";
+import useDashboardStore, { fmtMoney, fmtMoneyC, currencyOf } from "@/lib/use-store";
 import { defaultLogoFor, defaultSignatureFor } from "@/lib/noc-defaults";
 
 const COMPANIES = ["Vizva", "SilverSpace", "Flawless"];
@@ -96,10 +96,12 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
     noc_footer_note:   allSettings[`${coSlug}_noc_footer_note`]   || allSettings.noc_footer_note   || "",
   };
 
+  const currency = currencyOf(company);
+
   const bodyText = s.noc_body_template
     .replace(/{candidate_name}/g, candidate || "Candidate")
     .replace(/{company_name}/g,   company   || "Company")
-    .replace(/{total_amount}/g,   fmtMoney(totalAmount))
+    .replace(/{total_amount}/g,   fmtMoneyC(totalAmount, currency))
     .replace(/{date}/g,           today)
     .replace(/{our_company}/g,    s.company_name);
 
@@ -256,7 +258,7 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
 
         <div className="modal-footer">
           <span style={{ flex:1, fontSize:11, color:"var(--color-ink-muted)" }}>
-            Total payable: <strong style={{ color:"var(--color-accent)" }}>{fmtMoney(totalAmount)}</strong>
+            Total payable: <strong style={{ color:"var(--color-accent)" }}>{fmtMoneyC(totalAmount, currency)}</strong>
           </span>
           <button className="btn-ghost" onClick={onClose}>Cancel</button>
           <button className="btn-primary" onClick={handleDownloadPDF}>
