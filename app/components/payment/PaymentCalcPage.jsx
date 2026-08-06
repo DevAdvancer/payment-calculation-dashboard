@@ -437,24 +437,33 @@ export default function PaymentCalcPage() {
 
   const handleStatusChange = (entry, nextStatus) => {
     if (nextStatus === "Move" && entry.status !== "Move") {
-      const currentIndex = sorted.findIndex(
-        (e) => String(e.id) === String(entry.id)
-      );
+      const currentMonthName = MONTH_NAMES[new Date().getMonth()];
+      const isMonthMatch = (entry.month || "").trim().toLowerCase() === currentMonthName.toLowerCase();
 
-      if (currentIndex === -1) return;
+      if (isMonthMatch) {
+        const currentIndex = sorted.findIndex(
+          (e) => String(e.id) === String(entry.id)
+        );
 
-      // Just remember which row was selected.
-      // Actual updates happen only after Confirm.
-      setPendingMove({
-        entry,
-        prevStatus: entry.status,
-        currentIndex,
-      });
+        if (currentIndex === -1) return;
 
-      setMoveDateIso(toISODate(entry.poDate));
-      setMoveError("");
+        // Just remember which row was selected.
+        // Actual updates happen only after Confirm.
+        setPendingMove({
+          entry,
+          prevStatus: entry.status,
+          currentIndex,
+        });
 
-      return;
+        setMoveDateIso(toISODate(entry.poDate));
+        setMoveError("");
+
+        return;
+      } else {
+        // Just do a normal status change without duplicate creation or Move prompt flow
+        updateStatus(entry.id, nextStatus);
+        return;
+      }
     }
 
     // Normal status changes.
