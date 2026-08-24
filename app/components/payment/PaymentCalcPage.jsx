@@ -30,14 +30,9 @@ const PAYMENT_IMPORT_HEADERS = [
 const PAYMENT_STATUS_OPTIONS = ["Received", "Pending", "Move", "Laid Off", "Default"];
 
 const COMPANY_OPTIONS = [
-  "Vizva",
   "Vizva Inc",
-  "Vizva-UK",
   "Vizva UK Ltd",
-  "SilverSpace",
   "SilverSpace Inc",
-  "SST",
-  "Flawless",
   "Flawless-ED"
 ];
 
@@ -963,7 +958,7 @@ export default function PaymentCalcPage() {
           <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>RECONCILIATION</div>
           {/* Reconciliation section (top) */}
           <div className="kpi-value" style={{ color: "#15803d", fontSize: 20, margin: "4px 0" }}>
-            {fmtMoneyC(recurringPaymentUSD - placementReceivedUSD, "USD", 2)}
+            {fmtMoneyC(placementPendingUSD, "USD", 2)}
           </div>
           <div className="kpi-sub" style={{ fontSize: 10, color: "#166534", marginBottom: 6 }}>
             Recurring – Placement received
