@@ -29,6 +29,18 @@ const PAYMENT_IMPORT_HEADERS = [
 
 const PAYMENT_STATUS_OPTIONS = ["Received", "Pending", "Move", "Laid Off", "Default"];
 
+const COMPANY_OPTIONS = [
+  "Vizva",
+  "Vizva Inc",
+  "Vizva-UK",
+  "Vizva UK Ltd",
+  "SilverSpace",
+  "SilverSpace Inc",
+  "SST",
+  "Flawless",
+  "Flawless-ED"
+];
+
 function cleanHeader(value) {
   return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
@@ -273,6 +285,31 @@ export default function PaymentCalcPage() {
   const [moveDateIso, setMoveDateIso]   = useState("");
   const [moveError, setMoveError]       = useState("");
   const [moveRows, setMoveRows]         = useState([]);
+  const [editingCompanyId, setEditingCompanyId] = useState(null);
+  const [companyDraft, setCompanyDraft] = useState("");
+  const companyEditRef = useRef(null);
+
+  useEffect(() => {
+    if (editingCompanyId === null) return;
+    function handleClickOutside(event) {
+      if (companyEditRef.current && !companyEditRef.current.contains(event.target)) {
+        setEditingCompanyId(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [editingCompanyId]);
+
+  const handleCompanySave = async (entry) => {
+    const trimmed = companyDraft.trim();
+    if (trimmed && trimmed !== entry.company) {
+      await updateEntry(entry.id, { company: trimmed });
+    }
+    setEditingCompanyId(null);
+  };
+
   const importRef = useRef();
   const searchRef = useRef();
   const pasteTargetRef = useRef();
@@ -1397,13 +1434,124 @@ export default function PaymentCalcPage() {
                     <td
                       style={{
                         fontWeight: 500,
-                        maxWidth: 160,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        maxWidth: 220,
+                        verticalAlign: "middle",
                       }}
                     >
-                      {entry.company || "—"}
+                      {editingCompanyId === entry.id ? (
+                        <div
+                          ref={companyEditRef}
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "6px",
+                            alignItems: "flex-start",
+                          }}
+                        >
+                          <select
+                            value={companyDraft}
+                            onChange={(e) => setCompanyDraft(e.target.value)}
+                            onKeyDown={async (e) => {
+                              if (e.key === "Enter") {
+                                await handleCompanySave(entry);
+                              } else if (e.key === "Escape") {
+                                setEditingCompanyId(null);
+                              }
+                            }}
+                            autoFocus
+                            style={{
+                              padding: "4px 8px",
+                              fontSize: "13px",
+                              borderRadius: "6px",
+                              border: "1px solid var(--border)",
+                              background: "var(--surface-1)",
+                              color: "var(--text-main)",
+                              width: "140px",
+                              outline: "none",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <option value="" disabled hidden>Select Company</option>
+                            {COMPANY_OPTIONS.map((c) => (
+                              <option key={c} value={c}>
+                                {c}
+                              </option>
+                            ))}
+                          </select>
+                          <div style={{ display: "flex", gap: "6px" }}>
+                            <button
+                              onClick={() => handleCompanySave(entry)}
+                              style={{
+                                padding: "4px 8px",
+                                fontSize: "11px",
+                                fontWeight: "bold",
+                                color: "#ffffff",
+                                backgroundColor: "var(--teal)",
+                                border: "none",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingCompanyId(null)}
+                              style={{
+                                padding: "4px 8px",
+                                fontSize: "11px",
+                                color: "var(--text-muted)",
+                                backgroundColor: "transparent",
+                                border: "1px solid var(--border)",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "8px",
+                          }}
+                        >
+                          <span
+                            style={{
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {entry.company || "—"}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCompanyId(entry.id);
+                              setCompanyDraft(entry.company || "");
+                            }}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: "2px",
+                              color: "var(--text-dim)",
+                              display: "inline-flex",
+                              alignItems: "center",
+                            }}
+                            title="Edit company"
+                          >
+                            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
                     </td>
 
                     <td style={{ fontWeight: 600, color: "var(--mint)" }}>
