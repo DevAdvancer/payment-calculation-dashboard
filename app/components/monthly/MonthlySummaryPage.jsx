@@ -94,7 +94,7 @@ export default function SummaryPage() {
   }, [entries, filters]);
 
   /* ── Build pivot rows: one row per (year, month) bucket sorted chronologically.
-       Each row carries Pending (= due) and Received (= paid) split by currency. */
+       Each row carries Pending, Move, and Received split by currency. */
   const pivot = useMemo(() => {
     const map = new Map();
     for (const e of filtered) {
@@ -105,6 +105,7 @@ export default function SummaryPage() {
         bucket = {
           key, month: e.month, year: e.year,
           pending: { USD: 0, GBP: 0 },
+          move: { USD: 0, GBP: 0 },
           received: { USD: 0, GBP: 0 },
           total: { USD: 0, GBP: 0 },
         };
@@ -115,10 +116,14 @@ export default function SummaryPage() {
       const paid = parseFloat(e.paid) || 0;
       if (e.status === RECEIVED_STATUS) {
         bucket.received[cur] += paid;
-      } else {
+        bucket.total[cur] += paid;
+      } else if (e.status === "Pending") {
         bucket.pending[cur] += amt;
+        bucket.total[cur] += amt;
+      } else if (e.status === "Move") {
+        bucket.move[cur] += amt;
+        bucket.total[cur] += amt;
       }
-      bucket.total[cur] += (e.status === RECEIVED_STATUS) ? paid : amt;
     }
     return [...map.values()].sort((a, b) => {
       if (+a.year !== +b.year) return +a.year - +b.year;
@@ -130,12 +135,14 @@ export default function SummaryPage() {
   const grand = useMemo(() => {
     const acc = {
       pending: { USD: 0, GBP: 0 },
+      move: { USD: 0, GBP: 0 },
       received: { USD: 0, GBP: 0 },
       total: { USD: 0, GBP: 0 },
     };
     for (const r of pivot) {
       for (const c of ["USD", "GBP"]) {
         acc.pending[c]  += r.pending[c];
+        acc.move[c]     += r.move[c];
         acc.received[c] += r.received[c];
         acc.total[c]    += r.total[c];
       }
@@ -152,6 +159,7 @@ export default function SummaryPage() {
         bucket = {
           month: r.month,
           pending: { USD: 0, GBP: 0 },
+          move: { USD: 0, GBP: 0 },
           received: { USD: 0, GBP: 0 },
           total: { USD: 0, GBP: 0 },
         };
@@ -159,6 +167,8 @@ export default function SummaryPage() {
       }
       bucket.pending.USD += r.pending.USD;
       bucket.pending.GBP += r.pending.GBP;
+      bucket.move.USD    += r.move.USD;
+      bucket.move.GBP    += r.move.GBP;
       bucket.received.USD += r.received.USD;
       bucket.received.GBP += r.received.GBP;
       bucket.total.USD += r.total.USD;
@@ -176,6 +186,15 @@ export default function SummaryPage() {
     return sum;
   }, [pivot]);
 
+  const totalMove = useMemo(() => {
+    let sum = { USD: 0, GBP: 0 };
+    for (const r of pivot) {
+      sum.USD += r.move.USD;
+      sum.GBP += r.move.GBP;
+    }
+    return sum;
+  }, [pivot]);
+
   const totalReceived = useMemo(() => {
     let sum = { USD: 0, GBP: 0 };
     for (const r of pivot) {
@@ -189,6 +208,10 @@ export default function SummaryPage() {
     const map = new Map();
 
     for (const e of filtered) {
+      if (e.status !== RECEIVED_STATUS && e.status !== "Pending" && e.status !== "Move") {
+        continue;
+      }
+
       const company = e.company?.trim() || "Unknown";
       let bucket = map.get(company);
       if (!bucket) {
@@ -208,10 +231,11 @@ export default function SummaryPage() {
 
       if (e.status === RECEIVED_STATUS) {
         bucket.received += usdAmount;
+        bucket.total += usdAmount;
       } else {
         bucket.pending += usdAmount;
+        bucket.total += usdAmount;
       }
-      bucket.total += usdAmount;
     }
 
     return [...map.values()]
@@ -402,8 +426,9 @@ export default function SummaryPage() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10, marginBottom: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 10, marginBottom: 8 }}>
         <SummaryCard label="Pending" color="#f59e0b" amountUsd={toUsd(totalPending)} />
+        <SummaryCard label="Move" color="#f87171" amountUsd={toUsd(totalMove)} />
         <SummaryCard label="Received" color="#4ade80" amountUsd={toUsd(totalReceived)} />
         <SummaryCard label="New Placement" color="#14b8a6" amountUsd={toUsd(totalNewPlacement)} />
         <SummaryCard label="Placement" color="#6366f1" amountUsd={toUsd(totalPlacement)} />
@@ -451,6 +476,7 @@ export default function SummaryPage() {
                 <tr>
                   <th style={{ padding: "6px 12px" }}>Months</th>
                   <th style={{ padding: "6px 12px" }}>Pending</th>
+                  <th style={{ padding: "6px 12px" }}>Move</th>
                   <th style={{ padding: "6px 12px" }}>Received</th>
                   <th style={{ padding: "6px 12px" }}>Grand Total</th>
                 </tr>
@@ -462,6 +488,11 @@ export default function SummaryPage() {
                     <td style={{ fontVariantNumeric: "tabular-nums", padding: "5px 12px" }}>
                       {(r.pending.USD || r.pending.GBP)
                         ? <MoneyStack usd={r.pending.USD} gbp={r.pending.GBP} decimals={2} />
+                        : <span style={{ color: "var(--text-dim)" }}>—</span>}
+                    </td>
+                    <td style={{ fontVariantNumeric: "tabular-nums", padding: "5px 12px" }}>
+                      {(r.move.USD || r.move.GBP)
+                        ? <MoneyStack usd={r.move.USD} gbp={r.move.GBP} decimals={2} />
                         : <span style={{ color: "var(--text-dim)" }}>—</span>}
                     </td>
                     <td style={{ fontVariantNumeric: "tabular-nums", color: "#4ade80", padding: "5px 12px" }}>
@@ -478,6 +509,9 @@ export default function SummaryPage() {
                   <td style={{ fontWeight: 800, padding: "5px 12px" }}>Grand Total</td>
                   <td style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums", padding: "5px 12px" }}>
                     <MoneyStack usd={grand.pending.USD} gbp={grand.pending.GBP} decimals={2} />
+                  </td>
+                  <td style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums", padding: "5px 12px" }}>
+                    <MoneyStack usd={grand.move.USD} gbp={grand.move.GBP} decimals={2} />
                   </td>
                   <td style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums", color: "#4ade80", padding: "5px 12px" }}>
                     <MoneyStack usd={grand.received.USD} gbp={grand.received.GBP} decimals={2} />
