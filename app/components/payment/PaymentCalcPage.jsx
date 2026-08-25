@@ -1054,7 +1054,7 @@ export default function PaymentCalcPage() {
                 background: "rgba(59, 130, 246, 0.12)",
                 color: "#2563eb"
               }}>
-                {recurringPaymentUSD > 0 ? Math.round((placementReceivedUSD / recurringPaymentUSD) * 100) : 0}%
+                {recurringPaymentUSD > 0 ? Math.round((placementReceivedUSD / totalRecurringPlacement) * 100) : 0}%
               </span>
             </div>
             <div>
@@ -1072,7 +1072,7 @@ export default function PaymentCalcPage() {
                 background: "rgba(245, 158, 11, 0.12)",
                 color: "#d97706"
               }}>
-                {recurringPaymentUSD > 0 ? Math.round((placementPendingUSD / recurringPaymentUSD) * 100) : 0}%
+                {recurringPaymentUSD > 0 ? Math.round((placementPendingUSD / totalRecurringPlacement) * 100) : 0}%
               </span>
             </div>
           </div>
