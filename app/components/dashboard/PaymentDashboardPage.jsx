@@ -1,8 +1,10 @@
 "use client";
 import useDashboardStore, { fmtMoneyC } from "@/lib/use-store";
+import { useRouter } from "next/navigation";
 
 export default function PaymentDashboardPage() {
-  const { lastDashboard, navigate, showToast } = useDashboardStore();
+  const { lastDashboard, showToast } = useDashboardStore();
+  const router = useRouter();
 
   if (!lastDashboard) {
     return (
@@ -20,7 +22,7 @@ export default function PaymentDashboardPage() {
           </div>
         </div>
         <button
-          onClick={() => navigate("placement")}
+          onClick={() => router.push("/vizva-candidate-records/placement")}
           style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 20px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: "var(--radius-md)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "var(--font-body)" }}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -97,13 +99,13 @@ export default function PaymentDashboardPage() {
         </div>
 
         <button
-          onClick={() => navigate("placement")}
+          onClick={() => router.push("/vizva-candidate-records/placement")}
           style={{ marginTop: "auto", padding: "10px 16px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: "var(--radius-md)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "var(--font-body)" }}
         >
           + New Placement
         </button>
         <button
-          onClick={() => navigate("payment")}
+          onClick={() => router.push("/vizva-candidate-records/payment")}
           style={{ padding: "8px 16px", background: "transparent", color: "var(--color-ink-muted)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-body)" }}
         >
           View Payment Sheet

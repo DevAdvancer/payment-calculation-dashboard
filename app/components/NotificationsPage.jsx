@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import useDashboardStore from "../../lib/use-store";
 
 export default function NotificationsPage() {
@@ -8,7 +9,7 @@ export default function NotificationsPage() {
   const markNotificationRead = useDashboardStore((s) => s.markNotificationRead);
   const deleteSpecificNotification = useDashboardStore((s) => s.deleteSpecificNotification);
   const deleteAllNotifications = useDashboardStore((s) => s.deleteAllNotifications);
-  const navigate = useDashboardStore((s) => s.navigate);
+  const router = useRouter();
   const setNocTarget = useDashboardStore((s) => s.setNocTarget);
   const showToast = useDashboardStore((s) => s.showToast);
   const set = useDashboardStore.setState;
@@ -38,7 +39,7 @@ export default function NotificationsPage() {
     // Set the target so CandidateHistoryPage picks it up
     setNocTarget(notif.candidate, notif.id);
     // Navigate to Candidate History page
-    navigate("history");
+    router.push("/vizva-candidate-records/history");
   };
 
   return (

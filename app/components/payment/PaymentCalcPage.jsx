@@ -238,7 +238,7 @@ function clipboardRowsToObjects(text) {
 }
 
 export default function PaymentCalcPage() {
-  const { getActive, getLaidOff, getDefaulters, getCandidateNames, updateEntry, updateStatus, createEntry, deleteEntry, bulkDelete, importEntries, showToast, loading, navigate } =
+  const { getActive, getLaidOff, getDefaulters, getCandidateNames, updateEntry, updateStatus, createEntry, deleteEntry, bulkDelete, importEntries, showToast, loading } =
     useDashboardStore();
 
   const entries       = getActive();
@@ -1078,9 +1078,9 @@ export default function PaymentCalcPage() {
           </div>
         </div>
 
-        {/* Card 4: Total Payment Status */}
+        {/* Card 4: Total From Placements */}
         <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", borderColor: "#bbf7d0" }}>
-          <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>Total Payment Status</div>
+          <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>Total From Placements</div>
           <div className="kpi-value" style={{ fontSize: 22, margin: "4px 0", color: "blue" }}>
             {fmtMoneyC(totalValueUSD, "USD", 2)}
           </div>

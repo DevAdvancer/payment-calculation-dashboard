@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import useDashboardStore, { MONTH_NAMES, fmtMoneyC, currencyOf, currencySymbol, fmtEmailDate } from "@/lib/use-store";
 import DateInput from "@/app/components/DateInput";
 
@@ -88,7 +89,8 @@ function formatDateDisplay(d) {
 }
 
 export default function NewPlacementPage() {
-  const { bulkCreate, showToast, navigate, setLastDashboard } = useDashboardStore();
+  const { bulkCreate, showToast, setLastDashboard } = useDashboardStore();
+  const router = useRouter();
   const [form, setForm]     = useState(EMPTY_FORM);
   const [step, setStep]     = useState(1);
   const [saving, setSaving] = useState(false);
@@ -265,7 +267,7 @@ export default function NewPlacementPage() {
       });
       setForm(EMPTY_FORM);
       setStep(1);
-      navigate("dashboard");
+      router.push("/vizva-candidate-records/dashboard");
     } catch {
       showToast("Failed to save entries");
     }
