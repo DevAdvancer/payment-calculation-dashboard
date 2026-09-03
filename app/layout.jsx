@@ -11,6 +11,8 @@ export const viewport = {
   maximumScale: 5,
 };
 
+import ClientLayout from "./ClientLayout";
+
 export default function RootLayout({ children }) {
   return (
     /* suppressHydrationWarning on <html> — browser extensions
@@ -19,7 +21,9 @@ export default function RootLayout({ children }) {
        otherwise show up as a hydration mismatch. The <body> tag
        continues to be reconciled normally. */
     <html lang="en-US" suppressHydrationWarning>
-      <body>{children}</body>
+      <body>
+        <ClientLayout>{children}</ClientLayout>
+      </body>
     </html>
   );
 }

@@ -1,27 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useDashboardStore from "../../lib/use-store";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+
+const PREFIX = "/vizva-candidate-records";
 
 export default function Sidebar() {
-  const currentPage    = useDashboardStore((s) => s.currentPage);
-  const navigateStore  = useDashboardStore((s) => s.navigate);
+  const pathname = usePathname();
+  
   const getLaidOff     = useDashboardStore((s) => s.getLaidOff);
   const getDefaulters  = useDashboardStore((s) => s.getDefaulters);
   const notifications  = useDashboardStore((s) => s.notifications);
   const sidebarOpen    = useDashboardStore((s) => s.sidebarOpen);
   const setSidebarOpen = useDashboardStore((s) => s.setSidebarOpen);
 
-  const paymentGroupActive = ["payment", "laidoff", "defaulter"].includes(currentPage);
+  const paymentGroupActive = pathname === `${PREFIX}/payment` || pathname === `${PREFIX}/laidoff` || pathname === `${PREFIX}/defaulter`;
   const [paymentOpen, setPaymentOpen] = useState(paymentGroupActive);
+  
+  useEffect(() => {
+    if (paymentGroupActive) {
+      setPaymentOpen(true);
+    }
+  }, [paymentGroupActive]);
 
   const laidOffCount   = getLaidOff().length;
   const defaulterCount = getDefaulters().length;
   const unreadNotificationsCount = notifications.filter(n => !n.read).length;
 
-  const isActive = (id) => currentPage === id;
-  /* Close mobile drawer after navigating */
-  const navigate = (id) => { navigateStore(id); setSidebarOpen(false); };
+  const isActive = (path) => pathname === path;
+  
+  const onNavClick = () => { setSidebarOpen(false); };
 
   return (
     <>
@@ -44,7 +54,7 @@ export default function Sidebar() {
       {/* Brand */}
       <div style={{ display:"flex", alignItems:"center", gap:"10px", padding:"20px 16px 16px", borderBottom:"1px solid rgba(255,255,255,0.08)", flexShrink:0 }}>
         <div style={{ width:34, height:34, background:"rgba(255,255,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-          <img src="../../icon.png" width= {35} height={35} alt="Logo" srcSet="" />            
+          <img src="../../icon.png" width={35} height={35} alt="Logo" srcSet="" />            
         </div>
         <span style={{ fontSize:11, fontWeight:700, color:"#fff", letterSpacing:"-0.01em", lineHeight:1.3 }}>
           Financial<br/>Management System
@@ -55,7 +65,7 @@ export default function Sidebar() {
       <div style={{ flex:1, display:"flex", flexDirection:"column", gap:2, padding:"10px 8px", overflowY:"auto" }}>
 
         {/* New Placement */}
-        <NavBtn active={isActive("placement")} onClick={() => navigate("placement")} accent>
+        <NavBtn href={`${PREFIX}/placement`} active={isActive(`${PREFIX}/placement`)} onClick={onNavClick} accent>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
@@ -64,7 +74,7 @@ export default function Sidebar() {
         </NavBtn>
 
         {/* Payment Dashboard */}
-        <NavBtn active={isActive("dashboard")} onClick={() => navigate("dashboard")}>
+        <NavBtn href={`${PREFIX}/dashboard`} active={isActive(`${PREFIX}/dashboard`)} onClick={onNavClick}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
             <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
@@ -75,7 +85,7 @@ export default function Sidebar() {
         <div style={{ height:1, background:"rgba(255,255,255,0.07)", margin:"4px 4px" }} />
 
         {/* Candidate History */}
-        <NavBtn active={isActive("history")} onClick={() => navigate("history")}>
+        <NavBtn href={`${PREFIX}/history`} active={isActive(`${PREFIX}/history`)} onClick={onNavClick}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="8" r="4"/>
             <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
@@ -84,7 +94,7 @@ export default function Sidebar() {
         </NavBtn>
 
         {/* PO Details */}
-        <NavBtn active={isActive("po-details")} onClick={() => navigate("po-details")}>
+        <NavBtn href={`${PREFIX}/po-details`} active={isActive(`${PREFIX}/po-details`)} onClick={onNavClick}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
@@ -95,7 +105,7 @@ export default function Sidebar() {
         </NavBtn>
 
         {/* Notifications */}
-        <NavBtn active={isActive("notifications")} onClick={() => navigate("notifications")}>
+        <NavBtn href={`${PREFIX}/notifications`} active={isActive(`${PREFIX}/notifications`)} onClick={onNavClick}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8" />
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
@@ -106,8 +116,9 @@ export default function Sidebar() {
 
         {/* Payment Calculation */}
         <NavBtn
-          active={isActive("payment")}
-          onClick={() => { setPaymentOpen(v => !v); navigate("payment"); }}
+          href={`${PREFIX}/payment`}
+          active={isActive(`${PREFIX}/payment`)}
+          onClick={() => { setPaymentOpen(v => !v); onNavClick(); }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="1" x2="12" y2="23"/>
@@ -119,12 +130,12 @@ export default function Sidebar() {
 
         {/* Sub: Laid Off */}
         <div style={{ overflow:"hidden", maxHeight:(paymentOpen || paymentGroupActive) ? 120 : 0, transition:"max-height 0.25s ease", opacity:(paymentOpen || paymentGroupActive) ? 1 : 0 }}>
-          <NavSubBtn active={isActive("laidoff")} onClick={() => navigate("laidoff")}>
+          <NavSubBtn href={`${PREFIX}/laidoff`} active={isActive(`${PREFIX}/laidoff`)} onClick={onNavClick}>
             <span style={{ width:6, height:6, borderRadius:"50%", background:"#f87171", flexShrink:0 }} />
             Laid Off
             {laidOffCount > 0 && <span style={{ marginLeft:"auto", fontSize:10, padding:"1px 6px", background:"rgba(248,113,113,0.2)", color:"#f87171", borderRadius:9999 }}>{laidOffCount}</span>}
           </NavSubBtn>
-          <NavSubBtn active={isActive("defaulter")} onClick={() => navigate("defaulter")}>
+          <NavSubBtn href={`${PREFIX}/defaulter`} active={isActive(`${PREFIX}/defaulter`)} onClick={onNavClick}>
             <span style={{ width:6, height:6, borderRadius:"50%", background:"#fb923c", flexShrink:0 }} />
             Defaulter
             {defaulterCount > 0 && <span style={{ marginLeft:"auto", fontSize:10, padding:"1px 6px", background:"rgba(251,146,60,0.2)", color:"#fb923c", borderRadius:9999 }}>{defaulterCount}</span>}
@@ -132,7 +143,7 @@ export default function Sidebar() {
         </div>
 
         {/* Expense Management */}
-        <NavBtn active={isActive("expenses")} onClick={() => navigate("expenses")}>
+        <NavBtn href={`${PREFIX}/expenses`} active={isActive(`${PREFIX}/expenses`)} onClick={onNavClick}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="1" x2="12" y2="23"/>
             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
@@ -141,7 +152,7 @@ export default function Sidebar() {
         </NavBtn>
 
         {/* Summary */}
-        <NavBtn active={isActive("monthly")} onClick={() => navigate("monthly")}>
+        <NavBtn href={`${PREFIX}/monthly`} active={isActive(`${PREFIX}/monthly`)} onClick={onNavClick}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="2"/>
             <line x1="16" y1="2" x2="16" y2="6"/>
@@ -152,8 +163,6 @@ export default function Sidebar() {
           </svg>
           Summary
         </NavBtn>
-
-
 
       </div>
 
@@ -174,15 +183,16 @@ export default function Sidebar() {
   );
 }
 
-function NavBtn({ active, onClick, children, accent }) {
+function NavBtn({ href, active, onClick, children, accent }) {
   const accentBg     = "rgba(37,99,235,0.85)";
   const accentBgHov  = "rgba(37,99,235,1)";
   return (
-    <button
+    <Link
+      href={href}
       onClick={onClick}
       style={{
         display:"flex", alignItems:"center", gap:8, padding:"8px 12px",
-        border: "none",
+        border: "none", textDecoration: "none",
         background: accent
           ? (active ? accentBg : "rgba(37,99,235,0.55)")
           : (active ? "rgba(255,255,255,0.15)" : "transparent"),
@@ -201,17 +211,18 @@ function NavBtn({ active, onClick, children, accent }) {
       }}
     >
       {children}
-    </button>
+    </Link>
   );
 }
 
-function NavSubBtn({ active, onClick, children }) {
+function NavSubBtn({ href, active, onClick, children }) {
   return (
-    <button
+    <Link
+      href={href}
       onClick={onClick}
       style={{
         display:"flex", alignItems:"center", gap:8, padding:"6px 12px 6px 28px",
-        border:"none", background: active ? "rgba(255,255,255,0.1)" : "transparent",
+        border:"none", textDecoration: "none", background: active ? "rgba(255,255,255,0.1)" : "transparent",
         cursor:"pointer", borderRadius:8, fontSize:12, fontWeight:500,
         color: active ? "#fff" : "rgba(255,255,255,0.5)", fontFamily:"inherit",
         textAlign:"left", width:"100%", transition:"background 0.15s, color 0.15s",
@@ -220,6 +231,6 @@ function NavSubBtn({ active, onClick, children }) {
       onMouseLeave={e => { if (!active) { e.currentTarget.style.background="transparent"; e.currentTarget.style.color="rgba(255,255,255,0.5)"; }}}
     >
       {children}
-    </button>
+    </Link>
   );
 }
