@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import useDashboardStore, { fmtMoney, fmtMoneyC, fmtDate, fmtEmailDate, MONTH_NAMES, currencyOf, currencySymbol, sumByCurrency } from "../../../lib/use-store";
 import MoneyStack from "../MoneyStack";
 import DateInput from "../DateInput";
@@ -250,7 +251,7 @@ export default function PODetailsPage() {
   const importEntries   = useDashboardStore((s) => s.importEntries);
   const bulkCreate      = useDashboardStore((s) => s.bulkCreate);
   const showToast       = useDashboardStore((s) => s.showToast);
-  const navigate        = useDashboardStore((s) => s.navigate);
+  const router          = useRouter();
   const setLastDashboard = useDashboardStore((s) => s.setLastDashboard);
 
   const [sort, setSort]       = useState({ key:"candidate", dir:"asc" });
@@ -735,7 +736,7 @@ export default function PODetailsPage() {
       rows,
       installments:       candidateEntries,
     });
-    navigate("dashboard");
+    router.push("/vizva-candidate-records/dashboard");
   };
 
   const handleExport = () => {
