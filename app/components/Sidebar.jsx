@@ -5,7 +5,7 @@ import useDashboardStore from "../../lib/use-store";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
-const PREFIX = "/vizva-candidate-records";
+const PREFIX = "";
 
 export default function Sidebar() {
   const pathname = usePathname();

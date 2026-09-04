@@ -736,7 +736,7 @@ export default function PODetailsPage() {
       rows,
       installments:       candidateEntries,
     });
-    router.push("/vizva-candidate-records/dashboard");
+    router.push("/dashboard");
   };
 
   const handleExport = () => {
