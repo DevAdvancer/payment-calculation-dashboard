@@ -267,7 +267,7 @@ export default function NewPlacementPage() {
       });
       setForm(EMPTY_FORM);
       setStep(1);
-      router.push("/vizva-candidate-records/dashboard");
+      router.push("/dashboard");
     } catch {
       showToast("Failed to save entries");
     }

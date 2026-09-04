@@ -39,7 +39,7 @@ export default function NotificationsPage() {
     // Set the target so CandidateHistoryPage picks it up
     setNocTarget(notif.candidate, notif.id);
     // Navigate to Candidate History page
-    router.push("/vizva-candidate-records/history");
+    router.push("/history");
   };
 
   return (
