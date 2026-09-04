@@ -11,6 +11,16 @@ export default function Sidebar() {
   const pathname = usePathname();
   
   const getLaidOff     = useDashboardStore((s) => s.getLaidOff);
+  const adminSection   = useDashboardStore((s) => s.adminSection);
+  const setAdminSection = useDashboardStore((s) => s.setAdminSection);
+  const isAdmin = pathname.startsWith("/admin");
+
+  const ADMIN_SECTIONS = [
+    { id:"company",   label:"Company Profiles", icon:"🏢" },
+    { id:"signatory", label:"Signatory",         icon:"✍️" },
+    { id:"noc",       label:"NOC Template",      icon:"📄" },
+    { id:"preview",   label:"Live Preview",      icon:"👁️" },
+  ];
   const getDefaulters  = useDashboardStore((s) => s.getDefaulters);
   const notifications  = useDashboardStore((s) => s.notifications);
   const sidebarOpen    = useDashboardStore((s) => s.sidebarOpen);
@@ -64,6 +74,24 @@ export default function Sidebar() {
       {/* Nav Items */}
       <div style={{ flex:1, display:"flex", flexDirection:"column", gap:2, padding:"10px 8px", overflowY:"auto" }}>
 
+        {isAdmin ? (
+          <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
+            {ADMIN_SECTIONS.map(s => (
+              <button key={s.id} onClick={() => { setAdminSection(s.id); setSidebarOpen(false); }}
+                style={{ display:"flex", alignItems:"center", gap:9, padding:"8px 12px", border:"none", background:adminSection===s.id?"rgba(255,255,255,0.15)":"transparent", cursor:"pointer", borderRadius:8, fontSize:13, fontWeight:adminSection===s.id?700:500, color:adminSection===s.id?"#fff":"rgba(255,255,255,0.65)", fontFamily:"inherit", textAlign:"left", width:"100%", transition:"all 0.15s", marginBottom:2 }}>
+                <span style={{ fontSize:15 }}>{s.icon}</span>{s.label}
+              </button>
+            ))}
+            <div style={{ marginTop:"auto", padding:"12px 8px 16px", borderTop:"1px solid rgba(255,255,255,0.08)" }}>
+              <a href="/dashboard" style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", borderRadius:8, fontSize:12, fontWeight:500, color:"rgba(255,255,255,0.45)", textDecoration:"none", border:"1px solid rgba(255,255,255,0.08)", transition:"all 0.15s" }}
+                onMouseEnter={e => { e.currentTarget.style.background="rgba(255,255,255,0.06)"; e.currentTarget.style.color="rgba(255,255,255,0.75)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.color="rgba(255,255,255,0.45)"; }}>
+                ← Dashboard
+              </a>
+            </div>
+          </div>
+        ) : (
+          <>
         {/* New Placement */}
         <NavBtn href={`${PREFIX}/placement`} active={isActive(`${PREFIX}/placement`)} onClick={onNavClick} accent>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -163,21 +191,25 @@ export default function Sidebar() {
           </svg>
           Summary
         </NavBtn>
+          </>
+        )}
 
       </div>
 
       {/* Footer */}
-      <div style={{ padding:"12px 16px", borderTop:"1px solid rgba(255,255,255,0.08)" }}>
-        <a href="/admin" style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:8, fontSize:12, fontWeight:500, color:"rgba(255,255,255,0.45)", textDecoration:"none", border:"1px solid rgba(255,255,255,0.08)", transition:"all 0.15s" }}
-          onMouseEnter={e => { e.currentTarget.style.background="rgba(255,255,255,0.06)"; e.currentTarget.style.color="rgba(255,255,255,0.75)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.color="rgba(255,255,255,0.45)"; }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.07 4.93A10 10 0 0 0 4.93 19.07M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-          </svg>
-          Admin &amp; NOC Settings
-        </a>
-      </div>
+      {!isAdmin && (
+        <div style={{ padding:"12px 16px", borderTop:"1px solid rgba(255,255,255,0.08)" }}>
+          <a href="/admin" style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:8, fontSize:12, fontWeight:500, color:"rgba(255,255,255,0.45)", textDecoration:"none", border:"1px solid rgba(255,255,255,0.08)", transition:"all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.background="rgba(255,255,255,0.06)"; e.currentTarget.style.color="rgba(255,255,255,0.75)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.color="rgba(255,255,255,0.45)"; }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.07 4.93A10 10 0 0 0 4.93 19.07M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+            Admin Settings
+          </a>
+        </div>
+      )}
     </nav>
     </>
   );

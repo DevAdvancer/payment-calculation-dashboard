@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { defaultLogoFor, defaultSignatureFor } from "@/lib/noc-defaults";
+import useDashboardStore from "@/lib/use-store";
 
 const COMPANIES = ["Vizva", "SilverSpace", "Flawless"];
 
@@ -30,7 +31,7 @@ export default function AdminPage() {
   const [baseline, setBaseline] = useState(null);   // last saved snapshot — drives delta save
   const [saving, setSaving]     = useState(false);
   const [saved, setSaved]       = useState(false);
-  const [section, setSection]   = useState("company");
+  const section                 = useDashboardStore(s => s.adminSection);
   const [activeCo, setActiveCo] = useState("Vizva");
   const [toast, setToast]       = useState("");
   const toastTimer = useRef(null);
@@ -162,27 +163,6 @@ export default function AdminPage() {
 
   return (
     <div style={{ display:"flex", minHeight:"100vh", background:"#f4f5f7", fontFamily:"'DM Sans',sans-serif" }}>
-
-      {/* Sidebar */}
-      <aside style={{ width:220, minWidth:220, background:"#1a1f2e", position:"sticky", top:0, height:"100vh", overflow:"auto", display:"flex", flexDirection:"column", boxShadow:"2px 0 12px rgba(0,0,0,0.12)" }}>
-        <div style={{ padding:"20px 16px 16px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
-          <div style={{ fontSize:13, fontWeight:700, color:"#fff", lineHeight:1.3 }}>NOC Admin</div>
-          <div style={{ fontSize:10, fontWeight:600, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:".1em", marginTop:3 }}>CMS Configuration</div>
-        </div>
-        <nav style={{ flex:1, padding:"10px 8px", display:"flex", flexDirection:"column", gap:2 }}>
-          {SECTIONS.map(s => (
-            <button key={s.id} onClick={() => setSection(s.id)}
-              style={{ display:"flex", alignItems:"center", gap:9, padding:"8px 12px", border:"none", background:section===s.id?"rgba(255,255,255,0.15)":"transparent", cursor:"pointer", borderRadius:8, fontSize:13, fontWeight:section===s.id?600:500, color:section===s.id?"#fff":"rgba(255,255,255,0.65)", fontFamily:"inherit", textAlign:"left", width:"100%", transition:"all 0.15s" }}>
-              <span>{s.icon}</span>{s.label}
-            </button>
-          ))}
-        </nav>
-        <div style={{ padding:"12px 8px 16px", borderTop:"1px solid rgba(255,255,255,0.08)" }}>
-          <a href="/" style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", borderRadius:8, fontSize:12, fontWeight:500, color:"rgba(255,255,255,0.45)", textDecoration:"none", border:"1px solid rgba(255,255,255,0.08)" }}>
-            ← Dashboard
-          </a>
-        </div>
-      </aside>
 
       {/* Main */}
       <main style={{ flex:1, padding:"40px 56px", maxWidth:900, overflow:"auto" }}>
