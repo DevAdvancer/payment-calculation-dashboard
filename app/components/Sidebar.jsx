@@ -11,8 +11,6 @@ export default function Sidebar() {
   const pathname = usePathname();
   
   const getLaidOff     = useDashboardStore((s) => s.getLaidOff);
-  const adminSection   = useDashboardStore((s) => s.adminSection);
-  const setAdminSection = useDashboardStore((s) => s.setAdminSection);
   const isAdmin = pathname.startsWith("/admin");
 
   const ADMIN_SECTIONS = [
@@ -76,12 +74,15 @@ export default function Sidebar() {
 
         {isAdmin ? (
           <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
-            {ADMIN_SECTIONS.map(s => (
-              <button key={s.id} onClick={() => { setAdminSection(s.id); setSidebarOpen(false); }}
-                style={{ display:"flex", alignItems:"center", gap:9, padding:"8px 12px", border:"none", background:adminSection===s.id?"rgba(255,255,255,0.15)":"transparent", cursor:"pointer", borderRadius:8, fontSize:13, fontWeight:adminSection===s.id?700:500, color:adminSection===s.id?"#fff":"rgba(255,255,255,0.65)", fontFamily:"inherit", textAlign:"left", width:"100%", transition:"all 0.15s", marginBottom:2 }}>
-                <span style={{ fontSize:15 }}>{s.icon}</span>{s.label}
-              </button>
-            ))}
+            {ADMIN_SECTIONS.map(s => {
+              const isActiveRoute = pathname === `/admin/${s.id}`;
+              return (
+                <Link key={s.id} href={`/admin/${s.id}`} onClick={() => setSidebarOpen(false)}
+                  style={{ display:"flex", alignItems:"center", gap:9, padding:"8px 12px", border:"none", textDecoration:"none", background:isActiveRoute?"rgba(255,255,255,0.15)":"transparent", cursor:"pointer", borderRadius:8, fontSize:13, fontWeight:isActiveRoute?700:500, color:isActiveRoute?"#fff":"rgba(255,255,255,0.65)", fontFamily:"inherit", textAlign:"left", width:"100%", transition:"all 0.15s", marginBottom:2 }}>
+                  <span style={{ fontSize:15 }}>{s.icon}</span>{s.label}
+                </Link>
+              );
+            })}
             <div style={{ marginTop:"auto", padding:"12px 8px 16px", borderTop:"1px solid rgba(255,255,255,0.08)" }}>
               <a href="/dashboard" style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", borderRadius:8, fontSize:12, fontWeight:500, color:"rgba(255,255,255,0.45)", textDecoration:"none", border:"1px solid rgba(255,255,255,0.08)", transition:"all 0.15s" }}
                 onMouseEnter={e => { e.currentTarget.style.background="rgba(255,255,255,0.06)"; e.currentTarget.style.color="rgba(255,255,255,0.75)"; }}
