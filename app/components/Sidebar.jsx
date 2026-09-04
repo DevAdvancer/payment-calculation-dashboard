@@ -71,9 +71,22 @@ export default function Sidebar() {
 
       {/* Nav Items */}
       <div style={{ flex:1, display:"flex", flexDirection:"column", gap:2, padding:"10px 8px", overflowY:"auto" }}>
-
         {isAdmin ? (
           <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
+            
+            <div style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:".05em", padding:"12px 12px 8px" }}>
+              Management
+            </div>
+            
+            <Link href="/admin/users" onClick={() => setSidebarOpen(false)}
+              style={{ display:"flex", alignItems:"center", gap:9, padding:"8px 12px", border:"none", textDecoration:"none", background:pathname==="/admin/users"?"rgba(255,255,255,0.15)":"transparent", cursor:"pointer", borderRadius:8, fontSize:13, fontWeight:pathname==="/admin/users"?700:500, color:pathname==="/admin/users"?"#fff":"rgba(255,255,255,0.65)", fontFamily:"inherit", textAlign:"left", width:"100%", transition:"all 0.15s", marginBottom:2 }}>
+              <span style={{ fontSize:15 }}>👥</span>Users
+            </Link>
+
+            <div style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:".05em", padding:"20px 12px 8px", marginTop:8 }}>
+              NOC Settings
+            </div>
+
             {ADMIN_SECTIONS.map(s => {
               const isActiveRoute = pathname === `/admin/${s.id}`;
               return (
