@@ -38,7 +38,7 @@ export default function AccessControlPage() {
               {/* Sample Row */}
               <tr style={{ borderBottom: "1px solid #eef0f3" }}>
                 <td style={{ padding: "16px 24px", color: "#111827", fontWeight: 500 }}>Abhirup</td>
-                <td style={{ padding: "16px 24px", color: "#64748b" }}>User</td>
+                <td style={{ padding: "16px 24px", color: "#64748b" }}>user</td>
                 <td style={{ padding: "16px 24px" }}>
                   <Link href="/admin/access-control" style={{ display: "inline-block", textDecoration: "none", padding: "6px 14px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 16, fontSize: 12, fontWeight: 600, color: "#334155", cursor: "pointer" }}>
                     Access

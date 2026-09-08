@@ -7,7 +7,7 @@ import Sidebar from "./components/Sidebar";
 import Toast from "./components/Toast";
 import CounterLoader from "./components/CounterLoader";
 
-export default function ClientLayout({ children }) {
+export default function ClientLayout({ children, userRole }) {
   const loading    = useDashboardStore((s) => s.loading);
   const loadFromDB = useDashboardStore((s) => s.loadFromDB);
   const pathname   = usePathname();
@@ -28,7 +28,7 @@ export default function ClientLayout({ children }) {
 
   return (
     <div style={{ display:"flex", minHeight:"100vh" }}>
-      {!hideSidebar && <Sidebar />}
+      {!hideSidebar && <Sidebar userRole={userRole} />}
       <main style={{ marginLeft: hideSidebar ? 0 : 220, flex:1, background:"var(--color-bg)", overflowY:"auto", minHeight:"100vh" }}>
         {children}
       </main>

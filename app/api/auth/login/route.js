@@ -9,7 +9,7 @@ const JWT_SECRET = new TextEncoder().encode(
 
 export async function POST(request) {
   try {
-    const { email, password } = await request.json();
+    const { email, password, role } = await request.json();
 
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
@@ -18,6 +18,12 @@ export async function POST(request) {
     const user = await getUserByEmail(email);
     if (!user) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
+
+    // Optional: enforce role matching. Default to 'user' if not provided
+    const requestedRole = role || 'user';
+    if (user.role !== requestedRole) {
+      return NextResponse.json({ error: `Account does not have ${requestedRole} privileges` }, { status: 403 });
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);

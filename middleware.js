@@ -21,11 +21,13 @@ export async function middleware(request) {
 
   const token = request.cookies.get('auth_token')?.value;
   let isValid = false;
+  let decodedPayload = null;
 
   if (token) {
     try {
-      await jwtVerify(token, JWT_SECRET);
+      const { payload } = await jwtVerify(token, JWT_SECRET);
       isValid = true;
+      decodedPayload = payload;
     } catch (error) {
       // Token is invalid or expired
     }
@@ -40,6 +42,13 @@ export async function middleware(request) {
 
   if (!isValid) {
     return NextResponse.redirect(new URL('/sign-in', request.url));
+  }
+
+  // Admin route protection
+  if (pathname.startsWith('/admin')) {
+    if (decodedPayload?.role !== 'admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
   }
 
   return NextResponse.next();

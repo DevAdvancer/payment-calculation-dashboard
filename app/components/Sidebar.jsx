@@ -7,7 +7,7 @@ import Link from "next/link";
 
 const PREFIX = "";
 
-export default function Sidebar() {
+export default function Sidebar({ userRole }) {
   const pathname = usePathname();
   
   const getLaidOff     = useDashboardStore((s) => s.getLaidOff);
@@ -212,7 +212,7 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div style={{ padding:"12px 16px", borderTop:"1px solid rgba(255,255,255,0.08)", marginTop: isAdmin ? 0 : "auto" }}>
-        {!isAdmin && (
+        {!isAdmin && userRole === 'admin' && (
           <a href="/admin" style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:8, fontSize:12, fontWeight:500, color:"rgba(255,255,255,0.45)", textDecoration:"none", border:"1px solid rgba(255,255,255,0.08)", transition:"all 0.15s", marginBottom: "8px" }}
             onMouseEnter={e => { e.currentTarget.style.background="rgba(255,255,255,0.06)"; e.currentTarget.style.color="rgba(255,255,255,0.75)"; }}
             onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.color="rgba(255,255,255,0.45)"; }}>

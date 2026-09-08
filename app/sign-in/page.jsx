@@ -9,6 +9,7 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState("user");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,7 +20,7 @@ export default function SignInPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, role: activeTab }),
       });
       
       if (!res.ok) {
@@ -79,6 +80,33 @@ export default function SignInPage() {
           <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "15px" }}>
             Sign in to manage your finances
           </p>
+        </div>
+
+        <div style={{ display: 'flex', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', padding: '4px', marginBottom: '24px' }}>
+          <button
+            type="button"
+            onClick={() => setActiveTab('user')}
+            style={{
+              flex: 1, padding: '10px', borderRadius: '8px', border: 'none',
+              background: activeTab === 'user' ? 'rgba(255,255,255,0.1)' : 'transparent',
+              color: activeTab === 'user' ? '#fff' : 'rgba(255,255,255,0.5)',
+              fontWeight: '600', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s'
+            }}
+          >
+            User Login
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('admin')}
+            style={{
+              flex: 1, padding: '10px', borderRadius: '8px', border: 'none',
+              background: activeTab === 'admin' ? 'rgba(255,255,255,0.1)' : 'transparent',
+              color: activeTab === 'admin' ? '#fff' : 'rgba(255,255,255,0.5)',
+              fontWeight: '600', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s'
+            }}
+          >
+            Admin Login
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
