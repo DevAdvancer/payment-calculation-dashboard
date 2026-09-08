@@ -36,6 +36,7 @@ export default function CandidateHistoryPage() {
   const [search, setSearch] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [selectedCompany, setSelectedCompany] = useState("");
   const [animated, setAnimated] = useState(false);
   const [showNOC, setShowNOC] = useState(false);
   const searchRef = useRef();
@@ -52,6 +53,14 @@ export default function CandidateHistoryPage() {
 
   /* ── Selected candidate entries ── */
   const candidateEntries = selected ? getByCandidate(selected) : [];
+  const uniqueCompanies = Array.from(new Set(candidateEntries.map(e => e.company).filter(Boolean)));
+  
+  useEffect(() => {
+    if (uniqueCompanies.length > 0 && (!selectedCompany || !uniqueCompanies.includes(selectedCompany))) {
+      setSelectedCompany(uniqueCompanies[0]);
+    }
+  }, [uniqueCompanies, selectedCompany]);
+
   const totalPaid   = candidateEntries
   .filter(e => e.status === "Received")
   .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
@@ -63,8 +72,11 @@ export default function CandidateHistoryPage() {
   .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
   const totalAmount = totalPaid + totalDue;
   const pct = totalAmount > 0 ? Math.round((totalPaid / totalAmount) * 100) : 0;
-  const primaryCompany = candidateEntries[0]?.company || "";
+  const primaryCompany = selectedCompany || candidateEntries[0]?.company || "";
   const primaryCurrency = currencyOf(primaryCompany);
+  const companyPaid = candidateEntries
+    .filter(e => e.company === primaryCompany && e.status === "Received")
+    .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
 
   /* ── Animate progress bar on candidate change ── */
   useEffect(() => {
@@ -280,12 +292,60 @@ export default function CandidateHistoryPage() {
                 <div>
                   <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text)", fontFamily: "var(--font-serif)" }}>{selected}</div>
                   {primaryCompany && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{primaryCompany}</div>}
-                  <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 2 }}>{candidateEntries.length} payment entries found</div>
+                  <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 2 }}>{candidateEntries.length} payment entries found in total</div>
                 </div>
               </div>
 
               {/* Right: KPI chips */}
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginLeft: "auto", alignItems: "center" }}>
+                
+                {/* Company Dropdown & NOC Generator */}
+                {uniqueCompanies.length > 0 && pct < 100 && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginRight: 8 }}>
+                    <select
+                      value={selectedCompany}
+                      onChange={e => setSelectedCompany(e.target.value)}
+                      style={{
+                        padding: "7px 12px",
+                        borderRadius: "var(--r-md)",
+                        border: "1px solid var(--border-md)",
+                        background: "var(--surface)",
+                        color: "var(--text)",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        outline: "none",
+                        cursor: "pointer",
+                        fontFamily: "var(--font)"
+                      }}
+                    >
+                      {uniqueCompanies.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                    <button 
+                      className="noc-btn" 
+                      onClick={() => {
+                        const resolvedNotifId = nocTargetNotifId
+                          || (notifications.find(n => n.type === "payment-complete" && n.candidate === selected && !n.noc)?.id)
+                          || null;
+                        if (resolvedNotifId) {
+                          markNotificationNoc(resolvedNotifId);
+                        }
+                        clearNocTarget();
+                        setShowNOC(true);
+                      }}
+                      style={{ padding: "8px 14px", fontSize: 13 }}
+                    >
+                      <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="9" y1="15" x2="15" y2="15" />
+                      </svg>
+                      Generate NOC
+                    </button>
+                  </div>
+                )}
+
                 <div style={{ background: "rgba(156,163,175,0.12)", border: "1px solid rgba(156,163,175,0.2)", borderRadius: "var(--r-lg)", padding: "8px 14px", textAlign: "center" }}>
                   <div style={{ fontSize: 9.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--text-muted)" }}>Total</div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmtMoneyC(totalPaid + totalDue, primaryCurrency, 0)}</div>
@@ -460,7 +520,7 @@ export default function CandidateHistoryPage() {
         <NOCModal
           candidate={selected}
           company={primaryCompany}
-          totalAmount={totalAmount}
+          totalAmount={pct === 100 ? totalAmount : companyPaid}
           onClose={() => setShowNOC(false)}
         />
       )}
