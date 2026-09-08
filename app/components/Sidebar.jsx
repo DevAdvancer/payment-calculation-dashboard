@@ -223,7 +223,7 @@ export default function Sidebar() {
             Admin Settings
           </a>
         )}
-        <a href="/sign-in" style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:8, fontSize:12, fontWeight:500, color:"#fca5a5", textDecoration:"none", border:"1px solid rgba(248,113,113,0.15)", background: "rgba(248,113,113,0.05)", transition:"all 0.15s" }}
+        <button onClick={async () => { await fetch('/api/auth/logout', {method: 'POST'}); window.location.href = '/sign-in'; }} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:8, fontSize:12, fontWeight:500, color:"#fca5a5", border:"1px solid rgba(248,113,113,0.15)", background: "rgba(248,113,113,0.05)", transition:"all 0.15s", cursor:"pointer", width:"100%" }}
           onMouseEnter={e => { e.currentTarget.style.background="rgba(248,113,113,0.15)"; e.currentTarget.style.color="#fecaca"; }}
           onMouseLeave={e => { e.currentTarget.style.background="rgba(248,113,113,0.05)"; e.currentTarget.style.color="#fca5a5"; }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -232,7 +232,7 @@ export default function Sidebar() {
             <line x1="21" y1="12" x2="9" y2="12" />
           </svg>
           Logout
-        </a>
+        </button>
       </div>
     </nav>
     </>

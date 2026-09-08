@@ -8,15 +8,31 @@ export default function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate auth
-    setTimeout(() => {
-      setLoading(false);
+    setError("");
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Login failed");
+      }
+      
       router.push("/dashboard");
-    }, 1000);
+      router.refresh();
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,6 +82,11 @@ export default function SignInPage() {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          {error && (
+            <div style={{ padding: "12px", background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: "8px", color: "#f87171", fontSize: "14px", textAlign: "center" }}>
+              {error}
+            </div>
+          )}
           <div>
             <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "rgba(255,255,255,0.7)", marginBottom: "8px" }}>
               Email Address

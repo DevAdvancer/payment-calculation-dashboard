@@ -23,11 +23,13 @@ export default function ClientLayout({ children }) {
   if (loading) return <CounterLoader />;
 
   const isSignIn = pathname === "/sign-in";
+  const isNotFound = pathname === "/page-not-found";
+  const hideSidebar = isSignIn || isNotFound;
 
   return (
     <div style={{ display:"flex", minHeight:"100vh" }}>
-      {!isSignIn && <Sidebar />}
-      <main style={{ marginLeft: isSignIn ? 0 : 220, flex:1, background:"var(--color-bg)", overflowY:"auto", minHeight:"100vh" }}>
+      {!hideSidebar && <Sidebar />}
+      <main style={{ marginLeft: hideSidebar ? 0 : 220, flex:1, background:"var(--color-bg)", overflowY:"auto", minHeight:"100vh" }}>
         {children}
       </main>
       <Toast />
