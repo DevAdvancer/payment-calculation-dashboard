@@ -1,4 +1,6 @@
 import "./globals.css";
+import { cookies } from "next/headers";
+import { jwtVerify } from "jose";
 
 export const metadata = {
   title: "Placement Management System",
@@ -13,16 +15,25 @@ export const viewport = {
 
 import ClientLayout from "./ClientLayout";
 
-export default function RootLayout({ children }) {
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || "fallback_secret_for_development_only_12345"
+);
+
+export default async function RootLayout({ children }) {
+  let role = "user";
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("auth_token")?.value;
+    if (token) {
+      const { payload } = await jwtVerify(token, JWT_SECRET);
+      if (payload.role) role = payload.role;
+    }
+  } catch (e) {}
+
   return (
-    /* suppressHydrationWarning on <html> — browser extensions
-       (Scribe recorder, ColorZilla, etc.) inject attributes like
-       data-scribe-recorder-ready before React hydrates, which would
-       otherwise show up as a hydration mismatch. The <body> tag
-       continues to be reconciled normally. */
     <html lang="en-US" suppressHydrationWarning>
       <body>
-        <ClientLayout>{children}</ClientLayout>
+        <ClientLayout userRole={role}>{children}</ClientLayout>
       </body>
     </html>
   );

@@ -7,7 +7,7 @@ import Link from "next/link";
 
 const PREFIX = "";
 
-export default function Sidebar() {
+export default function Sidebar({ userRole }) {
   const pathname = usePathname();
   
   const getLaidOff     = useDashboardStore((s) => s.getLaidOff);
@@ -211,9 +211,9 @@ export default function Sidebar() {
       </div>
 
       {/* Footer */}
-      {!isAdmin && (
-        <div style={{ padding:"12px 16px", borderTop:"1px solid rgba(255,255,255,0.08)" }}>
-          <a href="/admin" style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:8, fontSize:12, fontWeight:500, color:"rgba(255,255,255,0.45)", textDecoration:"none", border:"1px solid rgba(255,255,255,0.08)", transition:"all 0.15s" }}
+      <div style={{ padding:"12px 16px", borderTop:"1px solid rgba(255,255,255,0.08)", marginTop: isAdmin ? 0 : "auto" }}>
+        {!isAdmin && userRole === 'admin' && (
+          <a href="/admin" style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:8, fontSize:12, fontWeight:500, color:"rgba(255,255,255,0.45)", textDecoration:"none", border:"1px solid rgba(255,255,255,0.08)", transition:"all 0.15s", marginBottom: "8px" }}
             onMouseEnter={e => { e.currentTarget.style.background="rgba(255,255,255,0.06)"; e.currentTarget.style.color="rgba(255,255,255,0.75)"; }}
             onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.color="rgba(255,255,255,0.45)"; }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -222,8 +222,18 @@ export default function Sidebar() {
             </svg>
             Admin Settings
           </a>
-        </div>
-      )}
+        )}
+        <button onClick={async () => { await fetch('/api/auth/logout', {method: 'POST'}); window.location.href = '/sign-in'; }} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:8, fontSize:12, fontWeight:500, color:"#fca5a5", border:"1px solid rgba(248,113,113,0.15)", background: "rgba(248,113,113,0.05)", transition:"all 0.15s", cursor:"pointer", width:"100%" }}
+          onMouseEnter={e => { e.currentTarget.style.background="rgba(248,113,113,0.15)"; e.currentTarget.style.color="#fecaca"; }}
+          onMouseLeave={e => { e.currentTarget.style.background="rgba(248,113,113,0.05)"; e.currentTarget.style.color="#fca5a5"; }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Logout
+        </button>
+      </div>
     </nav>
     </>
   );
