@@ -20,6 +20,10 @@ export async function POST(request) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
+    if (user.status === 'inactive') {
+      return NextResponse.json({ error: "Please contact the admin" }, { status: 403 });
+    }
+
     // Optional: enforce role matching. Default to 'user' if not provided
     const requestedRole = role || 'user';
     if (user.role !== requestedRole) {
