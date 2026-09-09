@@ -205,6 +205,7 @@ export default function AccessControlPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createFormData, setCreateFormData] = useState({ name: '', email: '', password: '', role: 'user', status: 'active' });
   const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
 
   // Reset Password Modal State
   const [userToResetPassword, setUserToResetPassword] = useState(null);
@@ -216,6 +217,7 @@ export default function AccessControlPage() {
   }, []);
 
   const fetchUsers = async () => {
+    setIsLoading(true);
     try {
       const res = await fetch("/api/users");
       const data = await res.json();
@@ -251,10 +253,17 @@ export default function AccessControlPage() {
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
-    if (!createFormData.email) {
-      toast.error("Email is required");
+    setCreateError("");
+
+    if (!createFormData.name || !createFormData.email || !createFormData.password) {
+      setCreateError("All required fields must be filled.");
       return;
     }
+    if (createFormData.password.length < 6) {
+      setCreateError("Password must be at least 6 characters.");
+      return;
+    }
+
     setIsCreating(true);
     try {
       const res = await fetch("/api/users", {
@@ -263,14 +272,19 @@ export default function AccessControlPage() {
         body: JSON.stringify(createFormData)
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create user");
+      if (!res.ok) {
+        if (data.error && data.error.includes("duplicate key value")) {
+          throw new Error("A user with this email already exists.");
+        }
+        throw new Error(data.error || "Failed to create user");
+      }
       
       setUsers([...users, data.user]);
       toast.success("User created");
       setIsCreateModalOpen(false);
       setCreateFormData({ name: '', email: '', password: '', role: 'user', status: 'active' });
     } catch (error) {
-      toast.error(error.message);
+      setCreateError(error.message);
     } finally {
       setIsCreating(false);
     }
@@ -322,11 +336,26 @@ export default function AccessControlPage() {
         {/* Header */}
         <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eef0f3" }}>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>Manage Users</h2>
-          <button 
-            onClick={() => setIsCreateModalOpen(true)}
-            style={{ padding: "8px 16px", background: "#1a1f2e", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}>
-            Create
-          </button>
+          <div style={{ display: "flex", gap: "12px" }}>
+            <button 
+              onClick={fetchUsers}
+              disabled={isLoading}
+              style={{ padding: "8px 16px", background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: isLoading ? "not-allowed" : "pointer", transition: "all 0.15s", display: "flex", alignItems: "center", gap: "6px" }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 2v6h-6"></path>
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              </svg>
+              {isLoading ? "Refreshing..." : "Refresh"}
+            </button>
+            <button 
+              onClick={() => {
+                setCreateError("");
+                setIsCreateModalOpen(true);
+              }}
+              style={{ padding: "8px 16px", background: "#1a1f2e", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}>
+              Create
+            </button>
+          </div>
         </div>
 
         {/* Table */}
@@ -398,8 +427,13 @@ export default function AccessControlPage() {
       {isCreateModalOpen && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
           <div style={{ background: "#fff", padding: "24px", borderRadius: "12px", width: "400px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
-            <h3 style={{ marginTop: 0, fontSize: "18px", color: "#111827" }}>Create New User</h3>
+            <h3 style={{ marginTop: 0, fontSize: "18px", color: "#111827" }}>Create New Account</h3>
             <form onSubmit={handleCreateSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
+              {createError && (
+                <div style={{ padding: "10px 12px", background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: "6px", color: "#ef4444", fontSize: "13px", fontWeight: 500 }}>
+                  {createError}
+                </div>
+              )}
               <div>
                 <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>Name *</label>
                 <input 
@@ -466,7 +500,10 @@ export default function AccessControlPage() {
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "16px" }}>
                 <button 
                   type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
+                  onClick={() => {
+                    setCreateError("");
+                    setIsCreateModalOpen(false);
+                  }}
                   disabled={isCreating}
                   style={{ padding: "8px 16px", border: "1px solid #d1d5db", background: "#fff", borderRadius: "6px", cursor: isCreating ? "not-allowed" : "pointer", color: "#374151", fontWeight: 500 }}
                 >
