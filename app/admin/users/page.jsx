@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
-function UserRow({ user, onUpdate, onPromptDelete }) {
+function UserRow({ user, onUpdate, onPromptDelete, onPromptResetPassword }) {
   const [currentStatus, setCurrentStatus] = useState(user.status || "active");
   const [currentRole, setCurrentRole] = useState(user.role || "user");
   const [isSaving, setIsSaving] = useState(false);
@@ -53,6 +53,10 @@ function UserRow({ user, onUpdate, onPromptDelete }) {
 
   const handleDelete = () => {
     onPromptDelete(user);
+  };
+
+  const handleResetPassword = () => {
+    onPromptResetPassword(user);
   };
 
   return (
@@ -149,22 +153,42 @@ function UserRow({ user, onUpdate, onPromptDelete }) {
               </div>
             )}
           </div>
-          <button 
-            onClick={handleDelete}
-            style={{ 
-              background: "#fee2e2", 
-              padding: "6px 12px", 
-              border: "1px solid #fca5a5", 
-              color: "#ef4444", 
-              fontWeight: 600, 
-              cursor: "pointer",
-              borderRadius: "6px",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-              transition: "all 0.15s"
-            }}
-          >
-            Delete
-          </button>
+          <div style={{ display: "flex", gap: "6px" }}>
+            <button 
+              onClick={handleResetPassword}
+              style={{ 
+                background: "#e0e7ff", 
+                padding: "6px 12px", 
+                border: "1px solid #c7d2fe", 
+                color: "#4f46e5", 
+                fontWeight: 600, 
+                cursor: "pointer",
+                borderRadius: "6px",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                transition: "all 0.15s",
+                fontSize: "12px"
+              }}
+            >
+              Reset Password
+            </button>
+            <button 
+              onClick={handleDelete}
+              style={{ 
+                background: "#fee2e2", 
+                padding: "6px 12px", 
+                border: "1px solid #fca5a5", 
+                color: "#ef4444", 
+                fontWeight: 600, 
+                cursor: "pointer",
+                borderRadius: "6px",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                transition: "all 0.15s",
+                fontSize: "12px"
+              }}
+            >
+              Delete
+            </button>
+          </div>
         </div>
       </td>
     </tr>
@@ -181,6 +205,11 @@ export default function AccessControlPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createFormData, setCreateFormData] = useState({ name: '', email: '', password: '', role: 'user', status: 'active' });
   const [isCreating, setIsCreating] = useState(false);
+
+  // Reset Password Modal State
+  const [userToResetPassword, setUserToResetPassword] = useState(null);
+  const [resetPasswordData, setResetPasswordData] = useState({ newPassword: '', confirmNewPassword: '' });
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -247,6 +276,36 @@ export default function AccessControlPage() {
     }
   };
 
+  const handleResetPasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (resetPasswordData.newPassword !== resetPasswordData.confirmNewPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    if (resetPasswordData.newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    setIsResettingPassword(true);
+    try {
+      const res = await fetch(`/api/users/${userToResetPassword.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: resetPasswordData.newPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to reset password");
+      
+      toast.success("Password reset successfully");
+      setUserToResetPassword(null);
+      setResetPasswordData({ newPassword: '', confirmNewPassword: '' });
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
   return (
     <div style={{ padding: "40px 56px", maxWidth: 1000, margin: "0 auto", fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{ marginBottom: 32 }}>
@@ -298,6 +357,7 @@ export default function AccessControlPage() {
                     user={user} 
                     onUpdate={handleUpdateUser} 
                     onPromptDelete={(user) => setUserToDelete(user)} 
+                    onPromptResetPassword={(user) => setUserToResetPassword(user)}
                   />
                 ))
               )}
@@ -373,6 +433,9 @@ export default function AccessControlPage() {
                     style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
                     placeholder="Enter password"
                   />
+                  <p style={{ fontSize: "11px", color: "#6b7280", marginTop: "6px", lineHeight: "1.4" }}>
+                    Please save this password on your device as this won't be displayed after you finally save it.
+                  </p>
                 </div>
               </div>
               <div style={{ display: "flex", gap: "16px" }}>
@@ -415,6 +478,57 @@ export default function AccessControlPage() {
                   style={{ padding: "8px 16px", border: "none", background: "#1a1f2e", borderRadius: "6px", cursor: isCreating ? "not-allowed" : "pointer", color: "#fff", fontWeight: 500 }}
                 >
                   {isCreating ? "Creating..." : "Create User"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {userToResetPassword && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div style={{ background: "#fff", padding: "24px", borderRadius: "12px", width: "400px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ marginTop: 0, fontSize: "18px", color: "#111827" }}>Reset Password for {userToResetPassword.name || userToResetPassword.email}</h3>
+            <form onSubmit={handleResetPasswordSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>New Password *</label>
+                <input 
+                  type="password" 
+                  required
+                  value={resetPasswordData.newPassword} 
+                  onChange={(e) => setResetPasswordData({...resetPasswordData, newPassword: e.target.value})}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
+                  placeholder="Enter new password"
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>Confirm New Password *</label>
+                <input 
+                  type="password" 
+                  required
+                  value={resetPasswordData.confirmNewPassword} 
+                  onChange={(e) => setResetPasswordData({...resetPasswordData, confirmNewPassword: e.target.value})}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
+                  placeholder="Confirm new password"
+                />
+              </div>
+              
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "16px" }}>
+                <button 
+                  type="button"
+                  onClick={() => setUserToResetPassword(null)}
+                  disabled={isResettingPassword}
+                  style={{ padding: "8px 16px", border: "1px solid #d1d5db", background: "#fff", borderRadius: "6px", cursor: isResettingPassword ? "not-allowed" : "pointer", color: "#374151", fontWeight: 500 }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isResettingPassword}
+                  style={{ padding: "8px 16px", border: "none", background: "#4f46e5", borderRadius: "6px", cursor: isResettingPassword ? "not-allowed" : "pointer", color: "#fff", fontWeight: 500 }}
+                >
+                  {isResettingPassword ? "Saving..." : "Save"}
                 </button>
               </div>
             </form>
