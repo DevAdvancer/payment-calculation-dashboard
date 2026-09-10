@@ -1,22 +1,406 @@
 "use client";
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
+
+const AVAILABLE_PAGES = [
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'payment', label: 'Payment Calc' },
+  { id: 'monthly', label: 'Monthly Summary' },
+  { id: 'defaulter', label: 'Defaulter Sheet' },
+  { id: 'history', label: 'Candidate History' },
+  { id: 'expenses', label: 'Expenses' },
+  { id: 'placement', label: 'New Placement' },
+  { id: 'laidoff', label: 'Laid Off / Resigned' },
+  { id: 'po-details', label: 'PO Details' },
+  { id: 'notifications', label: 'Notifications' }
+];
+
+const AVAILABLE_FILTERS = [
+  { id: 'company', label: 'Company' },
+  { id: 'status', label: 'Status' },
+  { id: 'month', label: 'Month' },
+  { id: 'year', label: 'Year' },
+  { id: 'instance', label: 'Instance' },
+  { id: 'type', label: 'Type' },
+  { id: 'client', label: 'Client' },
+  { id: 'candidate', label: 'Candidate' },
+  { id: 'po_num', label: 'PO Number' },
+  { id: 'category', label: 'Category' },
+  { id: 'currency', label: 'Currency' }
+];
+
+const PAGE_FILTERS = {
+  'dashboard': [],
+  'payment': ['company', 'status', 'month', 'year', 'instance', 'type'],
+  'monthly': ['company', 'month', 'year'],
+  'defaulter': ['company', 'month', 'year'],
+  'history': [],
+  'expenses': ['category', 'status', 'month', 'year', 'currency'],
+  'placement': [],
+  'laidoff': ['company', 'month', 'year'],
+  'po-details': ['company', 'month', 'year'],
+  'notifications': []
+};
+
+function UserRow({ user, onUpdate, onPromptDelete, onPromptResetPassword, onPromptAccess }) {
+  const [currentStatus, setCurrentStatus] = useState(user.status || "active");
+  const [currentRole, setCurrentRole] = useState(user.role || "user");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const hasStatusChanges = user.status !== currentStatus;
+  const hasRoleChanges = user.role !== currentRole;
+
+  const handleSaveRole = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: currentRole })
+      });
+      if (!res.ok) throw new Error("Failed to update role");
+      const data = await res.json();
+      onUpdate(data.user);
+      toast.success("Role updated");
+    } catch (error) {
+      toast.error(error.message);
+      setCurrentRole(user.role);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveStatus = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: currentStatus })
+      });
+      if (!res.ok) throw new Error("Failed to update status");
+      const data = await res.json();
+      onUpdate(data.user);
+      toast.success("Status updated");
+    } catch (error) {
+      toast.error(error.message);
+      setCurrentStatus(user.status);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = () => {
+    onPromptDelete(user);
+  };
+
+  const handleResetPassword = () => {
+    onPromptResetPassword(user);
+  };
+
+  return (
+    <tr style={{ borderBottom: "1px solid #eef0f3" }}>
+      <td style={{ padding: "16px 24px", color: "#111827", fontWeight: 500 }}>{user.name || "N/A"}</td>
+      <td style={{ padding: "16px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#64748b" }}>
+          <span>{user.email}</span>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(user.email);
+              toast.success("Email copied to clipboard");
+            }}
+            title="Copy Email"
+            style={{ 
+              background: "transparent", 
+              border: "none", 
+              cursor: "pointer", 
+              color: "#94a3b8", 
+              display: "flex", 
+              alignItems: "center", 
+              padding: "4px",
+              borderRadius: "4px",
+              transition: "color 0.2s, background 0.2s"
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "#475569"; e.currentTarget.style.background = "#f1f5f9"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.background = "transparent"; }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+        </div>
+      </td>
+      <td style={{ padding: "16px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+          <select 
+            value={currentRole}
+            onChange={(e) => setCurrentRole(e.target.value)}
+            disabled={isSaving}
+            style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #cbd5e1", outline: "none", background: "#f8fafc", color: currentRole === 'admin' ? "#8b5cf6" : "#64748b", fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "all 0.2s" }}
+          >
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
+          
+          {hasRoleChanges && (
+            <div style={{ display: "flex", gap: 6 }}>
+              <button 
+                onClick={handleSaveRole}
+                disabled={isSaving}
+                style={{ padding: "6px 10px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "transform 0.1s", boxShadow: "0 1px 2px rgba(59, 130, 246, 0.2)" }}
+              >{isSaving ? "..." : "Save"}</button>
+              <button 
+                onClick={() => setCurrentRole(user.role)}
+                disabled={isSaving}
+                style={{ padding: "6px 10px", background: "#fff", color: "#64748b", border: "1px solid #cbd5e1", borderRadius: 6, fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "transform 0.1s" }}
+              >Cancel</button>
+            </div>
+          )}
+        </div>
+      </td>
+      <td style={{ padding: "16px 24px" }}>
+        <button onClick={() => onPromptAccess(user)} style={{ border: "1px solid #cbd5e1", background: "#fff", padding: "6px 14px", borderRadius: 16, fontSize: 12, fontWeight: 600, color: "#334155", cursor: "pointer", transition: "all 0.15s" }}>
+          Access
+        </button>
+      </td>
+      <td style={{ padding: "16px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <select 
+              value={currentStatus}
+              onChange={(e) => setCurrentStatus(e.target.value)}
+              disabled={isSaving}
+              style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #cbd5e1", outline: "none", background: "#f8fafc", color: currentStatus === 'active' ? "#10b981" : "#f59e0b", fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "all 0.2s" }}
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            
+            {hasStatusChanges && (
+              <div style={{ display: "flex", gap: 6 }}>
+                <button 
+                  onClick={handleSaveStatus}
+                  disabled={isSaving}
+                  style={{ padding: "6px 10px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "transform 0.1s", boxShadow: "0 1px 2px rgba(16, 185, 129, 0.2)" }}
+                >{isSaving ? "..." : "Save"}</button>
+                <button 
+                  onClick={() => setCurrentStatus(user.status)}
+                  disabled={isSaving}
+                  style={{ padding: "6px 10px", background: "#fff", color: "#64748b", border: "1px solid #cbd5e1", borderRadius: 6, fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "transform 0.1s" }}
+                >Cancel</button>
+              </div>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: "6px" }}>
+            <button 
+              onClick={handleResetPassword}
+              style={{ 
+                background: "#e0e7ff", 
+                padding: "6px 12px", 
+                border: "1px solid #c7d2fe", 
+                color: "#4f46e5", 
+                fontWeight: 600, 
+                cursor: "pointer",
+                borderRadius: "6px",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                transition: "all 0.15s",
+                fontSize: "12px"
+              }}
+            >
+              Reset Password
+            </button>
+            <button 
+              onClick={handleDelete}
+              style={{ 
+                background: "#fee2e2", 
+                padding: "6px 12px", 
+                border: "1px solid #fca5a5", 
+                color: "#ef4444", 
+                fontWeight: 600, 
+                cursor: "pointer",
+                borderRadius: "6px",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                transition: "all 0.15s",
+                fontSize: "12px"
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </td>
+    </tr>
+  );
+}
 
 export default function AccessControlPage() {
-  const [savedStatus, setSavedStatus] = useState("inactive");
-  const [currentStatus, setCurrentStatus] = useState("inactive");
-  
-  const [savedRole, setSavedRole] = useState("user");
-  const [currentRole, setCurrentRole] = useState("user");
-  
-  const hasStatusChanges = savedStatus !== currentStatus;
-  const hasRoleChanges = savedRole !== currentRole;
+  const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [isDeletingModal, setIsDeletingModal] = useState(false);
+
+  // Create User Modal State
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createFormData, setCreateFormData] = useState({ name: '', email: '', password: '', role: 'user', status: 'active' });
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
+
+  // Reset Password Modal State
+  const [userToResetPassword, setUserToResetPassword] = useState(null);
+  const [resetPasswordData, setResetPasswordData] = useState({ newPassword: '', confirmNewPassword: '' });
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+
+  // Access Modal State
+  const [userToManageAccess, setUserToManageAccess] = useState(null);
+  const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
+  const [accessData, setAccessData] = useState({ pages: {} });
+
+  const handleOpenAccessModal = (user) => {
+    setUserToManageAccess(user);
+    if (user.permissions && Object.keys(user.permissions).length > 0) {
+      setAccessData(user.permissions);
+    } else {
+      const fullAccess = { pages: {} };
+      AVAILABLE_PAGES.forEach(p => {
+        fullAccess.pages[p.id] = { access: true, filters: PAGE_FILTERS[p.id] || [] };
+      });
+      setAccessData(fullAccess);
+    }
+    setIsAccessModalOpen(true);
+  };
+
+  const handleSaveAccess = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/users/${userToManageAccess.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ permissions: accessData })
+      });
+      if (!res.ok) throw new Error("Failed to save permissions");
+      toast.success("Permissions updated");
+      setIsAccessModalOpen(false);
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.message);
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/users");
+      const data = await res.json();
+      if (data.users) {
+        setUsers(data.users);
+      }
+    } catch (error) {
+      toast.error("Failed to fetch users");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateUser = (updatedUser) => {
+    setUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
+    setIsDeletingModal(true);
+    try {
+      const res = await fetch(`/api/users/${userToDelete.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error("Failed to delete user");
+      setUsers(users.filter(u => u.id !== userToDelete.id));
+      toast.success("User deleted");
+      setUserToDelete(null);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsDeletingModal(false);
+    }
+  };
+
+  const handleCreateSubmit = async (e) => {
+    e.preventDefault();
+    setCreateError("");
+
+    if (!createFormData.name || !createFormData.email || !createFormData.password) {
+      setCreateError("All required fields must be filled.");
+      return;
+    }
+    if (createFormData.password.length < 6) {
+      setCreateError("Password must be at least 6 characters.");
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(createFormData)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.error && data.error.includes("duplicate key value")) {
+          throw new Error("A user with this email already exists.");
+        }
+        throw new Error(data.error || "Failed to create user");
+      }
+      
+      setUsers([...users, data.user]);
+      toast.success("User created");
+      setIsCreateModalOpen(false);
+      setCreateFormData({ name: '', email: '', password: '', role: 'user', status: 'active' });
+    } catch (error) {
+      setCreateError(error.message);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (resetPasswordData.newPassword !== resetPasswordData.confirmNewPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    if (resetPasswordData.newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    setIsResettingPassword(true);
+    try {
+      const res = await fetch(`/api/users/${userToResetPassword.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: resetPasswordData.newPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to reset password");
+      
+      toast.success("Password reset successfully");
+      setUserToResetPassword(null);
+      setResetPasswordData({ newPassword: '', confirmNewPassword: '' });
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
 
   return (
     <div style={{ padding: "40px 56px", maxWidth: 1000, margin: "0 auto", fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>
-          Access Control
+          Users
         </h1>
         <p style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>
           Manage users and their permissions within the system.
@@ -28,9 +412,26 @@ export default function AccessControlPage() {
         {/* Header */}
         <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eef0f3" }}>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>Manage Users</h2>
-          <button style={{ padding: "8px 16px", background: "#1a1f2e", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}>
-            Create
-          </button>
+          <div style={{ display: "flex", gap: "12px" }}>
+            <button 
+              onClick={fetchUsers}
+              disabled={isLoading}
+              style={{ padding: "8px 16px", background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: isLoading ? "not-allowed" : "pointer", transition: "all 0.15s", display: "flex", alignItems: "center", gap: "6px" }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 2v6h-6"></path>
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              </svg>
+              {isLoading ? "Refreshing..." : "Refresh"}
+            </button>
+            <button 
+              onClick={() => {
+                setCreateError("");
+                setIsCreateModalOpen(true);
+              }}
+              style={{ padding: "8px 16px", background: "#1a1f2e", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}>
+              Create
+            </button>
+          </div>
         </div>
 
         {/* Table */}
@@ -46,99 +447,328 @@ export default function AccessControlPage() {
               </tr>
             </thead>
             <tbody>
-              {/* Sample Row */}
-              <tr style={{ borderBottom: "1px solid #eef0f3" }}>
-                <td style={{ padding: "16px 24px", color: "#111827", fontWeight: 500 }}>Abhirup</td>
-                <td style={{ padding: "16px 24px", color: "#64748b" }}>x@example.com</td>
-                <td style={{ padding: "16px 24px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-                    <select 
-                      value={currentRole}
-                      onChange={(e) => setCurrentRole(e.target.value)}
-                      style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #cbd5e1", outline: "none", background: "#f8fafc", color: currentRole === 'admin' ? "#8b5cf6" : "#64748b", fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}
-                    >
-                      <option value="user">User</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                    
-                    {hasRoleChanges && (
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button 
-                          onClick={() => setSavedRole(currentRole)}
-                          style={{ padding: "6px 10px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontWeight: 600, cursor: "pointer", transition: "transform 0.1s", boxShadow: "0 1px 2px rgba(59, 130, 246, 0.2)" }}
-                          onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.95)"; }}
-                          onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-                        >Save</button>
-                        <button 
-                          onClick={() => setCurrentRole(savedRole)}
-                          style={{ padding: "6px 10px", background: "#fff", color: "#64748b", border: "1px solid #cbd5e1", borderRadius: 6, fontWeight: 600, cursor: "pointer", transition: "transform 0.1s" }}
-                          onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.95)"; }}
-                          onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-                        >Cancel</button>
-                      </div>
-                    )}
-                  </div>
-                </td>
-                <td style={{ padding: "16px 24px" }}>
-                  <Link href="/admin/access-control" style={{ display: "inline-block", textDecoration: "none", padding: "6px 14px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 16, fontSize: 12, fontWeight: 600, color: "#334155", cursor: "pointer" }}>
-                    Access
-                  </Link>
-                </td>
-                <td style={{ padding: "16px 24px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <select 
-                        value={currentStatus}
-                        onChange={(e) => setCurrentStatus(e.target.value)}
-                        style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #cbd5e1", outline: "none", background: "#f8fafc", color: currentStatus === 'active' ? "#10b981" : "#f59e0b", fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}
-                      >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                      </select>
-                      
-                      {hasStatusChanges && (
-                        <div style={{ display: "flex", gap: 6 }}>
-                          <button 
-                            onClick={() => setSavedStatus(currentStatus)}
-                            style={{ padding: "6px 10px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontWeight: 600, cursor: "pointer", transition: "transform 0.1s", boxShadow: "0 1px 2px rgba(16, 185, 129, 0.2)" }}
-                            onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.95)"; }}
-                            onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-                          >Save</button>
-                          <button 
-                            onClick={() => setCurrentStatus(savedStatus)}
-                            style={{ padding: "6px 10px", background: "#fff", color: "#64748b", border: "1px solid #cbd5e1", borderRadius: 6, fontWeight: 600, cursor: "pointer", transition: "transform 0.1s" }}
-                            onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.95)"; }}
-                            onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-                          >Cancel</button>
-                        </div>
-                      )}
-                    </div>
-                    <button 
-                      style={{ 
-                        background: "#fee2e2", 
-                        padding: "6px 12px", 
-                        border: "1px solid #fca5a5", 
-                        color: "#ef4444", 
-                        fontWeight: 600, 
-                        cursor: "pointer",
-                        borderRadius: "6px",
-                        boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-                        transition: "all 0.15s"
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = "#fecaca"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = "#fee2e2"; }}
-                      onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.96)"; }}
-                      onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={5} style={{ padding: "24px", textAlign: "center", color: "#64748b" }}>Loading users...</td>
+                </tr>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ padding: "24px", textAlign: "center", color: "#64748b" }}>No users found.</td>
+                </tr>
+              ) : (
+                users.map(user => (
+                  <UserRow 
+                    key={user.id} 
+                    user={user} 
+                    onUpdate={handleUpdateUser} 
+                    onPromptDelete={(user) => setUserToDelete(user)} 
+                    onPromptResetPassword={(user) => setUserToResetPassword(user)}
+                    onPromptAccess={handleOpenAccessModal}
+                  />
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {userToDelete && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div style={{ background: "#fff", padding: "24px", borderRadius: "12px", width: "400px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ marginTop: 0, fontSize: "18px", color: "#111827" }}>Delete User</h3>
+            <p style={{ color: "#4b5563", fontSize: "14px" }}>
+              Are you sure you want to delete <strong>{userToDelete.name || userToDelete.email}</strong>? This action cannot be undone.
+            </p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "24px" }}>
+              <button 
+                onClick={() => setUserToDelete(null)}
+                disabled={isDeletingModal}
+                style={{ padding: "8px 16px", border: "1px solid #d1d5db", background: "#fff", borderRadius: "6px", cursor: isDeletingModal ? "not-allowed" : "pointer", color: "#374151", fontWeight: 500 }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleConfirmDelete}
+                disabled={isDeletingModal}
+                style={{ padding: "8px 16px", border: "none", background: "#ef4444", borderRadius: "6px", cursor: isDeletingModal ? "not-allowed" : "pointer", color: "#fff", fontWeight: 500 }}
+              >
+                {isDeletingModal ? "Deleting..." : "Delete User"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create User Modal */}
+      {isCreateModalOpen && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div style={{ background: "#fff", padding: "24px", borderRadius: "12px", width: "400px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ marginTop: 0, fontSize: "18px", color: "#111827" }}>Create New Account</h3>
+            <form onSubmit={handleCreateSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
+              {createError && (
+                <div style={{ padding: "10px 12px", background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: "6px", color: "#ef4444", fontSize: "13px", fontWeight: 500 }}>
+                  {createError}
+                </div>
+              )}
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>Name *</label>
+                <input 
+                  type="text" 
+                  required
+                  value={createFormData.name} 
+                  onChange={(e) => setCreateFormData({...createFormData, name: e.target.value})}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
+                  placeholder="John Doe"
+                />
+              </div>
+              <div style={{ display: "flex", gap: "16px" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>Email *</label>
+                  <input 
+                    type="email" 
+                    required
+                    value={createFormData.email} 
+                    onChange={(e) => setCreateFormData({...createFormData, email: e.target.value})}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
+                    placeholder="john@example.com"
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>Password *</label>
+                  <input 
+                    type="password" 
+                    required
+                    value={createFormData.password} 
+                    onChange={(e) => setCreateFormData({...createFormData, password: e.target.value})}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
+                    placeholder="Enter password"
+                  />
+                  <p style={{ fontSize: "11px", color: "#6b7280", marginTop: "6px", lineHeight: "1.4" }}>
+                    Please save this password on your device as this won't be displayed after you finally save it.
+                  </p>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "16px" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>Role</label>
+                  <select 
+                    value={createFormData.role} 
+                    onChange={(e) => setCreateFormData({...createFormData, role: e.target.value})}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px" }}
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>Status</label>
+                  <select 
+                    value={createFormData.status} 
+                    onChange={(e) => setCreateFormData({...createFormData, status: e.target.value})}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px" }}
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "16px" }}>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setCreateError("");
+                    setIsCreateModalOpen(false);
+                  }}
+                  disabled={isCreating}
+                  style={{ padding: "8px 16px", border: "1px solid #d1d5db", background: "#fff", borderRadius: "6px", cursor: isCreating ? "not-allowed" : "pointer", color: "#374151", fontWeight: 500 }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isCreating}
+                  style={{ padding: "8px 16px", border: "none", background: "#1a1f2e", borderRadius: "6px", cursor: isCreating ? "not-allowed" : "pointer", color: "#fff", fontWeight: 500 }}
+                >
+                  {isCreating ? "Creating..." : "Create User"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {userToResetPassword && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div style={{ background: "#fff", padding: "24px", borderRadius: "12px", width: "400px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ marginTop: 0, fontSize: "18px", color: "#111827" }}>Reset Password</h3>
+            <p style={{ color: "#4b5563", fontSize: "14px", marginTop: 4, marginBottom: 16 }}>
+              Enter a new password for <strong>{userToResetPassword.name || userToResetPassword.email}</strong>.
+            </p>
+            <form onSubmit={handleResetPasswordSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>New Password</label>
+                <input 
+                  type="password" 
+                  required
+                  value={resetPasswordData.newPassword} 
+                  onChange={(e) => setResetPasswordData({...resetPasswordData, newPassword: e.target.value})}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
+                  placeholder="••••••••"
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>Confirm New Password</label>
+                <input 
+                  type="password" 
+                  required
+                  value={resetPasswordData.confirmNewPassword} 
+                  onChange={(e) => setResetPasswordData({...resetPasswordData, confirmNewPassword: e.target.value})}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
+                  placeholder="••••••••"
+                />
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "16px" }}>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setUserToResetPassword(null);
+                    setResetPasswordData({ newPassword: '', confirmNewPassword: '' });
+                  }}
+                  disabled={isResettingPassword}
+                  style={{ padding: "8px 16px", border: "1px solid #d1d5db", background: "#fff", borderRadius: "6px", cursor: isResettingPassword ? "not-allowed" : "pointer", color: "#374151", fontWeight: 500 }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isResettingPassword}
+                  style={{ padding: "8px 16px", border: "none", background: "#1a1f2e", borderRadius: "6px", cursor: isResettingPassword ? "not-allowed" : "pointer", color: "#fff", fontWeight: 500 }}
+                >
+                  {isResettingPassword ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Access Permissions Modal */}
+      {isAccessModalOpen && userToManageAccess && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div style={{ background: "#fff", padding: "32px", borderRadius: "12px", width: "800px", maxHeight: "85vh", overflowY: "auto", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ marginTop: 0, fontSize: "20px", color: "#111827", marginBottom: "8px" }}>Access Permissions</h3>
+            <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "24px", marginTop: 0 }}>
+              Configure page and filter access for <strong>{userToManageAccess.name || userToManageAccess.email}</strong>
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+              {AVAILABLE_PAGES.map(page => {
+                const pageData = accessData.pages[page.id] || { access: false, filters: [] };
+                const hasAccess = pageData.access;
+                const applicableFilters = PAGE_FILTERS[page.id] || [];
+
+                return (
+                  <div key={page.id} style={{ border: "1px solid #e5e7eb", borderRadius: "8px", padding: "16px", background: hasAccess ? "#f8fafc" : "#fff" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <input 
+                        type="checkbox" 
+                        id={`page-${page.id}`}
+                        checked={hasAccess}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setAccessData(prev => ({
+                            ...prev,
+                            pages: {
+                              ...prev.pages,
+                              [page.id]: {
+                                access: checked,
+                                filters: checked ? applicableFilters : []
+                              }
+                            }
+                          }));
+                        }}
+                        style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                      />
+                      <label htmlFor={`page-${page.id}`} style={{ fontSize: "15px", fontWeight: 600, color: "#111827", cursor: "pointer" }}>
+                        {page.label}
+                      </label>
+                    </div>
+
+                    {hasAccess && applicableFilters.length > 0 && (
+                      <div style={{ marginTop: "16px", paddingLeft: "28px" }}>
+                        <div style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280", marginBottom: "10px" }}>Allowed Filters:</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+                          {applicableFilters.map(filterId => {
+                            const filter = AVAILABLE_FILTERS.find(f => f.id === filterId);
+                            if (!filter) return null;
+                            const hasFilter = pageData.filters.includes(filter.id);
+                            return (
+                              <label key={filter.id} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#4b5563", cursor: "pointer" }}>
+                                <input 
+                                  type="checkbox"
+                                  checked={hasFilter}
+                                  onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    setAccessData(prev => {
+                                      const existingFilters = prev.pages[page.id]?.filters || [];
+                                      const newFilters = checked 
+                                        ? [...existingFilters, filter.id] 
+                                        : existingFilters.filter(f => f !== filter.id);
+                                      return {
+                                        ...prev,
+                                        pages: {
+                                          ...prev.pages,
+                                          [page.id]: {
+                                            ...prev.pages[page.id],
+                                            filters: newFilters
+                                          }
+                                        }
+                                      };
+                                    });
+                                  }}
+                                />
+                                {filter.label}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {hasAccess && applicableFilters.length === 0 && (
+                      <div style={{ marginTop: "16px", paddingLeft: "28px", fontSize: "13px", color: "#9ca3af", fontStyle: "italic" }}>
+                        No filters available for this page.
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "32px", borderTop: "1px solid #e5e7eb", paddingTop: "24px" }}>
+              <button 
+                type="button"
+                onClick={() => setIsAccessModalOpen(false)}
+                disabled={isLoading}
+                style={{ padding: "8px 16px", border: "1px solid #d1d5db", background: "#fff", borderRadius: "6px", cursor: isLoading ? "not-allowed" : "pointer", color: "#374151", fontWeight: 500 }}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                onClick={handleSaveAccess}
+                disabled={isLoading}
+                style={{ padding: "8px 16px", border: "none", background: "#1a1f2e", borderRadius: "6px", cursor: isLoading ? "not-allowed" : "pointer", color: "#fff", fontWeight: 500 }}
+              >
+                {isLoading ? "Saving..." : "Save Permissions"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

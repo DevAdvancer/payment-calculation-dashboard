@@ -20,6 +20,10 @@ export async function POST(request) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
+    if (user.status === 'inactive') {
+      return NextResponse.json({ error: "Please contact the admin" }, { status: 403 });
+    }
+
     // Optional: enforce role matching. Default to 'user' if not provided
     const requestedRole = role || 'user';
     if (user.role !== requestedRole) {
@@ -32,7 +36,12 @@ export async function POST(request) {
     }
 
     // Create JWT
-    const token = await new SignJWT({ sub: user.id, email: user.email, role: user.role })
+    const token = await new SignJWT({ 
+      sub: user.id, 
+      email: user.email, 
+      role: user.role,
+      permissions: user.permissions || null
+    })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('24h')
       .sign(JWT_SECRET);
