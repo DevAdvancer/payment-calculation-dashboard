@@ -21,19 +21,21 @@ const JWT_SECRET = new TextEncoder().encode(
 
 export default async function RootLayout({ children }) {
   let role = "user";
+  let permissions = null;
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("auth_token")?.value;
     if (token) {
       const { payload } = await jwtVerify(token, JWT_SECRET);
       if (payload.role) role = payload.role;
+      if (payload.permissions) permissions = payload.permissions;
     }
   } catch (e) {}
 
   return (
     <html lang="en-US" suppressHydrationWarning>
       <body>
-        <ClientLayout userRole={role}>{children}</ClientLayout>
+        <ClientLayout userRole={role} userPermissions={permissions}>{children}</ClientLayout>
       </body>
     </html>
   );

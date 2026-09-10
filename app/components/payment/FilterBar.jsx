@@ -4,6 +4,8 @@ import { useMemo } from "react";
 import { MONTH_NAMES, INSTANCE_OPTIONS, SERVICE_TYPES } from "@/lib/use-store";
 import { periodOf, normalizeMonth } from "@/lib/period-utils";
 import MultiSelectDropdown from "@/app/components/MultiSelectDropdown";
+import { usePermissions } from "@/app/components/PermissionsContext";
+import { usePathname } from "next/navigation";
 
 const EMPTY_FILTERS = {
   company:  [],
@@ -32,6 +34,17 @@ const STATUS_ORDER = [
 ];
 
 export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFilterChange }) {
+  const permissions = usePermissions();
+  const pathname = usePathname();
+  const pageId = pathname.split('/')[1] || 'dashboard';
+
+  const hasFilterAccess = (filterId) => {
+    if (!permissions || !permissions.pages) return true;
+    const p = permissions.pages[pageId];
+    if (!p) return false;
+    return p.filters.includes(filterId);
+  };
+
   /* All dropdowns are derived dynamically from the actual entries so
      each only lists values that exist in the data. The current
      selection is always kept visible even if no row currently has
@@ -200,69 +213,81 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
         </span>
 
         {/* Company */}
-        <MultiSelectDropdown
-          options={companies}
-          selected={Array.isArray(filters.company) ? filters.company : (filters.company ? [filters.company] : [])}
-          onChange={(val) => {
-            if (typeof onFilterChange === "function") {
-              onFilterChange((prev) => ({ ...prev, company: val }));
-            }
-          }}
-          placeholder="All Companies"
-        />
+        {hasFilterAccess('company') && (
+          <MultiSelectDropdown
+            options={companies}
+            selected={Array.isArray(filters.company) ? filters.company : (filters.company ? [filters.company] : [])}
+            onChange={(val) => {
+              if (typeof onFilterChange === "function") {
+                onFilterChange((prev) => ({ ...prev, company: val }));
+              }
+            }}
+            placeholder="All Companies"
+          />
+        )}
 
         {/* Month */}
-        <MultiSelectDropdown
-          options={months}
-          selected={Array.isArray(filters.month) ? filters.month : (filters.month ? [filters.month] : [])}
-          onChange={(val) => {
-            if (typeof onFilterChange === "function") {
-              onFilterChange((prev) => ({ ...prev, month: val }));
-            }
-          }}
-          placeholder="All Months"
-        />
+        {hasFilterAccess('month') && (
+          <MultiSelectDropdown
+            options={months}
+            selected={Array.isArray(filters.month) ? filters.month : (filters.month ? [filters.month] : [])}
+            onChange={(val) => {
+              if (typeof onFilterChange === "function") {
+                onFilterChange((prev) => ({ ...prev, month: val }));
+              }
+            }}
+            placeholder="All Months"
+          />
+        )}
 
         {/* Year */}
-        <select
-          className="filter-select"
-          value={filters.year}
-          onChange={set("year")}
-        >
-          <option value="">All Years</option>
-          {years.map((y) => <option key={y} value={y}>{y}</option>)}
-        </select>
+        {hasFilterAccess('year') && (
+          <select
+            className="filter-select"
+            value={filters.year}
+            onChange={set("year")}
+          >
+            <option value="">All Years</option>
+            {years.map((y) => <option key={y} value={y}>{y}</option>)}
+          </select>
+        )}
 
         {/* Instance */}
-        <select
-          className="filter-select"
-          value={filters.instance}
-          onChange={set("instance")}
-        >
-          <option value="">All Instances</option>
-          {instances.map((i) => <option key={i} value={i}>{i}</option>)}
-        </select>
+        {hasFilterAccess('instance') && (
+          <select
+            className="filter-select"
+            value={filters.instance}
+            onChange={set("instance")}
+          >
+            <option value="">All Instances</option>
+            {instances.map((i) => <option key={i} value={i}>{i}</option>)}
+          </select>
+        )}
 
         {/* Status — options are derived from the actual entries so the
             dropdown only lists statuses that exist in the data. */}
-        <select
-          className="filter-select"
-          value={filters.status}
-          onChange={set("status")}
-        >
-          <option value="">All Status</option>
-          {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
+        {hasFilterAccess('status') && (
+          <select
+            className="filter-select"
+            value={filters.status}
+            onChange={set("status")}
+          >
+            <option value="">All Status</option>
+            {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        )}
 
         {/* Type of Service */}
-        <select
-          className="filter-select"
-          value={filters.serviceType}
-          onChange={set("serviceType")}
-        >
-          <option value="">All Types</option>
-          {types.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
+        {hasFilterAccess('type') && (
+          <select
+            className="filter-select"
+            value={filters.serviceType}
+            onChange={set("serviceType")}
+          >
+            <option value="">All Types</option>
+            {types.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+        )}
 
         {/* Clear */}
         {hasFilters && (

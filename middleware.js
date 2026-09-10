@@ -33,9 +33,18 @@ export async function middleware(request) {
     }
   }
 
+  const protectedPages = ['dashboard', 'payment', 'monthly', 'defaulter', 'history', 'expenses', 'placement', 'laidoff', 'po-details', 'notifications'];
+
   if (pathname === '/sign-in') {
     if (isValid) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      let dest = '/dashboard';
+      if (decodedPayload?.permissions?.pages) {
+        const allowed = Object.entries(decodedPayload.permissions.pages).find(([_, data]) => data.access === true);
+        if (allowed && !decodedPayload.permissions.pages['dashboard']?.access) {
+          dest = `/${allowed[0]}`;
+        }
+      }
+      return NextResponse.redirect(new URL(dest, request.url));
     }
     return NextResponse.next();
   }
@@ -48,6 +57,18 @@ export async function middleware(request) {
   if (pathname.startsWith('/admin')) {
     if (decodedPayload?.role !== 'admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+  }
+
+  // Page-level access control
+  const segment = pathname.split('/')[1];
+  if (protectedPages.includes(segment)) {
+    const perms = decodedPayload?.permissions;
+    if (perms && perms.pages) {
+      const pagePerm = perms.pages[segment];
+      if (!pagePerm || !pagePerm.access) {
+        return NextResponse.redirect(new URL('/page-not-found', request.url));
+      }
     }
   }
 

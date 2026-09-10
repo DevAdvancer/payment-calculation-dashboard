@@ -1,9 +1,48 @@
 "use client";
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import toast from "react-hot-toast";
 
-function UserRow({ user, onUpdate, onPromptDelete, onPromptResetPassword }) {
+const AVAILABLE_PAGES = [
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'payment', label: 'Payment Calc' },
+  { id: 'monthly', label: 'Monthly Summary' },
+  { id: 'defaulter', label: 'Defaulter Sheet' },
+  { id: 'history', label: 'Candidate History' },
+  { id: 'expenses', label: 'Expenses' },
+  { id: 'placement', label: 'New Placement' },
+  { id: 'laidoff', label: 'Laid Off / Resigned' },
+  { id: 'po-details', label: 'PO Details' },
+  { id: 'notifications', label: 'Notifications' }
+];
+
+const AVAILABLE_FILTERS = [
+  { id: 'company', label: 'Company' },
+  { id: 'status', label: 'Status' },
+  { id: 'month', label: 'Month' },
+  { id: 'year', label: 'Year' },
+  { id: 'instance', label: 'Instance' },
+  { id: 'type', label: 'Type' },
+  { id: 'client', label: 'Client' },
+  { id: 'candidate', label: 'Candidate' },
+  { id: 'po_num', label: 'PO Number' },
+  { id: 'category', label: 'Category' },
+  { id: 'currency', label: 'Currency' }
+];
+
+const PAGE_FILTERS = {
+  'dashboard': [],
+  'payment': ['company', 'status', 'month', 'year', 'instance', 'type'],
+  'monthly': ['company', 'month', 'year'],
+  'defaulter': ['company', 'month', 'year'],
+  'history': [],
+  'expenses': ['category', 'status', 'month', 'year', 'currency'],
+  'placement': [],
+  'laidoff': ['company', 'month', 'year'],
+  'po-details': ['company', 'month', 'year'],
+  'notifications': []
+};
+
+function UserRow({ user, onUpdate, onPromptDelete, onPromptResetPassword, onPromptAccess }) {
   const [currentStatus, setCurrentStatus] = useState(user.status || "active");
   const [currentRole, setCurrentRole] = useState(user.role || "user");
   const [isSaving, setIsSaving] = useState(false);
@@ -121,9 +160,9 @@ function UserRow({ user, onUpdate, onPromptDelete, onPromptResetPassword }) {
         </div>
       </td>
       <td style={{ padding: "16px 24px" }}>
-        <Link href={`/admin/access-control?userId=${user.id}`} style={{ display: "inline-block", textDecoration: "none", padding: "6px 14px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 16, fontSize: 12, fontWeight: 600, color: "#334155", cursor: "pointer" }}>
+        <button onClick={() => onPromptAccess(user)} style={{ border: "1px solid #cbd5e1", background: "#fff", padding: "6px 14px", borderRadius: 16, fontSize: 12, fontWeight: 600, color: "#334155", cursor: "pointer", transition: "all 0.15s" }}>
           Access
-        </Link>
+        </button>
       </td>
       <td style={{ padding: "16px 24px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13 }}>
@@ -211,6 +250,43 @@ export default function AccessControlPage() {
   const [userToResetPassword, setUserToResetPassword] = useState(null);
   const [resetPasswordData, setResetPasswordData] = useState({ newPassword: '', confirmNewPassword: '' });
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+
+  // Access Modal State
+  const [userToManageAccess, setUserToManageAccess] = useState(null);
+  const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
+  const [accessData, setAccessData] = useState({ pages: {} });
+
+  const handleOpenAccessModal = (user) => {
+    setUserToManageAccess(user);
+    if (user.permissions && Object.keys(user.permissions).length > 0) {
+      setAccessData(user.permissions);
+    } else {
+      const fullAccess = { pages: {} };
+      AVAILABLE_PAGES.forEach(p => {
+        fullAccess.pages[p.id] = { access: true, filters: PAGE_FILTERS[p.id] || [] };
+      });
+      setAccessData(fullAccess);
+    }
+    setIsAccessModalOpen(true);
+  };
+
+  const handleSaveAccess = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/users/${userToManageAccess.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ permissions: accessData })
+      });
+      if (!res.ok) throw new Error("Failed to save permissions");
+      toast.success("Permissions updated");
+      setIsAccessModalOpen(false);
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.message);
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -324,7 +400,7 @@ export default function AccessControlPage() {
     <div style={{ padding: "40px 56px", maxWidth: 1000, margin: "0 auto", fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>
-          Access Control
+          Users
         </h1>
         <p style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>
           Manage users and their permissions within the system.
@@ -387,6 +463,7 @@ export default function AccessControlPage() {
                     onUpdate={handleUpdateUser} 
                     onPromptDelete={(user) => setUserToDelete(user)} 
                     onPromptResetPassword={(user) => setUserToResetPassword(user)}
+                    onPromptAccess={handleOpenAccessModal}
                   />
                 ))
               )}
@@ -526,35 +603,40 @@ export default function AccessControlPage() {
       {userToResetPassword && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
           <div style={{ background: "#fff", padding: "24px", borderRadius: "12px", width: "400px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
-            <h3 style={{ marginTop: 0, fontSize: "18px", color: "#111827" }}>Reset Password for {userToResetPassword.name || userToResetPassword.email}</h3>
-            <form onSubmit={handleResetPasswordSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
+            <h3 style={{ marginTop: 0, fontSize: "18px", color: "#111827" }}>Reset Password</h3>
+            <p style={{ color: "#4b5563", fontSize: "14px", marginTop: 4, marginBottom: 16 }}>
+              Enter a new password for <strong>{userToResetPassword.name || userToResetPassword.email}</strong>.
+            </p>
+            <form onSubmit={handleResetPasswordSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>New Password *</label>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>New Password</label>
                 <input 
                   type="password" 
                   required
                   value={resetPasswordData.newPassword} 
                   onChange={(e) => setResetPasswordData({...resetPasswordData, newPassword: e.target.value})}
                   style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
-                  placeholder="Enter new password"
+                  placeholder="••••••••"
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>Confirm New Password *</label>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>Confirm New Password</label>
                 <input 
                   type="password" 
                   required
                   value={resetPasswordData.confirmNewPassword} 
                   onChange={(e) => setResetPasswordData({...resetPasswordData, confirmNewPassword: e.target.value})}
                   style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
-                  placeholder="Confirm new password"
+                  placeholder="••••••••"
                 />
               </div>
-              
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "16px" }}>
                 <button 
                   type="button"
-                  onClick={() => setUserToResetPassword(null)}
+                  onClick={() => {
+                    setUserToResetPassword(null);
+                    setResetPasswordData({ newPassword: '', confirmNewPassword: '' });
+                  }}
                   disabled={isResettingPassword}
                   style={{ padding: "8px 16px", border: "1px solid #d1d5db", background: "#fff", borderRadius: "6px", cursor: isResettingPassword ? "not-allowed" : "pointer", color: "#374151", fontWeight: 500 }}
                 >
@@ -563,7 +645,7 @@ export default function AccessControlPage() {
                 <button 
                   type="submit"
                   disabled={isResettingPassword}
-                  style={{ padding: "8px 16px", border: "none", background: "#4f46e5", borderRadius: "6px", cursor: isResettingPassword ? "not-allowed" : "pointer", color: "#fff", fontWeight: 500 }}
+                  style={{ padding: "8px 16px", border: "none", background: "#1a1f2e", borderRadius: "6px", cursor: isResettingPassword ? "not-allowed" : "pointer", color: "#fff", fontWeight: 500 }}
                 >
                   {isResettingPassword ? "Saving..." : "Save"}
                 </button>
@@ -572,6 +654,121 @@ export default function AccessControlPage() {
           </div>
         </div>
       )}
+
+      {/* Access Permissions Modal */}
+      {isAccessModalOpen && userToManageAccess && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div style={{ background: "#fff", padding: "32px", borderRadius: "12px", width: "800px", maxHeight: "85vh", overflowY: "auto", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ marginTop: 0, fontSize: "20px", color: "#111827", marginBottom: "8px" }}>Access Permissions</h3>
+            <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "24px", marginTop: 0 }}>
+              Configure page and filter access for <strong>{userToManageAccess.name || userToManageAccess.email}</strong>
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+              {AVAILABLE_PAGES.map(page => {
+                const pageData = accessData.pages[page.id] || { access: false, filters: [] };
+                const hasAccess = pageData.access;
+                const applicableFilters = PAGE_FILTERS[page.id] || [];
+
+                return (
+                  <div key={page.id} style={{ border: "1px solid #e5e7eb", borderRadius: "8px", padding: "16px", background: hasAccess ? "#f8fafc" : "#fff" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <input 
+                        type="checkbox" 
+                        id={`page-${page.id}`}
+                        checked={hasAccess}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setAccessData(prev => ({
+                            ...prev,
+                            pages: {
+                              ...prev.pages,
+                              [page.id]: {
+                                access: checked,
+                                filters: checked ? applicableFilters : []
+                              }
+                            }
+                          }));
+                        }}
+                        style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                      />
+                      <label htmlFor={`page-${page.id}`} style={{ fontSize: "15px", fontWeight: 600, color: "#111827", cursor: "pointer" }}>
+                        {page.label}
+                      </label>
+                    </div>
+
+                    {hasAccess && applicableFilters.length > 0 && (
+                      <div style={{ marginTop: "16px", paddingLeft: "28px" }}>
+                        <div style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280", marginBottom: "10px" }}>Allowed Filters:</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+                          {applicableFilters.map(filterId => {
+                            const filter = AVAILABLE_FILTERS.find(f => f.id === filterId);
+                            if (!filter) return null;
+                            const hasFilter = pageData.filters.includes(filter.id);
+                            return (
+                              <label key={filter.id} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#4b5563", cursor: "pointer" }}>
+                                <input 
+                                  type="checkbox"
+                                  checked={hasFilter}
+                                  onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    setAccessData(prev => {
+                                      const existingFilters = prev.pages[page.id]?.filters || [];
+                                      const newFilters = checked 
+                                        ? [...existingFilters, filter.id] 
+                                        : existingFilters.filter(f => f !== filter.id);
+                                      return {
+                                        ...prev,
+                                        pages: {
+                                          ...prev.pages,
+                                          [page.id]: {
+                                            ...prev.pages[page.id],
+                                            filters: newFilters
+                                          }
+                                        }
+                                      };
+                                    });
+                                  }}
+                                />
+                                {filter.label}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {hasAccess && applicableFilters.length === 0 && (
+                      <div style={{ marginTop: "16px", paddingLeft: "28px", fontSize: "13px", color: "#9ca3af", fontStyle: "italic" }}>
+                        No filters available for this page.
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "32px", borderTop: "1px solid #e5e7eb", paddingTop: "24px" }}>
+              <button 
+                type="button"
+                onClick={() => setIsAccessModalOpen(false)}
+                disabled={isLoading}
+                style={{ padding: "8px 16px", border: "1px solid #d1d5db", background: "#fff", borderRadius: "6px", cursor: isLoading ? "not-allowed" : "pointer", color: "#374151", fontWeight: 500 }}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                onClick={handleSaveAccess}
+                disabled={isLoading}
+                style={{ padding: "8px 16px", border: "none", background: "#1a1f2e", borderRadius: "6px", cursor: isLoading ? "not-allowed" : "pointer", color: "#fff", fontWeight: 500 }}
+              >
+                {isLoading ? "Saving..." : "Save Permissions"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
