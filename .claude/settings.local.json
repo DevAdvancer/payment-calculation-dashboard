@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk 'NR>=459 && NR<=560' lib/use-store.js)",
+      "Bash(node --test test/status-routing.test.mjs)",
+      "Bash(node --test test/)",
+      "Bash(node --test test/*.test.mjs)"
+    ]
+  }
+}

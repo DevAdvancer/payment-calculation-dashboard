@@ -1,4 +1,6 @@
 "use client";
+import { Receipt } from "lucide-react";
+import { useLockedEntries, usePageMode } from "@/app/components/PermissionsContext";
 import { useState, useMemo, useRef } from "react";
 import * as XLSX from "xlsx";
 import useDashboardStore, {
@@ -51,8 +53,8 @@ function normalizeExpenseStatus(status) {
 }
 
 export default function ExpensePage() {
-  const { expenses, createExpense, updateExpense, deleteExpense, bulkDeleteExpenses, showToast, loading } =
-    useDashboardStore();
+  const { expenses: _expenses, createExpense, updateExpense, deleteExpense, bulkDeleteExpenses, showToast, loading } =
+    useDashboardStore(); const expenses = useLockedEntries(_expenses, 'expenses');
 
   const [search, setSearch]   = useState("");
   const [filters, setFilters] = useState({ category: "", status: "", month: "", year: "", currency: "" });
@@ -91,7 +93,7 @@ export default function ExpensePage() {
 
   /* ── Filter options derived from data */
   const years = useMemo(
-    () => [...new Set(expenses.map(e => e.year).filter(Boolean))].sort((a, b) => +b - +a),
+    () => [...new Set(expenses.map(e => e.year).filter(x => x && x !== "0"))].sort((a, b) => +b - +a),
     [expenses]
   );
 
@@ -350,7 +352,7 @@ export default function ExpensePage() {
       {/* Table */}
       {sorted.length === 0 ? (
         <div className="empty-state" style={{ padding: 40, textAlign: "center" }}>
-          <div className="empty-icon" style={{ fontSize: 28 }}>💸</div>
+          <div className="empty-icon" style={{ display:"flex", justifyContent:"center", marginBottom:12 }}><Receipt size={48} strokeWidth={1} color="#9ca3af" /></div>
           <div className="empty-title" style={{ fontWeight: 700, marginTop: 6 }}>No expenses recorded</div>
           <div className="empty-sub" style={{ color: "var(--text-muted)", marginTop: 4 }}>Click <strong>New Expense</strong> to log your first one.</div>
         </div>
@@ -513,3 +515,21 @@ const iconBtn = (color) => ({
   color, padding: "4px 6px", borderRadius: 4,
   display: "inline-flex", alignItems: "center", justifyContent: "center",
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

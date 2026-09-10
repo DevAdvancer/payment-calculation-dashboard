@@ -1,6 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import MultiSelectDropdown from "@/app/components/MultiSelectDropdown";
+import useDashboardStore, { MONTH_NAMES, INSTANCE_OPTIONS, SERVICE_TYPES, ALL_STATUSES } from "@/lib/use-store";
+import { useMemo } from "react";
 
 const AVAILABLE_PAGES = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -255,6 +258,50 @@ export default function AccessControlPage() {
   const [userToManageAccess, setUserToManageAccess] = useState(null);
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
   const [accessData, setAccessData] = useState({ pages: {} });
+
+  
+  const { getActive, expenses = [] } = useDashboardStore();
+  const entries = getActive ? getActive() : [];
+  
+  const optionsMap = useMemo(() => {
+    const opts = {};
+    opts.month = MONTH_NAMES || [];
+    
+    const yrs = new Set(entries.map(e => String(e.year || "").trim()).filter(x => x && x !== "0"));
+    yrs.add(String(new Date().getFullYear()));
+    opts.year = [...yrs].sort((a,b)=>Number(b)-Number(a));
+
+    const comps = new Set(entries.map(e => String(e.company || "").trim()).filter(x => x && x !== "0"));
+    opts.company = [...comps].sort();
+
+    const stats = new Set(entries.map(e => String(e.status || "").trim()).filter(x => x && x !== "0"));
+    if (ALL_STATUSES) ALL_STATUSES.forEach(s => stats.add(s));
+    opts.status = [...stats].sort();
+
+    const insts = new Set(entries.map(e => String(e.instance || "")).filter(Boolean));
+    if (INSTANCE_OPTIONS) INSTANCE_OPTIONS.forEach(i => insts.add(i));
+    opts.instance = [...insts].sort();
+
+    const types = new Set(entries.map(e => String(e.serviceType || "")).filter(Boolean));
+    if (SERVICE_TYPES) SERVICE_TYPES.forEach(t => types.add(t));
+    opts.type = [...types].sort();
+
+    const clients = new Set(entries.map(e => String(e.client || "").trim()).filter(x => x && x !== "0"));
+    opts.client = [...clients].sort();
+
+    const cands = new Set(entries.map(e => String(e.candidate || "").trim()).filter(x => x && x !== "0"));
+    opts.candidate = [...cands].sort();
+
+    const pos = new Set(entries.map(e => String(e.poNumber || "").trim()).filter(x => x && x !== "0"));
+    opts.po_num = [...pos].sort();
+
+        const cats = new Set(expenses.map(e => String(e.category||"").trim()).filter(x => x && x !== "0"));
+    opts.category = [...cats].sort();
+    opts.currency = ["USD", "GBP", "INR"];
+    
+    return opts;
+  }, [entries]);
+
 
   const handleOpenAccessModal = (user) => {
     setUserToManageAccess(user);
@@ -685,7 +732,7 @@ export default function AccessControlPage() {
                               ...prev.pages,
                               [page.id]: {
                                 access: checked,
-                                filters: checked ? applicableFilters : []
+                                filters: checked ? applicableFilters : [], mode: checked ? "write" : "write"
                               }
                             }
                           }));
@@ -697,7 +744,41 @@ export default function AccessControlPage() {
                       </label>
                     </div>
 
-                    {hasAccess && applicableFilters.length > 0 && (
+                    
+                      {hasAccess && (
+                        <div style={{ marginTop: "16px", paddingLeft: "28px", display: "flex", alignItems: "center", gap: "16px" }}>
+                          <div style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280" }}>Permissions:</div>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#4b5563", cursor: "pointer" }}>
+                            <input 
+                              type="radio" 
+                              name={`mode-${page.id}`} 
+                              checked={pageData.mode !== "read"} 
+                              onChange={() => {
+                                setAccessData(prev => ({
+                                  ...prev,
+                                  pages: { ...prev.pages, [page.id]: { ...prev.pages[page.id], mode: "write" } }
+                                }));
+                              }}
+                            />
+                            Read & Write
+                          </label>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#4b5563", cursor: "pointer" }}>
+                            <input 
+                              type="radio" 
+                              name={`mode-${page.id}`} 
+                              checked={pageData.mode === "read"} 
+                              onChange={() => {
+                                setAccessData(prev => ({
+                                  ...prev,
+                                  pages: { ...prev.pages, [page.id]: { ...prev.pages[page.id], mode: "read" } }
+                                }));
+                              }}
+                            />
+                            Read Only
+                          </label>
+                        </div>
+                      )}
+{hasAccess && applicableFilters.length > 0 && (
                       <div style={{ marginTop: "16px", paddingLeft: "28px" }}>
                         <div style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280", marginBottom: "10px" }}>Allowed Filters:</div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
@@ -737,7 +818,51 @@ export default function AccessControlPage() {
                         </div>
                       </div>
                     )}
-                    {hasAccess && applicableFilters.length === 0 && (
+                    
+                      {hasAccess && applicableFilters.length > 0 && (
+                        <div style={{ marginTop: "16px", paddingLeft: "28px" }}>
+                          <div style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280", margin: "16px 0 10px" }}>Locked Row Filters (Leave blank to allow all):</div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", flexDirection: "column" }}>
+                          {applicableFilters.map(filterId => { 
+                            const filter = AVAILABLE_FILTERS.find(f => f.id === filterId); 
+                            if (!filter) return null; 
+                            const lockedValue = pageData.lockedFilters?.[filter.id] || ""; 
+                              return (
+                              <div key={`lock-${filter.id}`} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#4b5563" }}>
+                                <span style={{ width: 80 }}>{filter.label}</span>
+                                  <MultiSelectDropdown
+                                    options={optionsMap[filter.id] || []}
+                                    selected={Array.isArray(lockedValue) ? lockedValue : (lockedValue ? [String(lockedValue)] : [])}
+                                    placeholder="Any (Unlocked)"
+                                    onChange={(val) => {
+                                      setAccessData(prev => { 
+                                      const lockedF = { ...(prev.pages[page.id]?.lockedFilters || {}) }; 
+                                        if (!val || val.length === 0) { 
+                                        delete lockedF[filter.id]; 
+                                        } else { 
+                                        lockedF[filter.id] = val; 
+                                        } 
+                                        return { 
+                                          ...prev, 
+                                          pages: { 
+                                            ...prev.pages, 
+                                            [page.id]: { 
+                                              ...prev.pages[page.id], 
+                                            lockedFilters: lockedF 
+                                            } 
+                                          } 
+                                        }; 
+                                      }); 
+                                    }}
+                                    style={{ minWidth: 200 }}
+                                  />
+                                </div>
+                              ); 
+                            })}
+                          </div>
+                        </div>
+                      )}
+{hasAccess && applicableFilters.length === 0 && (
                       <div style={{ marginTop: "16px", paddingLeft: "28px", fontSize: "13px", color: "#9ca3af", fontStyle: "italic" }}>
                         No filters available for this page.
                       </div>

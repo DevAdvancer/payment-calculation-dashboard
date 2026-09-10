@@ -1,4 +1,5 @@
 "use client";
+import { Check } from "lucide-react";
 import { useState } from "react";
 import useDashboardStore, {
   ALL_STATUSES,
@@ -120,7 +121,7 @@ export default function QuickEntryModal({ onClose }) {
     setSaving(false);
 
     if (result) {
-      showToast(`✓ Entry created for ${form.candidate}`);
+      showToast(<span style={{display:"flex",alignItems:"center",gap:6}}><Check size={15}/> Entry created for {form.candidate}</span>);
       onClose();
     }
   };

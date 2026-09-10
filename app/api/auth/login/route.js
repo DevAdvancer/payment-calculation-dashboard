@@ -9,7 +9,7 @@ const JWT_SECRET = new TextEncoder().encode(
 
 export async function POST(request) {
   try {
-    const { email, password, role } = await request.json();
+    const { email, password } = await request.json();
 
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
@@ -22,12 +22,6 @@ export async function POST(request) {
 
     if (user.status === 'inactive') {
       return NextResponse.json({ error: "Please contact the admin" }, { status: 403 });
-    }
-
-    // Optional: enforce role matching. Default to 'user' if not provided
-    const requestedRole = role || 'user';
-    if (user.role !== requestedRole) {
-      return NextResponse.json({ error: `Account does not have ${requestedRole} privileges` }, { status: 403 });
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
@@ -46,7 +40,7 @@ export async function POST(request) {
       .setExpirationTime('24h')
       .sign(JWT_SECRET);
 
-    const response = NextResponse.json({ success: true }, { status: 200 });
+    const response = NextResponse.json({ success: true, role: user.role }, { status: 200 });
 
     response.cookies.set({
       name: 'auth_token',

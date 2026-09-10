@@ -1,4 +1,5 @@
 "use client";
+import { Check } from "lucide-react";
 import useDashboardStore, { fmtMoneyC } from "@/lib/use-store";
 import { useRouter } from "next/navigation";
 
@@ -54,7 +55,7 @@ export default function PaymentDashboardPage() {
     sel.addRange(range);
     document.execCommand("copy");
     sel.removeAllRanges();
-    showToast("✓ Email copied to clipboard");
+    showToast(<span style={{display:"flex",alignItems:"center",gap:6}}><Check size={15}/> Email copied to clipboard</span>);
   };
 
   return (
@@ -190,3 +191,4 @@ export default function PaymentDashboardPage() {
     </div>
   );
 }
+

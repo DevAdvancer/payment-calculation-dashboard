@@ -1,5 +1,7 @@
 "use client";
+import { Check, ClipboardList } from "lucide-react";
 
+import { useLockedEntries } from "@/app/components/PermissionsContext";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import useDashboardStore, { fmtMoney, fmtMoneyC, fmtDate, fmtEmailDate, MONTH_NAMES, currencyOf, currencySymbol, sumByCurrency } from "../../../lib/use-store";
@@ -244,7 +246,7 @@ function clipboardRowsToObjects(text) {
 }
 
 export default function PODetailsPage() {
-  const entries         = useDashboardStore((s) => s.entries);
+  const _entries = useDashboardStore((s) => s.entries); const entries = useLockedEntries(_entries, 'po-details');
   const updateEntry     = useDashboardStore((s) => s.updateEntry);
   const deleteEntry     = useDashboardStore((s) => s.deleteEntry);
   const bulkDelete      = useDashboardStore((s) => s.bulkDelete);
@@ -337,7 +339,7 @@ export default function PODetailsPage() {
 
     /* Companies / Years: derive from entries; keep the current
        selection visible too. */
-    const companiesSet = new Set(poEntries.map(e => e.company).filter(Boolean));
+    const companiesSet = new Set(poEntries.map(e => e.company).filter(x => x && x !== "0"));
     if (poFilters.company) {
       if (Array.isArray(poFilters.company)) {
         poFilters.company.forEach(c => companiesSet.add(String(c)));
@@ -347,7 +349,7 @@ export default function PODetailsPage() {
     }
     const companies = [...companiesSet].sort();
 
-    const yearsSet = new Set(poEntries.map(e => e.year).filter(Boolean).map(String));
+    const yearsSet = new Set(poEntries.map(e => e.year).filter(x => x && x !== "0").map(String));
     if (poFilters.year) yearsSet.add(String(poFilters.year));
     const years = [...yearsSet].sort((a, b) => Number(b) - Number(a));
 
@@ -592,7 +594,7 @@ export default function PODetailsPage() {
         setDeleteConfirm(prev => ({ ...prev, loading: true }));
         const ok = await bulkDelete(candidateEntries.map(e => e.id));
         if (ok) {
-          showToast(`✓ Deleted ${row.candidate} (${count} ${count === 1 ? "entry" : "entries"})`);
+          showToast(<span style={{display:"flex",alignItems:"center",gap:6}}><Check size={15}/> Deleted {row.candidate} ({count} {count === 1 ? "entry" : "entries"})</span>);
         }
         setDeleteConfirm({ isOpen: false, title: "", message: "", onConfirm: null, loading: false });
       },
@@ -628,7 +630,7 @@ export default function PODetailsPage() {
         const ok = await bulkDelete(toDelete.map(e => e.id));
         if (ok) {
           setSelected(new Set());
-          showToast(`✓ Deleted ${selectedRows.length} ${selectedRows.length === 1 ? "candidate" : "candidates"} (${totalEntries} entries)`);
+          showToast(<span style={{display:"flex",alignItems:"center",gap:6}}><Check size={15}/> Deleted {selectedRows.length} {selectedRows.length === 1 ? "candidate" : "candidates"} ({totalEntries} entries)</span>);
         }
         setDeleteConfirm({ isOpen: false, title: "", message: "", onConfirm: null, loading: false });
       },
@@ -636,7 +638,7 @@ export default function PODetailsPage() {
   };
 
   const importMappedRows = async (mapped, label = "Imported") => {
-    const valid = mapped.filter(Boolean);
+    const valid = mapped.filter(x => x && x !== "0");
     if (!valid.length) {
       showToast("No valid PO rows found to import");
       return false;
@@ -675,7 +677,7 @@ export default function PODetailsPage() {
     if (!text.trim() || !text.includes("\t")) return;
 
     const rowObjects = clipboardRowsToObjects(text);
-    const mapped = rowObjects.map((row, i) => mapPoImportRow(row, i)).filter(Boolean);
+    const mapped = rowObjects.map((row, i) => mapPoImportRow(row, i)).filter(x => x && x !== "0");
     if (mapped.length) {
       e.preventDefault();
       setPasteImport({ rows: mapped });
@@ -897,7 +899,7 @@ export default function PODetailsPage() {
               {rows.length === 0 ? (
                 <tr><td colSpan={COLS.length + 2}>
                   <div className="empty-state">
-                    <div className="empty-icon">📋</div>
+                    <div className="empty-icon" style={{ display:"flex", justifyContent:"center", marginBottom:12 }}><ClipboardList size={48} strokeWidth={1} color="#9ca3af" /></div>
                     <div className="empty-title">No PO records yet</div>
                     <div className="empty-sub">Add a row, import Excel, or paste copied Excel rows to get started.</div>
                   </div>
@@ -1202,3 +1204,20 @@ const btnGhost = {
   border:"1px solid var(--color-border)", borderRadius:"var(--radius-md)",
   fontSize:12, fontWeight:600, fontFamily:"var(--font-body)", cursor:"pointer",
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

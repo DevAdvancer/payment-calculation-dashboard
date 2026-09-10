@@ -1,4 +1,5 @@
 "use client";
+import { AlertTriangle, X, Check } from "lucide-react";
 import { useEffect, useRef, useState, createContext } from "react";
 import { COMPANY_SLUGS, fallbackFor } from "./components";
 
@@ -21,7 +22,7 @@ export default function AdminLayout({ children }) {
         setSettings(s);
         setBaseline(s);
       })
-      .catch(() => showToast("⚠ Could not load settings"));
+      .catch(() => showToast(<span style={{display:"flex",alignItems:"center",gap:6}}><AlertTriangle size={15}/> Could not load settings</span>));
   }, []);
 
   function showToast(msg, ms = 4500) {
@@ -94,7 +95,7 @@ export default function AdminLayout({ children }) {
 
       const sizeKB = approxKB(payload);
       if (sizeKB > 4000) {
-        showToast(`✕ Save failed — payload is ${sizeKB} KB (limit ~4500 KB). Compress images and retry.`, 7000);
+        showToast(<span style={{display:"flex",alignItems:"center",gap:6}}><X size={15}/>  Save failed — payload is {sizeKB} KB (limit ~4500 KB). Compress images and retry.</span>, 7000);
         setSaving(false);
         return;
       }
@@ -108,7 +109,7 @@ export default function AdminLayout({ children }) {
         const errBody = await res.json().catch(() => ({}));
         const msg = errBody.error || `HTTP ${res.status}`;
         console.error("admin save failed:", res.status, errBody);
-        showToast(`✕ Save failed — ${msg}`, 7000);
+        showToast(<span style={{display:"flex",alignItems:"center",gap:6}}><X size={15}/> Save failed — {msg}</span>, 7000);
         return;
       }
       const data = await res.json().catch(() => ({}));
@@ -119,10 +120,10 @@ export default function AdminLayout({ children }) {
         setBaseline({ ...settings });
       }
       setSaved(true);
-      showToast("✓ Settings saved successfully");
+      showToast(<span style={{display:"flex",alignItems:"center",gap:6}}><Check size={15}/> Settings saved successfully</span>);
     } catch (e) {
       console.error("admin save error:", e);
-      showToast("✕ Save failed — network error", 7000);
+      showToast(<span style={{display:"flex",alignItems:"center",gap:6}}><X size={15}/> Save failed — network error</span>, 7000);
     } finally { setSaving(false); }
   }
 
@@ -154,7 +155,7 @@ export default function AdminLayout({ children }) {
               {saving ? "Saving…" : "Save Settings"}
             </button>
             <span style={{ fontSize:12, fontWeight:600, padding:"4px 12px", borderRadius:9999, background: saved ? "#ecfdf5" : "#f3f4f6", color: saved ? "#059669" : "#9ca3af" }}>
-              {saved ? "● Saved" : "○ Unsaved changes"}
+              {saved ? <span style={{display:"inline-flex",alignItems:"center",gap:4}}><Check size={14}/> Saved</span> : <span style={{display:"inline-flex",alignItems:"center",gap:4}}><AlertTriangle size={14}/> Unsaved changes</span>}
             </span>
           </div>
         </main>

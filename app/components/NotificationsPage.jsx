@@ -1,8 +1,10 @@
 "use client";
+import { Bell, Check, X } from "lucide-react";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import useDashboardStore from "../../lib/use-store";
+import SkeletonTable from "@/app/components/SkeletonTable";
 
 export default function NotificationsPage() {
   const notifications = useDashboardStore((s) => s.notifications);
@@ -130,7 +132,7 @@ export default function NotificationsPage() {
 
       {sortedNotifications.length === 0 ? (
         <div className="empty-state" style={{ paddingTop: 20 }}>
-          <div className="empty-icon">🔔</div>
+          <div className="empty-icon" style={{ display:"flex", justifyContent:"center", marginBottom:12 }}><Bell size={48} strokeWidth={1} color="#9ca3af" /></div>
           <div className="empty-title">No notifications yet</div>
           <div className="empty-sub">Once a candidate reaches 100% payment completion, alerts will appear here.</div>
         </div>
@@ -157,9 +159,7 @@ export default function NotificationsPage() {
               >
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                    <div style={{ width: 28, height: 28, borderRadius: 9999, display: "grid", placeItems: "center", background: isRead ? "#d1fae5" : "#34d399", color: isRead ? "#065f46" : "#ffffff", fontWeight: 700 }}>
-                      ✓
-                    </div>
+                    <div style={{ width: 28, height: 28, borderRadius: 9999, display: "grid", placeItems: "center", background: isRead ? "#d1fae5" : "#34d399", color: isRead ? "#065f46" : "#ffffff", fontWeight: 700 }}><Check size={16} /></div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: isRead ? "#0f172a" : "#064e3b" }}>
                       {isRead ? "Read" : "New"}
                     </div>
@@ -267,9 +267,7 @@ export default function NotificationsPage() {
                       e.currentTarget.style.background = "#ef4444";
                       e.currentTarget.style.transform = "scale(1)";
                     }}
-                  >
-                    ✕
-                  </button>
+                  ><X size={16} /></button>
                 </div>
               </div>
             );
@@ -279,3 +277,6 @@ export default function NotificationsPage() {
     </div>
   );
 }
+
+
+

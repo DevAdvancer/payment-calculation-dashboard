@@ -1,4 +1,5 @@
 "use client";
+import { Globe } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import useDashboardStore, { MONTH_NAMES, fmtMoneyC, currencyOf, currencySymbol, fmtEmailDate } from "@/lib/use-store";
@@ -338,9 +339,7 @@ export default function NewPlacementPage() {
                   {COMPANY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
                 {isUK && (
-                  <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "#dbeafe", color: "#1d4ed8", letterSpacing: ".06em", pointerEvents: "none" }}>
-                    🇬🇧 GBP
-                  </span>
+                  <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "#dbeafe", color: "#1d4ed8", letterSpacing: ".06em", pointerEvents: "none" }}><span style={{display:"inline-flex",alignItems:"center",gap:6}}><Globe size={14}/> GBP</span></span>
                 )}
               </div>
             </Field>
@@ -491,3 +490,4 @@ const btnGhostStyle = {
   border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)",
   fontSize: 12, fontWeight: 600, fontFamily: "var(--font-body)", cursor: "pointer",
 };
+

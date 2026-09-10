@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { MONTH_NAMES, INSTANCE_OPTIONS, SERVICE_TYPES } from "@/lib/use-store";
 import { periodOf, normalizeMonth } from "@/lib/period-utils";
 import MultiSelectDropdown from "@/app/components/MultiSelectDropdown";
-import { usePermissions } from "@/app/components/PermissionsContext";
+import { useFilterAccess } from "@/app/components/PermissionsContext";
 import { usePathname } from "next/navigation";
 
 const EMPTY_FILTERS = {
@@ -34,16 +34,11 @@ const STATUS_ORDER = [
 ];
 
 export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFilterChange }) {
-  const permissions = usePermissions();
+  
   const pathname = usePathname();
   const pageId = pathname.split('/')[1] || 'dashboard';
 
-  const hasFilterAccess = (filterId) => {
-    if (!permissions || !permissions.pages) return true;
-    const p = permissions.pages[pageId];
-    if (!p) return false;
-    return p.filters.includes(filterId);
-  };
+  const hasFilterAccess = useFilterAccess(pageId);
 
   /* All dropdowns are derived dynamically from the actual entries so
      each only lists values that exist in the data. The current
@@ -52,7 +47,7 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
      the filter). */
 
   const companies = useMemo(() => {
-    const set = new Set(entries.map((e) => e.company).filter(Boolean));
+    const set = new Set(entries.map((e) => e.company).filter(x => x && x !== "0"));
     if (filters.company) {
       if (Array.isArray(filters.company)) {
         filters.company.forEach(c => set.add(String(c)));
@@ -64,7 +59,7 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
   }, [entries, filters.company]);
 
   const years = useMemo(() => {
-    const set = new Set(entries.map((e) => e.year).filter(Boolean).map(String));
+    const set = new Set(entries.map((e) => e.year).filter(x => x && x !== "0").map(String));
     if (filters.year) set.add(String(filters.year));
     const currentYear = String(new Date().getFullYear());
     if (!set.has(currentYear)) set.add(currentYear);
@@ -99,7 +94,7 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
   /* Instance: derived from entries (data may have only First Half or
      only Second Half on this page). */
   const instances = useMemo(() => {
-    const present = new Set(entries.map(e => String(e.instance || "").trim()).filter(Boolean));
+    const present = new Set(entries.map(e => String(e.instance || "").trim()).filter(x => x && x !== "0"));
     if (filters.instance) present.add(String(filters.instance));
     const ordered = INSTANCE_OPTIONS.filter(i => present.has(i));
     const extras  = [...present].filter(i => !INSTANCE_OPTIONS.includes(i)).sort((a, b) => a.localeCompare(b));
@@ -112,7 +107,7 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
      just cleared the only row of that status). */
   const statuses = useMemo(() => {
     const present = new Set(
-      entries.map(e => String(e.status || "").trim()).filter(Boolean)
+      entries.map(e => String(e.status || "").trim()).filter(x => x && x !== "0")
     );
     if (filters.status) present.add(String(filters.status));
     const ordered = STATUS_ORDER.filter(s => present.has(s));
@@ -124,7 +119,7 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
 
   const types = useMemo(() => {
     const present = new Set(
-      entries.map(e => String(e.serviceType || "").trim()).filter(Boolean)
+      entries.map(e => String(e.serviceType || "").trim()).filter(x => x && x !== "0")
       );
     if (filters.serviceType) present.add(String(filters.serviceType));
     const ordered = SERVICE_TYPES.filter(s => present.has(s));
@@ -303,3 +298,4 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
     </>
   );
 }
+

@@ -9,7 +9,6 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState("user");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,7 +19,7 @@ export default function SignInPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, role: activeTab }),
+        body: JSON.stringify({ email, password }),
       });
       
       if (!res.ok) {
@@ -28,7 +27,7 @@ export default function SignInPage() {
         throw new Error(data.error || "Login failed");
       }
       
-      router.push("/dashboard");
+      router.push("/");
       router.refresh();
     } catch (err) {
       setError(err.message);
@@ -82,33 +81,6 @@ export default function SignInPage() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', padding: '4px', marginBottom: '24px' }}>
-          <button
-            type="button"
-            onClick={() => setActiveTab('user')}
-            style={{
-              flex: 1, padding: '10px', borderRadius: '8px', border: 'none',
-              background: activeTab === 'user' ? 'rgba(255,255,255,0.1)' : 'transparent',
-              color: activeTab === 'user' ? '#fff' : 'rgba(255,255,255,0.5)',
-              fontWeight: '600', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s'
-            }}
-          >
-            User Login
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('admin')}
-            style={{
-              flex: 1, padding: '10px', borderRadius: '8px', border: 'none',
-              background: activeTab === 'admin' ? 'rgba(255,255,255,0.1)' : 'transparent',
-              color: activeTab === 'admin' ? '#fff' : 'rgba(255,255,255,0.5)',
-              fontWeight: '600', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s'
-            }}
-          >
-            Admin Login
-          </button>
-        </div>
-
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           {error && (
             <div style={{ padding: "12px", background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: "8px", color: "#f87171", fontSize: "14px", textAlign: "center" }}>
@@ -144,7 +116,6 @@ export default function SignInPage() {
           <div>
             <label style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", fontWeight: "500", color: "rgba(255,255,255,0.7)", marginBottom: "8px" }}>
               <span>Password</span>
-              <a href="#" style={{ color: "#3b82f6", textDecoration: "none", transition: "color 0.2s" }}>Forgot?</a>
             </label>
             <input
               type="password"

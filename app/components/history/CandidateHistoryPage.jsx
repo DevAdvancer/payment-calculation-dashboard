@@ -1,4 +1,6 @@
 "use client";
+import { Search } from "lucide-react";
+import SkeletonTable from "@/app/components/SkeletonTable";
 import { useState, useEffect, useRef, useMemo } from "react";
 import useDashboardStore, {
   INSTANCE_OPTIONS,
@@ -53,7 +55,7 @@ export default function CandidateHistoryPage() {
 
   /* ── Selected candidate entries ── */
   const candidateEntries = selected ? getByCandidate(selected) : [];
-  const uniqueCompanies = Array.from(new Set(candidateEntries.map(e => e.company).filter(Boolean)));
+  const uniqueCompanies = Array.from(new Set(candidateEntries.map(e => e.company).filter(x => x && x !== "0")));
   
   useEffect(() => {
     if (uniqueCompanies.length > 0 && (!selectedCompany || !uniqueCompanies.includes(selectedCompany))) {
@@ -131,14 +133,7 @@ export default function CandidateHistoryPage() {
     prevPctRef.current = pct;
   }, [pct, selected, notifications, addNotification, showToast]);
 
-  if (loading) return (
-    <div className="page-inner">
-      <div style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--text-muted)", padding: "40px 0" }}>
-        <div style={{ width: 18, height: 18, border: "2px solid var(--teal)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
-        Loading…
-      </div>
-    </div>
-  );
+  if (loading) return <SkeletonTable />;
 
   return (
     <div className="page-inner">
@@ -509,7 +504,7 @@ export default function CandidateHistoryPage() {
       {/* Empty state when no candidate selected */}
       {!selected && (
         <div className="empty-state" style={{ paddingTop: 20 }}>
-          <div className="empty-icon">🔍</div>
+          <div className="empty-icon" style={{ display:"flex", justifyContent:"center", marginBottom:12 }}><Search size={48} strokeWidth={1} color="#9ca3af" /></div>
           <div className="empty-title">Search for a candidate</div>
           <div className="empty-sub">Type a name above to view their complete payment history</div>
         </div>
@@ -527,3 +522,7 @@ export default function CandidateHistoryPage() {
     </div>
   );
 }
+
+
+
+

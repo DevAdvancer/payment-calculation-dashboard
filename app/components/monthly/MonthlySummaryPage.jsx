@@ -1,4 +1,7 @@
 "use client";
+import { BarChart3 } from "lucide-react";
+import SkeletonTable from "@/app/components/SkeletonTable";
+import { useLockedEntries, useFilterAccess } from "@/app/components/PermissionsContext";
 import { useState, useMemo, useEffect } from "react";
 import * as XLSX from "xlsx";
 import useDashboardStore, { MONTH_NAMES, fmtMoneyC, currencyOf } from "@/lib/use-store";
@@ -18,7 +21,8 @@ export default function SummaryPage() {
   // const currentMonth = MONTH_NAMES[today.getMonth()];
   const currentYear = String(today.getFullYear());
   const { getActive, loading } = useDashboardStore();
-  const entries = getActive();
+  const hasFilterAccess = useFilterAccess("monthly");
+  const _entries = getActive(); const entries = useLockedEntries(_entries, 'monthly');
 
   const [filters, setFilters] = useState({
     year: currentYear,
@@ -48,12 +52,12 @@ export default function SummaryPage() {
   
   /* ── Filter option sets, derived from current data ── */
   const years = useMemo(
-    () => [...new Set(entries.map(e => e.year).filter(Boolean))].sort((a, b) => +b - +a),
+    () => [...new Set(entries.map(e => e.year).filter(x => x && x !== "0"))].sort((a, b) => +b - +a),
     [entries]
   );
   const companies = useMemo(
     () => {
-      const set = new Set(entries.map(e => e.company).filter(Boolean));
+      const set = new Set(entries.map(e => e.company).filter(x => x && x !== "0"));
       if (filters.company) {
         if (Array.isArray(filters.company)) {
           filters.company.forEach(c => set.add(String(c)));
@@ -67,7 +71,7 @@ export default function SummaryPage() {
   );
   const months = useMemo(
     () => {
-      const set = new Set(entries.map(e => e.month).filter(Boolean));
+      const set = new Set(entries.map(e => e.month).filter(x => x && x !== "0"));
       if (filters.month) {
         if (Array.isArray(filters.month)) {
           filters.month.forEach(m => set.add(String(m)));
@@ -374,14 +378,7 @@ export default function SummaryPage() {
     XLSX.writeFile(wb, `Summary_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
-  if (loading) return (
-    <div className="page-inner" style={{ padding: "16px 20px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--text-muted)", padding: "40px 0" }}>
-        <div style={{ width: 18, height: 18, border: "2px solid var(--teal)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
-        Loading…
-      </div>
-    </div>
-  );
+  if (loading) return <SkeletonTable />;
 
   return (
     <div className="page-inner" style={{ padding: "12px 20px 12px 20px", display: "flex", flexDirection: "column", height: "100vh", boxSizing: "border-box", overflow: "hidden" }}>
@@ -398,18 +395,22 @@ export default function SummaryPage() {
             <option value="">All</option>
             {years.map(y => <option key={y} value={y}>{y}</option>)}
           </FilterSelect>
-          <MultiSelectDropdown
+          {hasFilterAccess("month") && (
+  <MultiSelectDropdown
             options={months}
             selected={Array.isArray(filters.month) ? filters.month : (filters.month ? [filters.month] : [])}
             onChange={(val) => setFilters(f => ({ ...f, month: val }))}
             placeholder="All Months"
           />
-          <MultiSelectDropdown
+)}
+          {hasFilterAccess("company") && (
+  <MultiSelectDropdown
             options={companies}
             selected={Array.isArray(filters.company) ? filters.company : (filters.company ? [filters.company] : [])}
             onChange={(val) => setFilters(f => ({ ...f, company: val }))}
             placeholder="All Companies"
           />
+)}
           {(filters.year || (filters.month && filters.month.length > 0) || (filters.company && filters.company.length > 0)) && (
             <button onClick={() => setFilters({ year: "", month: [], company: [] })}
               style={{ padding: "6px 12px", fontSize: 11, fontWeight: 600, border: "1px solid var(--border-md)", borderRadius: 8, background: "transparent", color: "var(--text-muted)", cursor: "pointer", fontFamily: "var(--font)" }}>
@@ -436,7 +437,7 @@ export default function SummaryPage() {
 
       {pivot.length === 0 ? (
         <div className="empty-state" style={{ flex: 1 }}>
-          <div className="empty-icon">📊</div>
+          <div className="empty-icon" style={{ display:"flex", justifyContent:"center", marginBottom:12 }}><BarChart3 size={48} strokeWidth={1} color="#9ca3af" /></div>
           <div className="empty-title">No entries match these filters</div>
           <div className="empty-sub">Adjust Year, Month, or Company to see summary rows</div>
         </div>
@@ -1023,3 +1024,21 @@ function BarChart({ rows, series }) {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

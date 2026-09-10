@@ -1,3 +1,4 @@
+import { AlertTriangle } from "lucide-react";
 import React from "react";
 
 export default function DeleteConfirmModal({
@@ -28,7 +29,7 @@ export default function DeleteConfirmModal({
         {/* Header */}
         <div className="modal-header" style={{ padding: "16px 20px" }}>
           <h3 className="modal-title" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ color: "var(--color-danger)" }}>⚠️</span> Confirm Deletion
+            <span style={{ color: "var(--color-danger)", display:"flex" }}><AlertTriangle size={18}/></span> Confirm Deletion
           </h3>
           <button
             className="modal-close"

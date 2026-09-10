@@ -1,4 +1,7 @@
 "use client";
+import { Check, ClipboardList, Trash2 } from "lucide-react";
+import SkeletonTable from "@/app/components/SkeletonTable";
+import { useLockedEntries, usePageMode } from "@/app/components/PermissionsContext";
 import { useState, useRef, useMemo, useEffect } from "react";
 import * as XLSX from "xlsx";
 import useDashboardStore, {
@@ -238,10 +241,11 @@ function clipboardRowsToObjects(text) {
 }
 
 export default function PaymentCalcPage() {
+  const pageMode = usePageMode("payment");
   const { getActive, getLaidOff, getDefaulters, getCandidateNames, updateEntry, updateStatus, createEntry, deleteEntry, bulkDelete, importEntries, showToast, loading } =
     useDashboardStore();
 
-  const entries       = getActive();
+  const _entries = getActive(); const entries = useLockedEntries(_entries, 'payment');
   const laidOffRows   = getLaidOff();
   const defaulterRows = getDefaulters();
   const allNames      = getCandidateNames();
@@ -336,7 +340,7 @@ export default function PaymentCalcPage() {
     const defaults = ["Placement", "New Placement"];
     const fromData = entries
       .map(e => normalizeServiceTypeValue(e.serviceType))
-      .filter(Boolean);
+      .filter(x => x && x !== "0");
     const seen = new Set(defaults.map(s => s.toLowerCase()));
     const extras = [];
     for (const v of fromData) {
@@ -614,7 +618,7 @@ export default function PaymentCalcPage() {
         const ok = await bulkDelete(Array.from(selected));
         if (ok) {
           setSelected(new Set());
-          showToast(`✓ Deleted ${count.toLocaleString()} entries`);
+          showToast(<span style={{display:"flex",alignItems:"center",gap:6}}><Check size={15}/> Deleted {count.toLocaleString()} entries</span>);
         }
         setDeleteConfirm({ isOpen: false, title: "", message: "", onConfirm: null, loading: false, loadingText: "" });
       },
@@ -761,7 +765,7 @@ export default function PaymentCalcPage() {
 
   /* ── Excel Export ── */
   const importMappedRows = async (mapped, label = "Imported") => {
-    const valid = mapped.filter(Boolean);
+    const valid = mapped.filter(x => x && x !== "0");
     if (!valid.length) {
       showToast("No valid payment rows found");
       return false;
@@ -774,7 +778,7 @@ export default function PaymentCalcPage() {
   const preparePastedRows = (text) => {
     if (!text.trim() || !text.includes("\t")) return false;
     const rowObjects = clipboardRowsToObjects(text);
-    const mapped = rowObjects.map((row, i) => mapPaymentImportRow(row, i)).filter(Boolean);
+    const mapped = rowObjects.map((row, i) => mapPaymentImportRow(row, i)).filter(x => x && x !== "0");
     if (mapped.length) {
       setPasteImport({ rows: mapped });
       return true;
@@ -865,14 +869,7 @@ export default function PaymentCalcPage() {
     setEditingUSD(null);
   };
 
-  if (loading) return (
-    <div className="page-inner" ref={pasteTargetRef} onPaste={handlePasteRows} tabIndex={0} style={{ outline: "none" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--text-muted)", padding: "40px 0" }}>
-        <div style={{ width: 18, height: 18, border: "2px solid var(--teal)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
-        Loading entries…
-      </div>
-    </div>
-  );
+  if (loading) return <SkeletonTable />;
 
   return (
     <div className="page-inner" ref={pasteTargetRef} onPaste={handlePasteRows} tabIndex={0} style={{ outline: "none" }}>
@@ -1242,14 +1239,14 @@ export default function PaymentCalcPage() {
               Delete ({selected.size})
             </button>
           )}
-          <label className="btn-icon" style={{ cursor: "pointer" }}>
+          {pageMode === "write" && (<label className="btn-icon" style={{ cursor: "pointer" }}>
             <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
               <polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
             </svg>
             Import Excel
             <input ref={importRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }} onChange={handleImport} />
-          </label>
+          </label>)}
           <button className="btn-icon" onClick={handlePasteButton}>
             <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path d="M9 12h6" /><path d="M9 16h6" /><path d="M9 8h1" />
@@ -1299,7 +1296,7 @@ export default function PaymentCalcPage() {
       {/* Table */}
       {sorted.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">📋</div>
+          <div className="empty-icon" style={{ display:"flex", justifyContent:"center", marginBottom:12 }}><ClipboardList size={48} strokeWidth={1} color="#9ca3af" /></div>
           <div className="empty-title">No entries found</div>
           <div className="empty-sub">
             {searchTerm || Object.values(filters).some(Boolean)
@@ -1724,9 +1721,7 @@ export default function PaymentCalcPage() {
                         title="Delete entry"
                         onClick={() => handleDelete(entry.id, entry.candidate)}
                         style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: 16 }}
-                      >
-                        🗑
-                      </button>
+                      ><Trash2 size={16} /></button>
                     </td>
                   </tr>
                 );
@@ -1851,3 +1846,22 @@ export default function PaymentCalcPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,4 +1,7 @@
 "use client";
+import { CircleAlert, AlertTriangle, Info } from "lucide-react";
+import SkeletonTable from "@/app/components/SkeletonTable";
+import { useLockedEntries } from "@/app/components/PermissionsContext";
 import { useState, useMemo, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import useDashboardStore, {
@@ -190,7 +193,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
      currently has it (so clearing the last matching row doesn't
      silently drop the filter). */
   const companies = useMemo(() => {
-    const set = new Set(rawEntries.map(e => e.company).filter(Boolean));
+    const set = new Set(rawEntries.map(e => e.company).filter(x => x && x !== "0"));
     if (filters.company) {
       if (Array.isArray(filters.company)) {
         filters.company.forEach(c => set.add(String(c)));
@@ -201,7 +204,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
     return [...set].sort();
   }, [rawEntries, filters.company]);
   const years = useMemo(() => {
-    const set = new Set(rawEntries.map(e => e.year).filter(Boolean).map(String));
+    const set = new Set(rawEntries.map(e => e.year).filter(x => x && x !== "0").map(String));
     if (filters.year) set.add(String(filters.year));
     return [...set].sort((a, b) => Number(b) - Number(a));
   }, [rawEntries, filters.year]);
@@ -319,7 +322,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
   };
 
   const importMappedRows = async (mapped, label = "Imported") => {
-    const valid = mapped.filter(Boolean);
+    const valid = mapped.filter(x => x && x !== "0");
     if (!valid.length) {
       showToast(`No valid ${isLaidOff ? "laid off" : "defaulter"} rows found`);
       return false;
@@ -356,7 +359,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
     if (!text.trim() || !text.includes("\t")) return;
 
     const rowObjects = clipboardRowsToObjects(text, isLaidOff);
-    const mapped = rowObjects.map((row, i) => mapSpecialImportRow(row, i, isLaidOff)).filter(Boolean);
+    const mapped = rowObjects.map((row, i) => mapSpecialImportRow(row, i, isLaidOff)).filter(x => x && x !== "0");
     if (mapped.length) {
       e.preventDefault();
       setPasteImport({ rows: mapped });
@@ -401,17 +404,10 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
   };
 
   const title = isLaidOff ? "Laid Off Sheet" : "Defaulter Sheet";
-  const icon = isLaidOff ? "🔴" : "⚠️";
+  const icon = isLaidOff ? <CircleAlert size={16}/> : <AlertTriangle size={16}/>;
   const infoStatuses = isLaidOff ? "Laid Off" : "Default";
 
-  if (loading) return (
-    <div className={`page-inner special-sheet-page special-sheet-${type}`} ref={pasteTargetRef} onPaste={handlePasteRows} tabIndex={0} style={{ outline: "none" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--text-muted)", padding: "40px 0" }}>
-        <div style={{ width: 18, height: 18, border: "2px solid var(--teal)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
-        Loading…
-      </div>
-    </div>
-  );
+  if (loading) return <SkeletonTable />;
 
   return (
     <div className={`page-inner special-sheet-page special-sheet-${type}`} ref={pasteTargetRef} onPaste={handlePasteRows} tabIndex={0} style={{ outline: "none" }}>
@@ -434,7 +430,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
         alignItems: "center",
         gap: 8,
       }}>
-        <span style={{ fontSize: 15 }}>{isLaidOff ? "ℹ️" : "⚠️"}</span>
+        <span style={{ fontSize: 15, display:"inline-flex", alignItems:"center" }}>{isLaidOff ? <Info size={15}/> : <AlertTriangle size={15}/>}</span>
         Entries appear here automatically when status is set to <strong>{infoStatuses}</strong>.
         Change status to a non-routed value to move them back to the active sheet.
       </div>
@@ -596,7 +592,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
       {/* Table */}
       {entries.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">{isLaidOff ? "🔴" : "⚠️"}</div>
+          <div className="empty-icon" style={{ display:"flex", justifyContent:"center", marginBottom:12 }}>{isLaidOff ? <CircleAlert size={48} strokeWidth={1} color="#9ca3af"/> : <AlertTriangle size={48} strokeWidth={1} color="#9ca3af"/>}</div>
           <div className="empty-title">No {isLaidOff ? "laid off" : "defaulter"} entries</div>
           <div className="empty-sub">
             {Object.values(filters).some(Boolean)
@@ -738,3 +734,21 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
