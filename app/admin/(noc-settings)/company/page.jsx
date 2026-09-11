@@ -9,10 +9,10 @@ export default function CompanyProfilesPage() {
   return (
     <>
       <div style={{ marginBottom:32 }}>
-        <h1 style={{ fontSize:22, fontWeight:700, color:"#111827", letterSpacing:"-0.02em" }}>
+        <h1 style={{ fontSize:22, fontWeight:700, color:"var(--color-ink)", letterSpacing:"-0.02em" }}>
           Company Profiles
         </h1>
-        <p style={{ fontSize:13, color:"#6b7280", marginTop:4 }}>Changes are saved to the database and applied to all generated NOC documents.</p>
+        <p style={{ fontSize:13, color: "var(--color-ink-muted)", marginTop:4 }}>Changes are saved to the database and applied to all generated NOC documents.</p>
       </div>
 
       <div style={{ display:"flex", gap:8, marginBottom:24 }}>
@@ -35,7 +35,7 @@ export default function CompanyProfilesPage() {
         </FieldRow>
         <FieldRow full>
           <Field label="Address">
-            <textarea rows={3} value={coVal("company_address")} onChange={e => updateCo("company_address", e.target.value)} placeholder="123 Business Park, Suite 100&#10;New York, NY 10001" style={{ background:"#fff", border:"1px solid #e3e6ea", borderRadius:8, padding:"9px 12px", color:"#111827", fontFamily:"'DM Sans',sans-serif", fontSize:14, outline:"none", width:"100%", resize:"vertical", transition:"border-color 0.15s" }} />
+            <textarea rows={3} value={coVal("company_address")} onChange={e => updateCo("company_address", e.target.value)} placeholder="123 Business Park, Suite 100&#10;New York, NY 10001" style={{ background:"var(--color-surface)", border:"1px solid var(--color-border)", borderRadius:8, padding:"9px 12px", color:"var(--color-ink)", fontFamily:"'DM Sans',sans-serif", fontSize:14, outline:"none", width:"100%", resize:"vertical", transition:"border-color 0.15s" }} />
           </Field>
         </FieldRow>
         <FieldRow triple>

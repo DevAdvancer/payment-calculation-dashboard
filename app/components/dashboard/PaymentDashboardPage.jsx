@@ -130,13 +130,13 @@ export default function PaymentDashboardPage() {
         </div>
 
         <div style={{ flex: 1, background: "var(--color-bg)", padding: "32px 24px", overflowY: "auto", display: "flex", justifyContent: "center" }}>
-          <div style={{ width: "100%", maxWidth: 640, background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 12, boxShadow: "0 4px 18px rgba(0,0,0,0.08)", overflow: "hidden" }} id="dash-email-body">
-            <div style={{ padding: "14px 40px 0", background: "#ffffff" }}>
-              <div style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 13, fontWeight: 500, color: "#2563eb" }}>
+          <div style={{ width: "100%", maxWidth: 640, background: "var(--color-surface)", border: "1px solid #e5e7eb", borderRadius: 12, boxShadow: "0 4px 18px rgba(0,0,0,0.08)", overflow: "hidden" }} id="dash-email-body">
+            <div style={{ padding: "14px 40px 0", background: "var(--color-surface)" }}>
+              <div style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 13, fontWeight: 500, color: "#4f46e5" }}>
                 Subject: Payment Schedule - {d.company}
               </div>
             </div>
-            <div style={{ background: "#ffffff", padding: "12px 40px 40px", color: "#374151", fontSize: 14, lineHeight: 1.4 }}>
+            <div style={{ background: "var(--color-surface)", padding: "12px 40px 40px", color: "var(--color-ink-2)", fontSize: 14, lineHeight: 1.4 }}>
               <p style={{ margin: "0" }}>Dear <strong>{d.name}</strong>,</p>
               <p style={{ margin: "0" }}>Congratulations on receiving your offer! It has been a pleasure working with you, and we are delighted to have played a part in helping you achieve this milestone in your career. Please find the breakdown of your payment details and schedule shared below.</p>
 
@@ -151,20 +151,20 @@ export default function PaymentDashboardPage() {
                     <td style={{ border: "1px solid #000", padding: "6px 12px" }}>{d.client}</td>
                   </tr>
                   <tr>
-                    <td style={{ border: "1px solid #000", padding: "6px 12px", fontWeight: "bold", background: "#fff", width: "45%" }}>Annual Package</td>
+                    <td style={{ border: "1px solid #000", padding: "6px 12px", fontWeight: "bold", background: "var(--color-surface)", width: "45%" }}>Annual Package</td>
                     <td style={{ border: "1px solid #000", padding: "6px 12px", fontFamily: "var(--font-mono)", width: "55%" }}>{fmtMoneyC(annualPkg, cur, 2)}</td>
                   </tr>
                   <tr>
-                    <td style={{ border: "1px solid #000", padding: "6px 12px", fontWeight: "bold", background: "#fff" }}>Agreement %</td>
+                    <td style={{ border: "1px solid #000", padding: "6px 12px", fontWeight: "bold", background: "var(--color-surface)" }}>Agreement %</td>
                     <td style={{ border: "1px solid #000", padding: "6px 12px", fontFamily: "var(--font-mono)" }}>{d.pct}% in {d.months} Months</td>
                   </tr>
-                  <tr style={{ fontWeight: "bold", background: "#f9fafb" }}>
+                  <tr style={{ fontWeight: "bold", background: "var(--color-surface-2)" }}>
                     <td style={{ border: "1px solid #000", padding: "6px 12px", fontWeight: "bold" }}>Total Outstanding</td>
                     <td style={{ border: "1px solid #000", padding: "6px 12px", fontFamily: "var(--font-mono)" }}>{fmtMoneyC(outstanding, cur, 2)}</td>
                   </tr>
                   {d.rows.map((row, i) => (
                     <tr key={i}>
-                      <td style={{ border: "1px solid #000", padding: "6px 12px", fontWeight: "bold", background: "#fff" }}>
+                      <td style={{ border: "1px solid #000", padding: "6px 12px", fontWeight: "bold", background: "var(--color-surface)" }}>
                         {row.label}
                       </td>
                       <td style={{ border: "1px solid #000", padding: "6px 12px", fontFamily: "var(--font-mono)" }}>{fmtMoneyC(row.amount, cur, 2)}</td>
@@ -179,7 +179,7 @@ export default function PaymentDashboardPage() {
 
               <p style={{ margin: "0 0 6px 0" }}>We sincerely appreciate your trust in <strong>{d.company}</strong> and look forward to continuing our professional association with you.</p>
 
-              <div style={{ background: "#fffbeb", borderLeft: "3px solid #f59e0b", padding: "12px 16px", borderRadius: "0 4px 4px 0", marginBottom: 14, fontSize: 13 }}>
+              <div style={{ background: "var(--color-surface-2)", borderLeft: "3px solid #f59e0b", padding: "12px 16px", borderRadius: "0 4px 4px 0", marginBottom: 14, fontSize: 13 }}>
                 <strong>Important Notice:</strong> Going forward, this email thread will serve as the official communication channel for any queries, issues, clarifications, or requests related to compliance.
               </div>
 

@@ -169,7 +169,7 @@ export default function Sidebar({ userRole, userPermissions }) {
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
             All Notifications
-            {unreadNotificationsCount > 0 && <span style={{ marginLeft:"auto", fontSize:10, padding:"1px 6px", background:"rgba(16,185,129,0.15)", color:"#10b981", borderRadius:9999 }}>{unreadNotificationsCount}</span>}
+            {unreadNotificationsCount > 0 && <span style={{ marginLeft:"auto", fontSize:10, padding:"1px 6px", background:"rgba(16,185,129,0.15)", color:"#059669", borderRadius:9999 }}>{unreadNotificationsCount}</span>}
           </NavBtn>
         )}
 
@@ -278,8 +278,8 @@ export default function Sidebar({ userRole, userPermissions }) {
 }
 
 function NavBtn({ href, active, onClick, children, accent }) {
-  const accentBg     = "rgba(37,99,235,0.85)";
-  const accentBgHov  = "rgba(37,99,235,1)";
+  const accentBg     = "rgba(79,70,229,0.85)";
+  const accentBgHov  = "rgba(79,70,229,1)";
   return (
     <Link
       href={href}
@@ -288,7 +288,7 @@ function NavBtn({ href, active, onClick, children, accent }) {
         display:"flex", alignItems:"center", gap:8, padding:"8px 12px",
         border: "none", textDecoration: "none",
         background: accent
-          ? (active ? accentBg : "rgba(37,99,235,0.55)")
+          ? (active ? accentBg : "rgba(79,70,229,0.55)")
           : (active ? "rgba(255,255,255,0.15)" : "transparent"),
         cursor:"pointer", borderRadius:8, fontSize:13, fontWeight: (active || accent) ? 700 : 500,
         color: "#fff", fontFamily:"inherit",
@@ -300,7 +300,7 @@ function NavBtn({ href, active, onClick, children, accent }) {
         else if (!active) { e.currentTarget.style.background="rgba(255,255,255,0.08)"; e.currentTarget.style.color="#fff"; }
       }}
       onMouseLeave={e => {
-        if (accent) e.currentTarget.style.background = active ? accentBg : "rgba(37,99,235,0.55)";
+        if (accent) e.currentTarget.style.background = active ? accentBg : "rgba(79,70,229,0.55)";
         else if (!active) { e.currentTarget.style.background="transparent"; e.currentTarget.style.color="rgba(255,255,255,0.65)"; }
       }}
     >

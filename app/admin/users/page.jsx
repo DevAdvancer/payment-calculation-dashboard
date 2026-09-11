@@ -102,10 +102,10 @@ function UserRow({ user, onUpdate, onPromptDelete, onPromptResetPassword, onProm
   };
 
   return (
-    <tr style={{ borderBottom: "1px solid #eef0f3" }}>
-      <td style={{ padding: "16px 24px", color: "#111827", fontWeight: 500 }}>{user.name || "N/A"}</td>
-      <td style={{ padding: "16px 24px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#64748b" }}>
+    <tr>
+      <td style={{ fontWeight: 500 }}>{user.name || "N/A"}</td>
+      <td>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--color-ink-muted)" }}>
           <span>{user.email}</span>
           <button
             onClick={() => {
@@ -117,15 +117,15 @@ function UserRow({ user, onUpdate, onPromptDelete, onPromptResetPassword, onProm
               background: "transparent", 
               border: "none", 
               cursor: "pointer", 
-              color: "#94a3b8", 
+              color: "var(--color-ink-muted)", 
               display: "flex", 
               alignItems: "center", 
               padding: "4px",
               borderRadius: "4px",
               transition: "color 0.2s, background 0.2s"
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "#475569"; e.currentTarget.style.background = "#f1f5f9"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.background = "transparent"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-main)"; e.currentTarget.style.background = "var(--color-surface-2)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-ink-muted)"; e.currentTarget.style.background = "transparent"; }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -134,13 +134,13 @@ function UserRow({ user, onUpdate, onPromptDelete, onPromptResetPassword, onProm
           </button>
         </div>
       </td>
-      <td style={{ padding: "16px 24px" }}>
+      <td>
         <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
           <select 
             value={currentRole}
             onChange={(e) => setCurrentRole(e.target.value)}
             disabled={isSaving}
-            style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #cbd5e1", outline: "none", background: "#f8fafc", color: currentRole === 'admin' ? "#8b5cf6" : "#64748b", fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "all 0.2s" }}
+            style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid var(--color-border)", outline: "none", background: "var(--color-surface-2)", color: currentRole === 'admin' ? "var(--color-primary)" : "var(--text-dim)", fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "all 0.2s" }}
           >
             <option value="user">User</option>
             <option value="admin">Admin</option>
@@ -151,30 +151,30 @@ function UserRow({ user, onUpdate, onPromptDelete, onPromptResetPassword, onProm
               <button 
                 onClick={handleSaveRole}
                 disabled={isSaving}
-                style={{ padding: "6px 10px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "transform 0.1s", boxShadow: "0 1px 2px rgba(59, 130, 246, 0.2)" }}
+                style={{ padding: "6px 10px", background: "var(--color-primary)", color: "white", border: "none", borderRadius: 6, fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "transform 0.1s", boxShadow: "0 1px 2px rgba(59, 130, 246, 0.2)" }}
               >{isSaving ? "..." : "Save"}</button>
               <button 
                 onClick={() => setCurrentRole(user.role)}
                 disabled={isSaving}
-                style={{ padding: "6px 10px", background: "#fff", color: "#64748b", border: "1px solid #cbd5e1", borderRadius: 6, fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "transform 0.1s" }}
+                style={{ padding: "6px 10px", background: "var(--color-surface)", color: "var(--color-ink-muted)", border: "1px solid var(--color-border)", borderRadius: 6, fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "transform 0.1s" }}
               >Cancel</button>
             </div>
           )}
         </div>
       </td>
-      <td style={{ padding: "16px 24px" }}>
-        <button onClick={() => onPromptAccess(user)} style={{ border: "1px solid #cbd5e1", background: "#fff", padding: "6px 14px", borderRadius: 16, fontSize: 12, fontWeight: 600, color: "#334155", cursor: "pointer", transition: "all 0.15s" }}>
+      <td>
+        <button onClick={() => onPromptAccess(user)} style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)", padding: "6px 14px", borderRadius: 16, fontSize: 12, fontWeight: 600, color: "#334155", cursor: "pointer", transition: "all 0.15s" }}>
           Access
         </button>
       </td>
-      <td style={{ padding: "16px 24px" }}>
+      <td>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <select 
               value={currentStatus}
               onChange={(e) => setCurrentStatus(e.target.value)}
               disabled={isSaving}
-              style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #cbd5e1", outline: "none", background: "#f8fafc", color: currentStatus === 'active' ? "#10b981" : "#f59e0b", fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "all 0.2s" }}
+              style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid var(--color-border)", outline: "none", background: "var(--color-surface-2)", color: currentStatus === "active" ? "var(--color-success)" : "var(--color-warning)", fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "all 0.2s" }}
             >
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
@@ -185,12 +185,12 @@ function UserRow({ user, onUpdate, onPromptDelete, onPromptResetPassword, onProm
                 <button 
                   onClick={handleSaveStatus}
                   disabled={isSaving}
-                  style={{ padding: "6px 10px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "transform 0.1s", boxShadow: "0 1px 2px rgba(16, 185, 129, 0.2)" }}
+                  style={{ padding: "6px 10px", background: "var(--color-success)", color: "white", border: "none", borderRadius: 6, fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "transform 0.1s", boxShadow: "0 1px 2px rgba(16, 185, 129, 0.2)" }}
                 >{isSaving ? "..." : "Save"}</button>
                 <button 
                   onClick={() => setCurrentStatus(user.status)}
                   disabled={isSaving}
-                  style={{ padding: "6px 10px", background: "#fff", color: "#64748b", border: "1px solid #cbd5e1", borderRadius: 6, fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "transform 0.1s" }}
+                  style={{ padding: "6px 10px", background: "var(--color-surface)", color: "var(--color-ink-muted)", border: "1px solid var(--color-border)", borderRadius: 6, fontWeight: 600, cursor: isSaving ? "not-allowed" : "pointer", transition: "transform 0.1s" }}
                 >Cancel</button>
               </div>
             )}
@@ -199,10 +199,10 @@ function UserRow({ user, onUpdate, onPromptDelete, onPromptResetPassword, onProm
             <button 
               onClick={handleResetPassword}
               style={{ 
-                background: "#e0e7ff", 
+                background: "var(--color-surface-2)", 
                 padding: "6px 12px", 
-                border: "1px solid #c7d2fe", 
-                color: "#4f46e5", 
+                border: "1px solid var(--color-accent-soft)", 
+                color: "var(--color-primary)", 
                 fontWeight: 600, 
                 cursor: "pointer",
                 borderRadius: "6px",
@@ -216,10 +216,10 @@ function UserRow({ user, onUpdate, onPromptDelete, onPromptResetPassword, onProm
             <button 
               onClick={handleDelete}
               style={{ 
-                background: "#fee2e2", 
+                background: "var(--color-danger-soft)", 
                 padding: "6px 12px", 
-                border: "1px solid #fca5a5", 
-                color: "#ef4444", 
+                border: "1px solid var(--color-danger)", 
+                color: "var(--color-danger)", 
                 fontWeight: 600, 
                 cursor: "pointer",
                 borderRadius: "6px",
@@ -444,26 +444,26 @@ export default function AccessControlPage() {
   };
 
   return (
-    <div style={{ padding: "40px 56px", maxWidth: 1000, margin: "0 auto", fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ padding: "40px 56px", maxWidth: 1400, margin: "0 auto", fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--color-ink)", letterSpacing: "-0.02em" }}>
           Users
         </h1>
-        <p style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>
+        <p style={{ fontSize: 14, color: "var(--color-ink-muted)", marginTop: 4 }}>
           Manage users and their permissions within the system.
         </p>
       </div>
 
-      <div style={{ background: "#fff", border: "1px solid #e3e6ea", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+      <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-surface-2)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
         
         {/* Header */}
-        <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eef0f3" }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: 0 }}>Manage Users</h2>
+        <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--color-border)" }}>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--color-ink)", margin: 0 }}>Manage Users</h2>
           <div style={{ display: "flex", gap: "12px" }}>
             <button 
               onClick={fetchUsers}
               disabled={isLoading}
-              style={{ padding: "8px 16px", background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: isLoading ? "not-allowed" : "pointer", transition: "all 0.15s", display: "flex", alignItems: "center", gap: "6px" }}>
+              style={{ padding: "8px 16px", background: "var(--color-surface-2)", color: "var(--text-main)", border: "1px solid var(--color-border)", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: isLoading ? "not-allowed" : "pointer", transition: "all 0.15s", display: "flex", alignItems: "center", gap: "6px" }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 2v6h-6"></path>
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
@@ -475,7 +475,7 @@ export default function AccessControlPage() {
                 setCreateError("");
                 setIsCreateModalOpen(true);
               }}
-              style={{ padding: "8px 16px", background: "#1a1f2e", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}>
+              style={{ padding: "8px 16px", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}>
               Create
             </button>
           </div>
@@ -483,24 +483,24 @@ export default function AccessControlPage() {
 
         {/* Table */}
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 14 }}>
+          <table className="tbl" style={{ width: "100%" }}>
             <thead>
-              <tr style={{ background: "#f8fafc", borderBottom: "1px solid #eef0f3" }}>
-                <th style={{ padding: "12px 24px", fontWeight: 600, color: "#64748b" }}>Name</th>
-                <th style={{ padding: "12px 24px", fontWeight: 600, color: "#64748b" }}>Email</th>
-                <th style={{ padding: "12px 24px", fontWeight: 600, color: "#64748b" }}>Role</th>
-                <th style={{ padding: "12px 24px", fontWeight: 600, color: "#64748b" }}>Control</th>
-                <th style={{ padding: "12px 24px", fontWeight: 600, color: "#64748b" }}>Status</th>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Control</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} style={{ padding: "24px", textAlign: "center", color: "#64748b" }}>Loading users...</td>
+                  <td colSpan={5} style={{ padding: "24px", textAlign: "center", color: "var(--color-ink-muted)" }}>Loading users...</td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ padding: "24px", textAlign: "center", color: "#64748b" }}>No users found.</td>
+                  <td colSpan={5} style={{ padding: "24px", textAlign: "center", color: "var(--color-ink-muted)" }}>No users found.</td>
                 </tr>
               ) : (
                 users.map(user => (
@@ -522,23 +522,23 @@ export default function AccessControlPage() {
       {/* Delete Confirmation Modal */}
       {userToDelete && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div style={{ background: "#fff", padding: "24px", borderRadius: "12px", width: "400px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
-            <h3 style={{ marginTop: 0, fontSize: "18px", color: "#111827" }}>Delete User</h3>
-            <p style={{ color: "#4b5563", fontSize: "14px" }}>
+          <div style={{ background: "var(--color-surface)", padding: "24px", borderRadius: "12px", width: "400px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ marginTop: 0, fontSize: "18px", color: "var(--color-ink)" }}>Delete User</h3>
+            <p style={{ color: "var(--color-ink-muted)", fontSize: "14px" }}>
               Are you sure you want to delete <strong>{userToDelete.name || userToDelete.email}</strong>? This action cannot be undone.
             </p>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "24px" }}>
               <button 
                 onClick={() => setUserToDelete(null)}
                 disabled={isDeletingModal}
-                style={{ padding: "8px 16px", border: "1px solid #d1d5db", background: "#fff", borderRadius: "6px", cursor: isDeletingModal ? "not-allowed" : "pointer", color: "#374151", fontWeight: 500 }}
+                style={{ padding: "8px 16px", border: "1px solid var(--color-border)", background: "var(--color-surface)", borderRadius: "6px", cursor: isDeletingModal ? "not-allowed" : "pointer", color: "var(--color-ink)", fontWeight: 500 }}
               >
                 Cancel
               </button>
               <button 
                 onClick={handleConfirmDelete}
                 disabled={isDeletingModal}
-                style={{ padding: "8px 16px", border: "none", background: "#ef4444", borderRadius: "6px", cursor: isDeletingModal ? "not-allowed" : "pointer", color: "#fff", fontWeight: 500 }}
+                style={{ padding: "8px 16px", border: "none", background: "var(--color-danger)", borderRadius: "6px", cursor: isDeletingModal ? "not-allowed" : "pointer", color: "#fff", fontWeight: 500 }}
               >
                 {isDeletingModal ? "Deleting..." : "Delete User"}
               </button>
@@ -550,70 +550,70 @@ export default function AccessControlPage() {
       {/* Create User Modal */}
       {isCreateModalOpen && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div style={{ background: "#fff", padding: "24px", borderRadius: "12px", width: "400px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
-            <h3 style={{ marginTop: 0, fontSize: "18px", color: "#111827" }}>Create New Account</h3>
+          <div style={{ background: "var(--color-surface)", padding: "24px", borderRadius: "12px", width: "400px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ marginTop: 0, fontSize: "18px", color: "var(--color-ink)" }}>Create New Account</h3>
             <form onSubmit={handleCreateSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
               {createError && (
-                <div style={{ padding: "10px 12px", background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: "6px", color: "#ef4444", fontSize: "13px", fontWeight: 500 }}>
+                <div style={{ padding: "10px 12px", background: "var(--color-danger-soft)", border: "1px solid var(--color-danger)", borderRadius: "6px", color: "var(--color-danger)", fontSize: "13px", fontWeight: 500 }}>
                   {createError}
                 </div>
               )}
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>Name *</label>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--color-ink)", marginBottom: "4px" }}>Name *</label>
                 <input 
                   type="text" 
                   required
                   value={createFormData.name} 
                   onChange={(e) => setCreateFormData({...createFormData, name: e.target.value})}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid var(--color-border)", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
                   placeholder="John Doe"
                 />
               </div>
               <div style={{ display: "flex", gap: "16px" }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>Email *</label>
+                  <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--color-ink)", marginBottom: "4px" }}>Email *</label>
                   <input 
                     type="email" 
                     required
                     value={createFormData.email} 
                     onChange={(e) => setCreateFormData({...createFormData, email: e.target.value})}
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid var(--color-border)", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
                     placeholder="john@example.com"
                   />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>Password *</label>
+                  <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--color-ink)", marginBottom: "4px" }}>Password *</label>
                   <input 
                     type="password" 
                     required
                     value={createFormData.password} 
                     onChange={(e) => setCreateFormData({...createFormData, password: e.target.value})}
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid var(--color-border)", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
                     placeholder="Enter password"
                   />
-                  <p style={{ fontSize: "11px", color: "#6b7280", marginTop: "6px", lineHeight: "1.4" }}>
+                  <p style={{ fontSize: "11px", color: "var(--color-ink-muted)", marginTop: "6px", lineHeight: "1.4" }}>
                     Please save this password on your device as this won't be displayed after you finally save it.
                   </p>
                 </div>
               </div>
               <div style={{ display: "flex", gap: "16px" }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>Role</label>
+                  <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--color-ink)", marginBottom: "4px" }}>Role</label>
                   <select 
                     value={createFormData.role} 
                     onChange={(e) => setCreateFormData({...createFormData, role: e.target.value})}
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px" }}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid var(--color-border)", outline: "none", fontSize: "14px" }}
                   >
                     <option value="user">User</option>
                     <option value="admin">Admin</option>
                   </select>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>Status</label>
+                  <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--color-ink)", marginBottom: "4px" }}>Status</label>
                   <select 
                     value={createFormData.status} 
                     onChange={(e) => setCreateFormData({...createFormData, status: e.target.value})}
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px" }}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid var(--color-border)", outline: "none", fontSize: "14px" }}
                   >
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
@@ -629,14 +629,14 @@ export default function AccessControlPage() {
                     setIsCreateModalOpen(false);
                   }}
                   disabled={isCreating}
-                  style={{ padding: "8px 16px", border: "1px solid #d1d5db", background: "#fff", borderRadius: "6px", cursor: isCreating ? "not-allowed" : "pointer", color: "#374151", fontWeight: 500 }}
+                  style={{ padding: "8px 16px", border: "1px solid var(--color-border)", background: "var(--color-surface)", borderRadius: "6px", cursor: isCreating ? "not-allowed" : "pointer", color: "var(--color-ink)", fontWeight: 500 }}
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
                   disabled={isCreating}
-                  style={{ padding: "8px 16px", border: "none", background: "#1a1f2e", borderRadius: "6px", cursor: isCreating ? "not-allowed" : "pointer", color: "#fff", fontWeight: 500 }}
+                  style={{ padding: "8px 16px", border: "none", background: "var(--color-primary)", borderRadius: "6px", cursor: isCreating ? "not-allowed" : "pointer", color: "#fff", fontWeight: 500 }}
                 >
                   {isCreating ? "Creating..." : "Create User"}
                 </button>
@@ -649,31 +649,31 @@ export default function AccessControlPage() {
       {/* Reset Password Modal */}
       {userToResetPassword && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div style={{ background: "#fff", padding: "24px", borderRadius: "12px", width: "400px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
-            <h3 style={{ marginTop: 0, fontSize: "18px", color: "#111827" }}>Reset Password</h3>
-            <p style={{ color: "#4b5563", fontSize: "14px", marginTop: 4, marginBottom: 16 }}>
+          <div style={{ background: "var(--color-surface)", padding: "24px", borderRadius: "12px", width: "400px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ marginTop: 0, fontSize: "18px", color: "var(--color-ink)" }}>Reset Password</h3>
+            <p style={{ color: "var(--color-ink-muted)", fontSize: "14px", marginTop: 4, marginBottom: 16 }}>
               Enter a new password for <strong>{userToResetPassword.name || userToResetPassword.email}</strong>.
             </p>
             <form onSubmit={handleResetPasswordSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>New Password</label>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--color-ink)", marginBottom: "4px" }}>New Password</label>
                 <input 
                   type="password" 
                   required
                   value={resetPasswordData.newPassword} 
                   onChange={(e) => setResetPasswordData({...resetPasswordData, newPassword: e.target.value})}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid var(--color-border)", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
                   placeholder="••••••••"
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "4px" }}>Confirm New Password</label>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--color-ink)", marginBottom: "4px" }}>Confirm New Password</label>
                 <input 
                   type="password" 
                   required
                   value={resetPasswordData.confirmNewPassword} 
                   onChange={(e) => setResetPasswordData({...resetPasswordData, confirmNewPassword: e.target.value})}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid var(--color-border)", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
                   placeholder="••••••••"
                 />
               </div>
@@ -685,14 +685,14 @@ export default function AccessControlPage() {
                     setResetPasswordData({ newPassword: '', confirmNewPassword: '' });
                   }}
                   disabled={isResettingPassword}
-                  style={{ padding: "8px 16px", border: "1px solid #d1d5db", background: "#fff", borderRadius: "6px", cursor: isResettingPassword ? "not-allowed" : "pointer", color: "#374151", fontWeight: 500 }}
+                  style={{ padding: "8px 16px", border: "1px solid var(--color-border)", background: "var(--color-surface)", borderRadius: "6px", cursor: isResettingPassword ? "not-allowed" : "pointer", color: "var(--color-ink)", fontWeight: 500 }}
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
                   disabled={isResettingPassword}
-                  style={{ padding: "8px 16px", border: "none", background: "#1a1f2e", borderRadius: "6px", cursor: isResettingPassword ? "not-allowed" : "pointer", color: "#fff", fontWeight: 500 }}
+                  style={{ padding: "8px 16px", border: "none", background: "var(--color-primary)", borderRadius: "6px", cursor: isResettingPassword ? "not-allowed" : "pointer", color: "#fff", fontWeight: 500 }}
                 >
                   {isResettingPassword ? "Saving..." : "Save"}
                 </button>
@@ -705,9 +705,9 @@ export default function AccessControlPage() {
       {/* Access Permissions Modal */}
       {isAccessModalOpen && userToManageAccess && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div style={{ background: "#fff", padding: "32px", borderRadius: "12px", width: "800px", maxHeight: "85vh", overflowY: "auto", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
-            <h3 style={{ marginTop: 0, fontSize: "20px", color: "#111827", marginBottom: "8px" }}>Access Permissions</h3>
-            <p style={{ color: "#6b7280", fontSize: "14px", marginBottom: "24px", marginTop: 0 }}>
+          <div style={{ background: "var(--color-surface)", padding: "32px", borderRadius: "12px", width: "800px", maxHeight: "85vh", overflowY: "auto", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
+            <h3 style={{ marginTop: 0, fontSize: "20px", color: "var(--color-ink)", marginBottom: "8px" }}>Access Permissions</h3>
+            <p style={{ color: "var(--color-ink-muted)", fontSize: "14px", marginBottom: "24px", marginTop: 0 }}>
               Configure page and filter access for <strong>{userToManageAccess.name || userToManageAccess.email}</strong>
             </p>
 
@@ -718,7 +718,7 @@ export default function AccessControlPage() {
                 const applicableFilters = PAGE_FILTERS[page.id] || [];
 
                 return (
-                  <div key={page.id} style={{ border: "1px solid #e5e7eb", borderRadius: "8px", padding: "16px", background: hasAccess ? "#f8fafc" : "#fff" }}>
+                  <div key={page.id} style={{ border: "1px solid var(--color-border)", borderRadius: "8px", padding: "16px", background: hasAccess ? "var(--color-surface-2)" : "var(--color-surface)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                       <input 
                         type="checkbox" 
@@ -739,7 +739,7 @@ export default function AccessControlPage() {
                         }}
                         style={{ width: "16px", height: "16px", cursor: "pointer" }}
                       />
-                      <label htmlFor={`page-${page.id}`} style={{ fontSize: "15px", fontWeight: 600, color: "#111827", cursor: "pointer" }}>
+                      <label htmlFor={`page-${page.id}`} style={{ fontSize: "15px", fontWeight: 600, color: "var(--color-ink)", cursor: "pointer" }}>
                         {page.label}
                       </label>
                     </div>
@@ -747,8 +747,8 @@ export default function AccessControlPage() {
                     
                       {hasAccess && (
                         <div style={{ marginTop: "16px", paddingLeft: "28px", display: "flex", alignItems: "center", gap: "16px" }}>
-                          <div style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280" }}>Permissions:</div>
-                          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#4b5563", cursor: "pointer" }}>
+                          <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--color-ink-muted)" }}>Permissions:</div>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "var(--color-ink-muted)", cursor: "pointer" }}>
                             <input 
                               type="radio" 
                               name={`mode-${page.id}`} 
@@ -762,7 +762,7 @@ export default function AccessControlPage() {
                             />
                             Read & Write
                           </label>
-                          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#4b5563", cursor: "pointer" }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "var(--color-ink-muted)", cursor: "pointer" }}>
                             <input 
                               type="radio" 
                               name={`mode-${page.id}`} 
@@ -780,14 +780,14 @@ export default function AccessControlPage() {
                       )}
 {hasAccess && applicableFilters.length > 0 && (
                       <div style={{ marginTop: "16px", paddingLeft: "28px" }}>
-                        <div style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280", marginBottom: "10px" }}>Allowed Filters:</div>
+                        <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--color-ink-muted)", marginBottom: "10px" }}>Allowed Filters:</div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
                           {applicableFilters.map(filterId => {
                             const filter = AVAILABLE_FILTERS.find(f => f.id === filterId);
                             if (!filter) return null;
                             const hasFilter = pageData.filters.includes(filter.id);
                             return (
-                              <label key={filter.id} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#4b5563", cursor: "pointer" }}>
+                              <label key={filter.id} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "var(--color-ink-muted)", cursor: "pointer" }}>
                                 <input 
                                   type="checkbox"
                                   checked={hasFilter}
@@ -821,14 +821,14 @@ export default function AccessControlPage() {
                     
                       {hasAccess && applicableFilters.length > 0 && (
                         <div style={{ marginTop: "16px", paddingLeft: "28px" }}>
-                          <div style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280", margin: "16px 0 10px" }}>Locked Row Filters (Leave blank to allow all):</div>
+                          <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--color-ink-muted)", margin: "16px 0 10px" }}>Locked Row Filters (Leave blank to allow all):</div>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", flexDirection: "column" }}>
                           {applicableFilters.map(filterId => { 
                             const filter = AVAILABLE_FILTERS.find(f => f.id === filterId); 
                             if (!filter) return null; 
                             const lockedValue = pageData.lockedFilters?.[filter.id] || ""; 
                               return (
-                              <div key={`lock-${filter.id}`} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#4b5563" }}>
+                              <div key={`lock-${filter.id}`} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "var(--color-ink-muted)" }}>
                                 <span style={{ width: 80 }}>{filter.label}</span>
                                   <MultiSelectDropdown
                                     options={optionsMap[filter.id] || []}
@@ -863,7 +863,7 @@ export default function AccessControlPage() {
                         </div>
                       )}
 {hasAccess && applicableFilters.length === 0 && (
-                      <div style={{ marginTop: "16px", paddingLeft: "28px", fontSize: "13px", color: "#9ca3af", fontStyle: "italic" }}>
+                      <div style={{ marginTop: "16px", paddingLeft: "28px", fontSize: "13px", color: "var(--color-ink-muted)", fontStyle: "italic" }}>
                         No filters available for this page.
                       </div>
                     )}
@@ -872,12 +872,12 @@ export default function AccessControlPage() {
               })}
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "32px", borderTop: "1px solid #e5e7eb", paddingTop: "24px" }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "32px", borderTop: "1px solid var(--color-border)", paddingTop: "24px" }}>
               <button 
                 type="button"
                 onClick={() => setIsAccessModalOpen(false)}
                 disabled={isLoading}
-                style={{ padding: "8px 16px", border: "1px solid #d1d5db", background: "#fff", borderRadius: "6px", cursor: isLoading ? "not-allowed" : "pointer", color: "#374151", fontWeight: 500 }}
+                style={{ padding: "8px 16px", border: "1px solid var(--color-border)", background: "var(--color-surface)", borderRadius: "6px", cursor: isLoading ? "not-allowed" : "pointer", color: "var(--color-ink)", fontWeight: 500 }}
               >
                 Cancel
               </button>
@@ -885,7 +885,7 @@ export default function AccessControlPage() {
                 type="button"
                 onClick={handleSaveAccess}
                 disabled={isLoading}
-                style={{ padding: "8px 16px", border: "none", background: "#1a1f2e", borderRadius: "6px", cursor: isLoading ? "not-allowed" : "pointer", color: "#fff", fontWeight: 500 }}
+                style={{ padding: "8px 16px", border: "none", background: "var(--color-primary)", borderRadius: "6px", cursor: isLoading ? "not-allowed" : "pointer", color: "#fff", fontWeight: 500 }}
               >
                 {isLoading ? "Saving..." : "Save Permissions"}
               </button>

@@ -264,7 +264,7 @@ export default function FilterBar({ entries = [], filters = EMPTY_FILTERS, onFil
         {hasFilterAccess('status') && (
           <select
             className="filter-select"
-            value={filters.status}
+            value={filters.status} data-status={filters.status} data-status={filters.status}
             onChange={set("status")}
           >
             <option value="">All Status</option>

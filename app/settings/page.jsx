@@ -66,22 +66,22 @@ export default function SettingsPage() {
         ` }} />
         <div style={{ marginBottom: 32 }}>
           <div className="skeleton-pulse" style={{ width: 140, height: 28, background: "#d1d5db", borderRadius: 6, marginBottom: 8 }} />
-          <div className="skeleton-pulse" style={{ width: 260, height: 16, background: "#e5e7eb", borderRadius: 4 }} />
+          <div className="skeleton-pulse" style={{ width: 260, height: 16, background: "var(--color-surface-2)", borderRadius: 4 }} />
         </div>
-        <div style={{ background: "#fff", border: "1px solid #e3e6ea", borderRadius: 12, padding: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+        <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 12, padding: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             <div>
-              <div className="skeleton-pulse" style={{ width: 100, height: 16, background: "#e5e7eb", borderRadius: 4, marginBottom: 6 }} />
-              <div className="skeleton-pulse" style={{ width: "100%", height: 38, background: "#f3f4f6", borderRadius: 6 }} />
+              <div className="skeleton-pulse" style={{ width: 100, height: 16, background: "var(--color-surface-2)", borderRadius: 4, marginBottom: 6 }} />
+              <div className="skeleton-pulse" style={{ width: "100%", height: 38, background: "var(--color-surface-2)", borderRadius: 6 }} />
             </div>
             <div>
-              <div className="skeleton-pulse" style={{ width: 80, height: 16, background: "#e5e7eb", borderRadius: 4, marginBottom: 6 }} />
-              <div className="skeleton-pulse" style={{ width: "100%", height: 38, background: "#f3f4f6", borderRadius: 6 }} />
+              <div className="skeleton-pulse" style={{ width: 80, height: 16, background: "var(--color-surface-2)", borderRadius: 4, marginBottom: 6 }} />
+              <div className="skeleton-pulse" style={{ width: "100%", height: 38, background: "var(--color-surface-2)", borderRadius: 6 }} />
             </div>
             <div style={{ borderTop: "1px solid #e5e7eb", margin: "8px 0" }} />
             <div>
-              <div className="skeleton-pulse" style={{ width: 120, height: 16, background: "#e5e7eb", borderRadius: 4, marginBottom: 6 }} />
-              <div className="skeleton-pulse" style={{ width: "100%", height: 38, background: "#f3f4f6", borderRadius: 6 }} />
+              <div className="skeleton-pulse" style={{ width: 120, height: 16, background: "var(--color-surface-2)", borderRadius: 4, marginBottom: 6 }} />
+              <div className="skeleton-pulse" style={{ width: "100%", height: 38, background: "var(--color-surface-2)", borderRadius: 6 }} />
             </div>
           </div>
         </div>
@@ -92,27 +92,27 @@ export default function SettingsPage() {
   return (
     <div style={{ padding: "40px 56px", maxWidth: 800, margin: "0 auto", fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111827", letterSpacing: "-0.02em" }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--color-ink)", letterSpacing: "-0.02em" }}>
           My Settings
         </h1>
-        <p style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>
+        <p style={{ fontSize: 14, color: "var(--color-ink-muted)", marginTop: 4 }}>
           Manage your personal profile and security preferences.
         </p>
       </div>
       
-      <div style={{ background: "#fff", border: "1px solid #e3e6ea", borderRadius: 12, padding: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+      <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 12, padding: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
         <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           
           <div>
-            <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "#374151" }}>Email Address</label>
-            <div style={{ marginTop: "4px", padding: "10px 14px", background: "#f9fafb", borderRadius: "6px", border: "1px solid #e5e7eb", color: "#6b7280", fontSize: "14px" }}>
+            <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "var(--color-ink-2)" }}>Email Address</label>
+            <div style={{ marginTop: "4px", padding: "10px 14px", background: "var(--color-surface-2)", borderRadius: "6px", border: "1px solid #e5e7eb", color: "var(--color-ink-muted)", fontSize: "14px" }}>
               {user?.email}
             </div>
-            <p style={{ fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}>Your email is used for login and cannot be altered.</p>
+            <p style={{ fontSize: "12px", color: "var(--color-ink-muted)", marginTop: "4px" }}>Your email is used for login and cannot be altered.</p>
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>Full Name</label>
+            <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "var(--color-ink-2)", marginBottom: "6px" }}>Full Name</label>
             <input 
               type="text" 
               value={name} 
@@ -125,7 +125,7 @@ export default function SettingsPage() {
           <div style={{ borderTop: "1px solid #e5e7eb", margin: "8px 0" }} />
 
           <div>
-            <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>New Password</label>
+            <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "var(--color-ink-2)", marginBottom: "6px" }}>New Password</label>
             <input 
               type="password" 
               value={password} 

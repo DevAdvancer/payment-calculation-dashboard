@@ -75,10 +75,10 @@ export default function MultiSelectDropdown({
           justify-content: space-between;
           padding: 4px 10px;
           font-size: 12px;
-          border: 1px solid var(--border-md, var(--color-border, #e2e8f0));
+          border: 1px solid var(--border-md, var(--color-border, var(--color-border)));
           border-radius: var(--r-md, var(--radius-md, 6px));
-          background: var(--surface-1, var(--color-surface, #ffffff));
-          color: var(--text-main, var(--color-ink, #0f172a));
+          background: var(--surface-1, var(--color-surface, var(--color-surface)));
+          color: var(--text-main, var(--color-ink, var(--text-main)));
           cursor: pointer;
           min-width: 140px;
           height: 29px;
@@ -87,7 +87,7 @@ export default function MultiSelectDropdown({
           transition: border-color 0.15s, box-shadow 0.15s;
         }
         .multiselect-trigger:hover {
-          border-color: var(--teal, var(--color-accent, #0d9488));
+          border-color: var(--teal, var(--color-accent, var(--color-primary)));
         }
         .multiselect-label {
           white-space: nowrap;
@@ -98,7 +98,7 @@ export default function MultiSelectDropdown({
         .multiselect-arrow {
           border-left: 4px solid transparent;
           border-right: 4px solid transparent;
-          border-top: 4px solid var(--text-muted, var(--color-ink-muted, #64748b));
+          border-top: 4px solid var(--text-muted, var(--color-ink-muted, var(--text-muted)));
           margin-top: 2px;
           transition: transform 0.15s;
         }
@@ -112,8 +112,8 @@ export default function MultiSelectDropdown({
           z-index: 999;
           min-width: 200px;
           max-height: 260px;
-          background: var(--surface-1, var(--color-surface, #ffffff));
-          border: 1px solid var(--border, var(--color-border, #e2e8f0));
+          background: var(--surface-1, var(--color-surface, var(--color-surface)));
+          border: 1px solid var(--border, var(--color-border, var(--color-border)));
           border-radius: var(--r-md, var(--radius-md, 8px));
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
           overflow-y: auto;
@@ -124,13 +124,13 @@ export default function MultiSelectDropdown({
           justify-content: space-between;
           padding-bottom: 6px;
           margin-bottom: 6px;
-          border-bottom: 1px solid var(--border-md, var(--color-border, #e2e8f0));
+          border-bottom: 1px solid var(--border-md, var(--color-border, var(--color-border)));
         }
         .multiselect-btn {
           background: none;
           border: none;
           font-size: 11px;
-          color: var(--teal, var(--color-accent, #0d9488));
+          color: var(--teal, var(--color-accent, var(--color-primary)));
           cursor: pointer;
           font-weight: 600;
           padding: 2px 4px;
@@ -143,21 +143,21 @@ export default function MultiSelectDropdown({
           align-items: center;
           padding: 5px 8px;
           font-size: 12px;
-          color: var(--text-main, var(--color-ink, #0f172a));
+          color: var(--text-main, var(--color-ink, var(--text-main)));
           cursor: pointer;
           border-radius: var(--r-sm, 4px);
           user-select: none;
           transition: background 0.1s;
         }
         .multiselect-item:hover {
-          background: var(--surface-2, var(--color-surface-hover, #f1f5f9));
+          background: var(--surface-2, var(--color-surface-hover, var(--color-surface-2)));
         }
         .multiselect-checkbox {
           margin-right: 8px;
           width: 13px;
           height: 13px;
           cursor: pointer;
-          accent-color: var(--teal, var(--color-accent, #0d9488));
+          accent-color: var(--teal, var(--color-accent, var(--color-primary)));
         }
         .multiselect-item-label {
           white-space: nowrap;

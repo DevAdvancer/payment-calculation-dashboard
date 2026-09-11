@@ -181,7 +181,7 @@ export default function QuickEntryModal({ onClose }) {
             </Field>
           ) : (
             <Field label="Currency">
-              <input value={effectiveCurrency} disabled style={{ ...inputStyle, background: "#f3f4f6", color: "var(--text-muted, #6b7280)" }} />
+              <input value={effectiveCurrency} disabled style={{ ...inputStyle, background: "var(--color-surface-2)", color: "var(--text-muted, #6b7280)" }} />
             </Field>
           )}
 
@@ -211,7 +211,7 @@ export default function QuickEntryModal({ onClose }) {
           </Field>
 
           <Field label="Status">
-            <select value={form.status} onChange={e => set("status", e.target.value)} style={inputStyle}>
+            <select value={form.status} data-status={form.status} data-status={form.status} onChange={e => set("status", e.target.value)} style={inputStyle}>
               {ALL_STATUSES.map(s => <option key={s}>{s}</option>)}
             </select>
           </Field>
@@ -270,7 +270,7 @@ const inputStyle = {
   width: "100%", padding: "9px 12px",
   border: "1px solid var(--border, #e3e6ea)", borderRadius: 8,
   fontSize: 13, fontFamily: "var(--font-body)",
-  color: "var(--text, #111827)", background: "#fff",
+  color: "var(--text, #111827)", background: "var(--color-surface)",
   outline: "none", appearance: "none", boxSizing: "border-box",
 };
 

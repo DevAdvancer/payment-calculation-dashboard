@@ -9,10 +9,10 @@ export default function PreviewPage() {
   return (
     <>
       <div style={{ marginBottom:32 }}>
-        <h1 style={{ fontSize:22, fontWeight:700, color:"#111827", letterSpacing:"-0.02em" }}>
+        <h1 style={{ fontSize:22, fontWeight:700, color:"var(--color-ink)", letterSpacing:"-0.02em" }}>
           Live Preview
         </h1>
-        <p style={{ fontSize:13, color:"#6b7280", marginTop:4 }}>Changes are saved to the database and applied to all generated NOC documents.</p>
+        <p style={{ fontSize:13, color: "var(--color-ink-muted)", marginTop:4 }}>Changes are saved to the database and applied to all generated NOC documents.</p>
       </div>
 
       <div style={{ display:"flex", gap:8, marginBottom:24 }}>

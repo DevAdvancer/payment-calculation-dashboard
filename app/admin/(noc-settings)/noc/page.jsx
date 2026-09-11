@@ -9,10 +9,10 @@ export default function NOCTemplatePage() {
   return (
     <>
       <div style={{ marginBottom:32 }}>
-        <h1 style={{ fontSize:22, fontWeight:700, color:"#111827", letterSpacing:"-0.02em" }}>
+        <h1 style={{ fontSize:22, fontWeight:700, color:"var(--color-ink)", letterSpacing:"-0.02em" }}>
           NOC Template
         </h1>
-        <p style={{ fontSize:13, color:"#6b7280", marginTop:4 }}>Changes are saved to the database and applied to all generated NOC documents.</p>
+        <p style={{ fontSize:13, color: "var(--color-ink-muted)", marginTop:4 }}>Changes are saved to the database and applied to all generated NOC documents.</p>
       </div>
 
       <div style={{ display:"flex", gap:8, marginBottom:24 }}>
@@ -27,12 +27,12 @@ export default function NOCTemplatePage() {
       <Card title={`${activeCo} — NOC Body Template`}>
         <FieldRow full>
           <Field label="">
-            <div style={{ fontSize:11, color:"#6b7280", marginBottom:8 }}>
-              Variables: <code style={{ background:"#eff6ff", color:"#2563eb", padding:"1px 5px", borderRadius:3 }}>{"{candidate_name}"}</code>{" "}
-              <code style={{ background:"#eff6ff", color:"#2563eb", padding:"1px 5px", borderRadius:3 }}>{"{company_name}"}</code>{" "}
-              <code style={{ background:"#eff6ff", color:"#2563eb", padding:"1px 5px", borderRadius:3 }}>{"{total_amount}"}</code>{" "}
-              <code style={{ background:"#eff6ff", color:"#2563eb", padding:"1px 5px", borderRadius:3 }}>{"{date}"}</code>{" "}
-              <code style={{ background:"#eff6ff", color:"#2563eb", padding:"1px 5px", borderRadius:3 }}>{"{our_company}"}</code>
+            <div style={{ fontSize:11, color: "var(--color-ink-muted)", marginBottom:8 }}>
+              Variables: <code style={{ background: "var(--color-surface-2)", color:"#4f46e5", padding:"1px 5px", borderRadius:3 }}>{"{candidate_name}"}</code>{" "}
+              <code style={{ background: "var(--color-surface-2)", color:"#4f46e5", padding:"1px 5px", borderRadius:3 }}>{"{company_name}"}</code>{" "}
+              <code style={{ background: "var(--color-surface-2)", color:"#4f46e5", padding:"1px 5px", borderRadius:3 }}>{"{total_amount}"}</code>{" "}
+              <code style={{ background: "var(--color-surface-2)", color:"#4f46e5", padding:"1px 5px", borderRadius:3 }}>{"{date}"}</code>{" "}
+              <code style={{ background: "var(--color-surface-2)", color:"#4f46e5", padding:"1px 5px", borderRadius:3 }}>{"{our_company}"}</code>
             </div>
             <textarea rows={9} value={coVal("noc_body_template")} onChange={e => updateCo("noc_body_template", e.target.value)}
               placeholder={`This is to certify that {candidate_name} has been successfully placed by {our_company} with {company_name}...`}

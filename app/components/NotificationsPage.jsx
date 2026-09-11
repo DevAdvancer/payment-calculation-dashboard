@@ -60,8 +60,7 @@ export default function NotificationsPage() {
               background: "var(--surface, #1e293b)",
               color: "var(--text-muted, #94a3b8)",
               border: "1.5px solid var(--border-md, #334155)",
-              width: 44,
-              height: 44,
+              width: 40, height: 40,
               borderRadius: "50%",
               cursor: "pointer",
               display: "flex",
@@ -101,27 +100,27 @@ export default function NotificationsPage() {
           <button
             onClick={() => deleteAllNotifications()}
             style={{
-              background: "#ef4444",
-              color: "#ffffff",
+              background: "var(--color-danger-soft)",
+              color: "var(--color-danger)",
               border: "none",
-              height: "50px",
-              padding: "10px",
-              borderRadius: "9px",
+              height: "40px",
+              padding: "0 18px",
+              borderRadius: "20px",
               cursor: "pointer",
-              fontWeight: 700,
-              fontSize: "16px",
+              fontWeight: 600,
+              fontSize: "13px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               transition: "all 0.2s ease",
-              boxShadow: "0 2px 6px rgba(239, 68, 68, 0.25)",
+              boxShadow: "none",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#dc2626";
+              e.currentTarget.style.background = "var(--color-danger)";
               e.currentTarget.style.transform = "scale(1.05)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#ef4444";
+              e.currentTarget.style.background = "var(--color-danger-soft)";
               e.currentTarget.style.transform = "scale(1)";
             }}
           >
@@ -151,20 +150,20 @@ export default function NotificationsPage() {
                   gap: 12,
                   padding: 20,
                   borderRadius: 18,
-                  background: isRead ? "#f8fafc" : "#ecfdf5",
-                  border: isRead ? "1px solid #e2e8f0" : "1px solid #34d399",
+                  background: isRead ? "var(--color-surface)" : "var(--color-surface-2)",
+                  border: isRead ? "1px solid var(--color-border)" : "1px solid rgba(16, 185, 129, 0.4)",
                   boxShadow: "0 12px 30px rgba(15, 23, 42, 0.05)",
                   flexWrap: "wrap",
                 }}
               >
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                    <div style={{ width: 28, height: 28, borderRadius: 9999, display: "grid", placeItems: "center", background: isRead ? "#d1fae5" : "#34d399", color: isRead ? "#065f46" : "#ffffff", fontWeight: 700 }}><Check size={16} /></div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: isRead ? "#0f172a" : "#064e3b" }}>
+                    <div style={{ width: 28, height: 28, borderRadius: 9999, display: "grid", placeItems: "center", background: isRead ? "var(--color-surface-2)" : "var(--color-success-soft)", color: isRead ? "var(--text-dim)" : "var(--color-success)", fontWeight: 700 }}><Check size={16} /></div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: isRead ? "var(--text-dim)" : "var(--color-success)" }}>
                       {isRead ? "Read" : "New"}
                     </div>
                   </div>
-                  <div style={{ fontSize: 15, lineHeight: 1.6, color: "#0f172a", marginBottom: 8, whiteSpace: "pre-wrap" }}>
+                  <div style={{ fontSize: 15, lineHeight: 1.6, color: "var(--text-main)", marginBottom: 8, whiteSpace: "pre-wrap" }}>
                     {notif.message}
                   </div>
                   <div style={{ fontSize: 12, color: "#64748b" }}>
@@ -179,8 +178,8 @@ export default function NotificationsPage() {
                     onClick={() => markNotificationRead(notif.id)}
                     disabled={isRead}
                     style={{
-                      background: isRead ? "#e2e8f0" : "#10b981",
-                      color: isRead ? "#64748b" : "#ffffff",
+                      background: isRead ? "var(--color-surface-2)" : "var(--color-success-soft)",
+                      color: isRead ? "var(--text-muted)" : "var(--color-success)",
                       border: "none",
                       padding: "10px 18px",
                       borderRadius: 9999,
@@ -201,9 +200,9 @@ export default function NotificationsPage() {
                       disabled={nocGenerated}
                       title={nocGenerated ? "NOC already generated for this candidate" : "Go to Candidate History to generate NOC"}
                       style={{
-                        background: nocGenerated ? "#1e293b" : "linear-gradient(135deg, #0f766e, #0d9488)",
-                        color: nocGenerated ? "#94a3b8" : "#ffffff",
-                        border: nocGenerated ? "1px solid #334155" : "none",
+                        background: nocGenerated ? "var(--color-surface-2)" : "var(--color-primary)",
+                        color: nocGenerated ? "var(--text-muted)" : "#fff",
+                        border: nocGenerated ? "1px solid var(--color-border)" : "none",
                         padding: "10px 18px",
                         borderRadius: 9999,
                         cursor: nocGenerated ? "default" : "pointer",
@@ -214,7 +213,7 @@ export default function NotificationsPage() {
                         gap: 6,
                         transition: "all 0.2s ease",
                         whiteSpace: "nowrap",
-                        boxShadow: nocGenerated ? "none" : "0 2px 8px rgba(13,148,136,0.3)",
+                        boxShadow: nocGenerated ? "none" : "0 2px 8px var(--color-accent-soft)",
                       }}
                       onMouseEnter={(e) => {
                         if (!nocGenerated) {
@@ -243,8 +242,8 @@ export default function NotificationsPage() {
                   <button
                     onClick={() => deleteSpecificNotification(notif.id)}
                     style={{
-                      background: "#ef4444",
-                      color: "#ffffff",
+                      background: "var(--color-danger-soft)",
+                      color: "var(--color-danger)",
                       border: "none",
                       width: "36px",
                       height: "36px",
@@ -256,15 +255,15 @@ export default function NotificationsPage() {
                       alignItems: "center",
                       justifyContent: "center",
                       transition: "all 0.2s ease",
-                      boxShadow: "0 2px 6px rgba(239, 68, 68, 0.25)",
+                      boxShadow: "none",
                       flexShrink: 0,
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "#dc2626";
+                      e.currentTarget.style.background = "var(--color-danger)";
                       e.currentTarget.style.transform = "scale(1.05)";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "#ef4444";
+                      e.currentTarget.style.background = "var(--color-danger-soft)";
                       e.currentTarget.style.transform = "scale(1)";
                     }}
                   ><X size={16} /></button>

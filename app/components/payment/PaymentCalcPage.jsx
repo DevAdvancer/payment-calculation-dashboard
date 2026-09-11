@@ -934,8 +934,8 @@ export default function PaymentCalcPage() {
       <div className="kpi-grid-container" style={{ gap: "20px", minWidth:"fit-content" }}>
         
         {/* Card 1: Entries */}
-        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", borderColor: "#bbf7d0"}}>
-          <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>
+        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", borderColor: "var(--color-border)"}}>
+          <div className="kpi-label" style={{ fontSize: 10, color: "var(--color-ink-muted)", fontWeight: "bold" }}>
             Entries<br />
             ({(() => {
               if (!filters.month || filters.month.length === 0) return "ALL";
@@ -945,19 +945,19 @@ export default function PaymentCalcPage() {
               return filters.month.toUpperCase();
             })()})
           </div>
-          <div className="kpi-value" style={{ fontSize: 24, margin: "8px 0" }}>{statsRows.length}</div>
+          <div className="kpi-value" style={{ fontSize: 24, margin: "8px 0", color: "var(--color-ink)" }}>{statsRows.length}</div>
           <div className="kpi-sub" style={{ fontSize: 11, color: "var(--color-ink-subtle)" }}>of {entries.length} total</div>
           <div className="kpi-sub" style={{ fontSize: 11, color: "var(--color-ink-subtle)" }}>showing {filtered.length} in table</div>
         </div>
 
         {/* Card 2: New Placement + Reconciliation */}
-        <div className="kpi-card" style={{ minWidth: "fit-content", padding: "12px 16px", borderColor: "#bbf7d0" }}>
-          <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>RECONCILIATION</div>
+        <div className="kpi-card" style={{ minWidth: "fit-content", padding: "12px 16px", borderColor: "var(--color-border)" }}>
+          <div className="kpi-label" style={{ fontSize: 10, color: "var(--color-ink-muted)", fontWeight: "bold" }}>RECONCILIATION</div>
           {/* Reconciliation section (top) */}
-          <div className="kpi-value" style={{ color: "#15803d", fontSize: 20, margin: "4px 0" }}>
+          <div className="kpi-value" style={{ color: "#4ade80", fontSize: 20, margin: "4px 0" }}>
             {fmtMoneyC(placementPendingUSD, "USD", 2)}
           </div>
-          <div className="kpi-sub" style={{ fontSize: 10, color: "#166534", marginBottom: 6 }}>
+          <div className="kpi-sub" style={{ fontSize: 10, color: "#22c55e", marginBottom: 6 }}>
             Recurring – Placement received
           </div>
           {/* <div style={{
@@ -975,13 +975,13 @@ export default function PaymentCalcPage() {
             <span>Difference</span>
             <span>{fmtMoneyC(recurringPaymentUSD - placementReceivedUSD, "USD", 2)}</span>
           </div> */}
-          <hr style={{ border: "none", borderTop: "1px solid #bbf7d0", margin: "8px 0" }} />
+          <hr style={{ border: "none", borderTop: "1px solid var(--color-border)", margin: "8px 0" }} />
           {/* New Placement Received / Pending (bottom — mirroring Card 3) */}
-          <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>New Placement</div>
+          <div className="kpi-label" style={{ fontSize: 10, color: "var(--color-ink-muted)", fontWeight: "bold" }}>New Placement</div>
           <div style={{ display: "flex", justifyContent: "space-evenly", gap: "10px"}}>
             <div>
-              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "black", fontWeight: "bold" }}>Received</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#16a34a", fontFamily: "var(--font-mono)" }}>
+              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "var(--color-ink-muted)", fontWeight: "bold" }}>Received</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#4ade80", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(newPlacementReceivedUSD, "USD", 2)}
               </div>
               <span style={{
@@ -992,14 +992,14 @@ export default function PaymentCalcPage() {
                 fontWeight: 700,
                 borderRadius: 4,
                 background: "rgba(59, 130, 246, 0.12)",
-                color: "#2563eb"
+                color: "#60a5fa"
               }}>
                 {newPlacementReceivedPct}%
               </span>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "black", fontWeight: "bold" }}>Pending</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "red", fontFamily: "var(--font-mono)" }}>
+              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "var(--color-ink-muted)", fontWeight: "bold" }}>Pending</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#f87171", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(newPlacementPendingUSD, "USD", 2)}
               </div>
               <span style={{
@@ -1010,14 +1010,14 @@ export default function PaymentCalcPage() {
                 fontWeight: 700,
                 borderRadius: 4,
                 background: "rgba(245, 158, 11, 0.12)",
-                color: "#d97706"
+                color: "#fbbf24"
               }}>
                 {newPlacementPendingPct}%
               </span>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "black", fontWeight: "bold" }}>Total</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "blue", fontFamily: "var(--font-mono)" }}>
+              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "var(--color-ink-muted)", fontWeight: "bold" }}>Total</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#60a5fa", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(totalNewPlacementUSD, "USD", 2)}
               </div>
             </div>
@@ -1025,20 +1025,20 @@ export default function PaymentCalcPage() {
         </div>
 
         {/* Card 3: Recurring Payment + Placement */}
-        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", borderColor: "#bbf7d0" }}>
-          <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>Recurring Payment</div>
-          <div className="kpi-value" style={{ color: "blue", fontSize: 22, margin: "4px 0" }}>
+        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", borderColor: "var(--color-border)" }}>
+          <div className="kpi-label" style={{ fontSize: 10, color: "var(--color-ink-muted)", fontWeight: "bold" }}>Recurring Payment</div>
+          <div className="kpi-value" style={{ color: "#60a5fa", fontSize: 22, margin: "4px 0" }}>
             {fmtMoneyC(totalRecurringPlacement, "USD", 2)}
           </div>
-          <div className="kpi-sub" style={{ fontSize: 10, marginBottom: 6, color: "black", fontWeight: "bold" }}>
+          <div className="kpi-sub" style={{ fontSize: 10, marginBottom: 6, color: "var(--color-ink-muted)", fontWeight: "bold" }}>
             across {recurringPlacementEntries.length} {recurringPlacementEntries.length === 1 ? "entry" : "entries"}
           </div>
-           <hr style={{ border: "none", borderTop: "1px solid #bbf7d0", margin: "8px 0" }} />
-          <div className="kpi-label" style={{ fontSize: 9, color: "var(--color-ink-subtle)", marginTop: 6, color: "black", fontWeight: "bold" }}>Placement</div>
+           <hr style={{ border: "none", borderTop: "1px solid var(--color-border)", margin: "8px 0" }} />
+          <div className="kpi-label" style={{ fontSize: 9, color: "var(--color-ink-subtle)", marginTop: 6, color: "var(--color-ink-muted)", fontWeight: "bold" }}>Placement</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 6 }}>
             <div>
-              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "black", fontWeight: "bold" }}>Received</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#16a34a", fontFamily: "var(--font-mono)" }}>
+              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "var(--color-ink-muted)", fontWeight: "bold" }}>Received</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#4ade80", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(placementReceivedUSD, "USD", 2)}
               </div>
               <span style={{
@@ -1049,14 +1049,14 @@ export default function PaymentCalcPage() {
                 fontWeight: 700,
                 borderRadius: 4,
                 background: "rgba(59, 130, 246, 0.12)",
-                color: "#2563eb"
+                color: "#60a5fa"
               }}>
                 {recurringPaymentUSD > 0 ? Math.round((placementReceivedUSD / totalRecurringPlacement) * 100) : 0}%
               </span>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "black", fontWeight: "bold"}}>Pending</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "red", fontFamily: "var(--font-mono)" }}>
+              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "var(--color-ink-muted)", fontWeight: "bold"}}>Pending</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#f87171", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(placementPendingUSD, "USD", 2)}
               </div>
               <span style={{
@@ -1067,7 +1067,7 @@ export default function PaymentCalcPage() {
                 fontWeight: 700,
                 borderRadius: 4,
                 background: "rgba(245, 158, 11, 0.12)",
-                color: "#d97706"
+                color: "#fbbf24"
               }}>
                 {recurringPaymentUSD > 0 ? Math.round((placementPendingUSD / totalRecurringPlacement) * 100) : 0}%
               </span>
@@ -1076,20 +1076,20 @@ export default function PaymentCalcPage() {
         </div>
 
         {/* Card 4: Total From Placements */}
-        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", borderColor: "#bbf7d0" }}>
-          <div className="kpi-label" style={{ fontSize: 10, color: "black", fontWeight: "bold" }}>Total From Placements</div>
-          <div className="kpi-value" style={{ fontSize: 22, margin: "4px 0", color: "blue" }}>
+        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", borderColor: "var(--color-border)" }}>
+          <div className="kpi-label" style={{ fontSize: 10, color: "var(--color-ink-muted)", fontWeight: "bold" }}>Total From Placements</div>
+          <div className="kpi-value" style={{ fontSize: 22, margin: "4px 0", color: "#60a5fa" }}>
             {fmtMoneyC(totalValueUSD, "USD", 2)}
           </div>
-          <div className="kpi-sub" style={{ fontSize: 10, color: "var(--color-ink-subtle)", marginBottom: 6, color: "black", fontWeight: "bold" }}>
+          <div className="kpi-sub" style={{ fontSize: 10, color: "var(--color-ink-subtle)", marginBottom: 6, color: "var(--color-ink-muted)", fontWeight: "bold" }}>
             Total
           </div>
-           <hr style={{ border: "none", borderTop: "1px solid #bbf7d0", margin: "8px 0" }} />
-          <div className="kpi-label" style={{ fontSize: 9, color: "var(--color-ink-subtle)", marginTop: 6, color: "black", fontWeight: "bold" }}>Status</div>
+           <hr style={{ border: "none", borderTop: "1px solid var(--color-border)", margin: "8px 0" }} />
+          <div className="kpi-label" style={{ fontSize: 9, color: "var(--color-ink-subtle)", marginTop: 6, color: "var(--color-ink-muted)", fontWeight: "bold" }}>Status</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 6 }}>
             <div>
-              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "black", fontWeight: "bold"}}>Total received</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#16a34a", fontFamily: "var(--font-mono)" }}>
+              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "var(--color-ink-muted)", fontWeight: "bold"}}>Total received</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#4ade80", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(totalPaidUSD, "USD", 2)}
               </div>
               <span style={{
@@ -1100,14 +1100,14 @@ export default function PaymentCalcPage() {
                 fontWeight: 700,
                 borderRadius: 4,
                 background: "rgba(34, 197, 94, 0.12)",
-                color: "#16a34a"
+                color: "#4ade80"
               }}>
                 {totalValueUSD > 0 ? Math.round((totalPaidUSD / totalValueUSD) * 100) : 0}%
               </span>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "black", fontWeight: "bold" }}>Total outstanding</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "red", fontFamily: "var(--font-mono)" }}>
+              <div style={{ fontSize: 10, color: "var(--color-ink-subtle)", color: "var(--color-ink-muted)", fontWeight: "bold" }}>Total outstanding</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#f87171", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(totalDueUSD, "USD", 2)}
               </div>
               <span style={{
@@ -1118,7 +1118,7 @@ export default function PaymentCalcPage() {
                 fontWeight: 700,
                 borderRadius: 4,
                 background: "rgba(245, 158, 11, 0.12)",
-                color: "#d97706"
+                color: "#fbbf24"
               }}>
                 {totalValueUSD > 0 ? Math.round((totalDueUSD / totalValueUSD) * 100) : 0}%
               </span>
@@ -1127,26 +1127,26 @@ export default function PaymentCalcPage() {
         </div>
 
         {/* Card 5: Move / Laid Off / Default */}
-        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", background: "#fff1f2", borderColor: "#fecaca" }}>
-          <div className="kpi-label" style={{ fontSize: 10, color: "#b91c1c", fontWeight: "bold" }}>Move / Laid Off / Default</div>
+        <div className="kpi-card" style={{ minWidth: 0, padding: "12px 16px", borderColor: "rgba(248, 113, 113, 0.4)" }}>
+          <div className="kpi-label" style={{ fontSize: 10, color: "#f87171", fontWeight: "bold" }}>Move / Laid Off / Default</div>
           <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
-              <span style={{ color: "#374151" }}>Move</span>
-              <span style={{ fontWeight: 700, color: "#111827", fontFamily: "var(--font-mono)" }}>
+              <span style={{ color: "var(--text-dim)" }}>Move</span>
+              <span style={{ fontWeight: 700, color: "var(--color-ink)", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(moveAmountUSD, "USD", 2)}
               </span>
             </div>
-            <div style={{ height: 1, background: "#fecaca" }} />
+            <div style={{ height: 1, background: "rgba(254, 202, 202, 0.2)" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
-              <span style={{ color: "#374151" }}>Laid off</span>
-              <span style={{ fontWeight: 700, color: "#b91c1c", fontFamily: "var(--font-mono)" }}>
+              <span style={{ color: "var(--text-dim)" }}>Laid off</span>
+              <span style={{ fontWeight: 700, color: "#f87171", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(laidOffAmountUSD, "USD", 2)}
               </span>
             </div>
-            <div style={{ height: 1, background: "#fecaca" }} />
+            <div style={{ height: 1, background: "rgba(254, 202, 202, 0.2)" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
-              <span style={{ color: "#374151" }}>Default</span>
-              <span style={{ fontWeight: 700, color: "#b91c1c", fontFamily: "var(--font-mono)" }}>
+              <span style={{ color: "var(--text-dim)" }}>Default</span>
+              <span style={{ fontWeight: 700, color: "#f87171", fontFamily: "var(--font-mono)" }}>
                 {fmtMoneyC(defaultAmountUSD, "USD", 2)}
               </span>
             </div>
@@ -1400,6 +1400,11 @@ export default function PaymentCalcPage() {
                             ? "rgba(34, 197, 94, 0.12)"
                             : undefined;
 
+                let stripeColor = undefined;
+                if (isTerminalStatus) stripeColor = "#dc2626";
+                else if (entry.status === "Move" || actualValue > usdValue) stripeColor = "#ef4444";
+                else if (actualValue < usdValue) stripeColor = "#22c55e";
+
                 return (
                   <tr
                     key={entry.id}
@@ -1407,16 +1412,19 @@ export default function PaymentCalcPage() {
                       opacity: fadingIds.has(entry.id) ? 0 : 1,
                       transition: "opacity 0.2s ease",
                       background: rowBackground,
-                      ...(isTerminalStatus ? { borderLeft: "3px solid #dc2626" } : {}),
                     }}
                   >
-                    <td style={{ textAlign: "center" }}>
-                      <input
-                        type="checkbox"
-                        checked={selected.has(entry.id)}
-                        onChange={() => toggleRow(entry.id)}
-                        style={{ width: 14, height: 14, cursor: "pointer" }}
-                      />
+                    <td style={{ textAlign: "center", position: "relative", width: 44 }}>
+                      {stripeColor && (
+                        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, backgroundColor: stripeColor, zIndex: 20 }} />
+                      )}
+                      <div className={"row-hover-checkbox " + (selected.has(entry.id) ? "is-selected" : "")} style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "inherit", zIndex: 10 }}>
+                        <input
+                          type="checkbox"
+                          checked={selected.has(entry.id)}
+                          onChange={() => toggleRow(entry.id)}
+                        />
+                      </div>
                     </td>
 
                     <td style={{ color: "var(--text-dim)", fontSize: 11 }}>

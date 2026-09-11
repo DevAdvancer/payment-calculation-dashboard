@@ -128,7 +128,7 @@ export default function AdminLayout({ children }) {
   }
 
   if (!settings) return (
-    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", background:"#f4f5f7", fontFamily:"'DM Sans',sans-serif", color:"#6b7280" }}>
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", background: "var(--color-surface-2)", fontFamily:"'DM Sans',sans-serif", color: "var(--color-ink-muted)" }}>
       Loading settings…
     </div>
   );
@@ -144,7 +144,7 @@ export default function AdminLayout({ children }) {
       ck,
       handleImageUpload
     }}>
-      <div style={{ display:"flex", minHeight:"100vh", background:"#f4f5f7", fontFamily:"'DM Sans',sans-serif" }}>
+      <div style={{ display:"flex", minHeight:"100vh", background: "var(--color-surface-2)", fontFamily:"'DM Sans',sans-serif" }}>
         <main style={{ flex:1, padding:"40px 56px", maxWidth:900, overflow:"auto" }}>
           {children}
 

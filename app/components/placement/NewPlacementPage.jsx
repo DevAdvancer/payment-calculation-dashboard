@@ -335,7 +335,7 @@ export default function NewPlacementPage() {
             <Field label="Company">
               <div style={{ position: "relative" }}>
                 <select value={form.companyGroup} onChange={e => set("companyGroup", e.target.value)}
-                  style={{ ...inputStyle, ...(isUK ? { borderColor: "#2563eb", background: "#eff6ff" } : null), paddingRight: isUK ? 76 : 12 }}>
+                  style={{ ...inputStyle, ...(isUK ? { borderColor: "#4f46e5", background: "var(--color-surface-2)" } : null), paddingRight: isUK ? 76 : 12 }}>
                   {COMPANY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
                 {isUK && (

@@ -51,19 +51,25 @@ function todayFormatted() {
 function currentYear() { return new Date().getFullYear(); }
 function refNum() { return `NOC-${currentYear()}-${String(Math.floor(Math.random()*9000)+1000)}`; }
 
-export default function NOCModal({ candidate, company, totalAmount, onClose }) {
+export default function NOCModal({ candidate, candidateEntries, onClose }) {
   const { loadNOCSettings, nocSettings } = useDashboardStore();
   const [loadingSettings, setLoadingSettings] = useState(!nocSettings);
-  const [selectedCo, setSelectedCo] = useState(() => {
-    /* pre-select company closest to candidate's company if passed */
-    if (company) {
-      const lc = company.toLowerCase();
-      if (lc.includes("vizva") || lc.includes("vcs")) return "Vizva";
-      if (lc.includes("silver"))                      return "SilverSpace";
-      if (lc.includes("flawless"))    return "Flawless";
-    }
+
+  const uniqueCompanies = Array.from(new Set(candidateEntries.map(e => e.company).filter(x => x && x !== "0")));
+  const [selectedCo, setSelectedCo] = useState(uniqueCompanies[0] || "Vizva Inc");
+
+  const totalAmount = candidateEntries
+    .filter(e => e.company === selectedCo && e.status === "Received")
+    .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+
+  const cmsKey = (() => {
+    const lc = selectedCo.toLowerCase();
+    if (lc.includes("vizva") || lc.includes("vcs")) return "Vizva";
+    if (lc.includes("silver"))                      return "SilverSpace";
+    if (lc.includes("flawless"))                    return "Flawless";
     return "Vizva";
-  });
+  })();
+
   const nocRef = useRef(refNum());
   const today  = todayFormatted();
 
@@ -77,8 +83,8 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
   const allSettings = nocSettings || {};
 
   /* Per-company settings: CMS keys prefixed with company slug */
-  const coSlug = selectedCo.toLowerCase().replace(/\s+/g, "_");
-  const def = DEFAULT_SETTINGS[selectedCo] || DEFAULT_SETTINGS.Vizva;
+  const coSlug = cmsKey.toLowerCase().replace(/\s+/g, "_");
+  const def = DEFAULT_SETTINGS[cmsKey] || DEFAULT_SETTINGS.Vizva;
 
   const s = {
     company_name:    allSettings[`${coSlug}_company_name`]    || def.company_name,
@@ -96,11 +102,11 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
     noc_footer_note:   allSettings[`${coSlug}_noc_footer_note`]   || allSettings.noc_footer_note   || "",
   };
 
-  const currency = currencyOf(company);
+  const currency = currencyOf(selectedCo);
 
   const bodyText = s.noc_body_template
     .replace(/{candidate_name}/g, candidate || "Candidate")
-    .replace(/{company_name}/g,   company   || "Company")
+    .replace(/{company_name}/g,   selectedCo || "Company")
     .replace(/{total_amount}/g,   fmtMoneyC(totalAmount, currency))
     .replace(/{date}/g,           today)
     .replace(/{our_company}/g,    s.company_name);
@@ -120,6 +126,14 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
       scale: 2,
       useCORS: true,
       allowTaint: true,
+      onclone: (clonedDoc) => {
+        const styles = clonedDoc.querySelectorAll("style");
+        styles.forEach((style) => {
+          if (style.innerHTML.includes("oklab")) {
+            style.remove();
+          }
+        });
+      },
     });
 
     const imgData = canvas.toDataURL("image/png");
@@ -156,16 +170,31 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
-        {/* Company Selector */}
-        <div style={{ padding:"12px 24px", borderBottom:"1px solid var(--color-border)", background:"var(--color-surface-2)", display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ fontSize:12, fontWeight:700, color:"var(--color-ink-muted)", textTransform:"uppercase", letterSpacing:".06em" }}>Issuing Company:</span>
-          <div style={{ display:"flex", gap:6 }}>
-            <span style={{
-              padding:"5px 16px", borderRadius:"var(--radius-full)", fontSize:12, fontWeight:600,
-              border:"1px solid var(--color-primary)", background:"var(--color-primary)", color:"#fff"
-            }}>
-              {selectedCo}
-            </span>
+        {/* Company Selectors */}
+        <div style={{ padding:"12px 24px", borderBottom:"1px solid var(--color-border)", background:"var(--color-surface-2)", display:"flex", alignItems:"center", gap:24, flexWrap:"wrap" }}>
+          
+          {/* Issuing Company */}
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{ fontSize:12, fontWeight:700, color:"var(--color-ink-muted)", textTransform:"uppercase", letterSpacing:".06em" }}>Issuing Company:</span>
+            {uniqueCompanies.length > 1 ? (
+              <select
+                value={selectedCo}
+                onChange={e => setSelectedCo(e.target.value)}
+                style={{
+                  padding: "4px 10px", borderRadius: "var(--radius-md)", fontSize: 12, fontWeight: 600,
+                  border: "1px solid var(--color-border)", background: "var(--color-surface)", color: "var(--color-ink)", cursor: "pointer", outline: "none"
+                }}
+              >
+                {uniqueCompanies.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            ) : (
+              <span style={{
+                padding:"5px 16px", borderRadius:"var(--radius-full)", fontSize:12, fontWeight:600,
+                border:"1px solid var(--color-border)", background:"var(--color-surface)", color:"var(--color-ink)"
+              }}>
+                {selectedCo || "N/A"}
+              </span>
+            )}
           </div>
         </div>
 
@@ -178,16 +207,16 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
           ) : (
             /* NOC Preview */
             <div ref={previewRef} style={{
-              background:"#fff", color:"#111827", borderRadius:8, padding:"32px 36px",
+              background:"#ffffff", color:"#111827", borderRadius:8, padding:"32px 36px",
               position:"relative", overflow:"hidden", fontFamily:"Georgia, serif",
-              border:"1px solid var(--color-border)", boxShadow:"var(--shadow-md)",
+              border:"1px solid #e5e7eb", boxShadow:"none",
             }}>
               {/* Watermark */}
               <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:0, opacity:0.05, overflow:"hidden" }}>
                 {s.watermark_url ? (
                   <img src={s.watermark_url} alt="" style={{ maxWidth:"80%", maxHeight:"80%", objectFit:"contain" }} />
                 ) : (
-                  <span style={{ fontSize:120, fontWeight:900, color:"#1a1f2e", letterSpacing:-4 }}>
+                  <span style={{ fontSize:120, fontWeight:900, color: "#9ca3af", letterSpacing:-4 }}>
                     {s.company_name.slice(0,3).toUpperCase()}
                   </span>
                 )}
@@ -199,9 +228,9 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
                   <div>
                     {s.logo_url && <img src={s.logo_url} alt="logo" style={{ height:36, marginBottom:6, display:"block" }} />}
                     <div style={{ fontSize:17, fontWeight:700, color:"#111827", fontFamily:"Georgia, serif" }}>{s.company_name}</div>
-                    {s.company_address && <div style={{ fontSize:10, color:"#6b7280", marginTop:3 }}>{s.company_address}</div>}
+                    {s.company_address && <div style={{ fontSize:10, color: "#6b7280", marginTop:3 }}>{s.company_address}</div>}
                   </div>
-                  <div style={{ textAlign:"right", fontSize:10, color:"#6b7280", lineHeight:1.7 }}>
+                  <div style={{ textAlign:"right", fontSize:10, color: "#6b7280", lineHeight:1.7 }}>
                     {s.ein     && <div><strong>EIN:</strong> {s.ein}</div>}
                     {s.email   && <div>{s.email}</div>}
                     {s.phone   && <div>{s.phone}</div>}
@@ -210,20 +239,20 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
                 </div>
 
                 {/* Separator */}
-                <div style={{ height:2, background:"#1a1f2e", marginBottom:12 }} />
+                <div style={{ height:2, background:"#e5e7eb", marginBottom:12 }} />
 
                 {/* Ref + Date */}
-                <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:"#9ca3af", marginBottom:16 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color: "#6b7280", marginBottom:16 }}>
                   <span>Ref: {nocRef.current}</span>
                   <span>Date: {today}</span>
                 </div>
 
                 {/* Title */}
                 <div style={{ textAlign:"center", marginBottom:18 }}>
-                  <div style={{ fontSize:16, fontWeight:700, letterSpacing:1, color:"#1a1f2e", fontFamily:"Georgia, serif", textTransform:"uppercase" }}>
+                  <div style={{ fontSize:16, fontWeight:700, letterSpacing:1, color: "#4b5563", fontFamily:"Georgia, serif", textTransform:"uppercase" }}>
                     No Objection Certificate
                   </div>
-                  <div style={{ height:2.5, background:"#2563eb", width:220, margin:"6px auto 0" }} />
+                  <div style={{ height:2.5, background:"#4f46e5", width:220, margin:"6px auto 0" }} />
                 </div>
 
                 {/* Body */}
@@ -235,15 +264,15 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
                 {(s.signature_name || s.signature_title) && (
                   <div style={{ marginTop:36 }}>
                     {s.signature_url && <img src={s.signature_url} alt="signature" style={{ height:48, marginBottom:4 }} />}
-                    <div style={{ borderTop:"1px solid #2563eb", paddingTop:8, width:200 }}>
+                    <div style={{ borderTop:"1px solid #4f46e5", paddingTop:8, width:200 }}>
                       {s.signature_name  && <div style={{ fontSize:12, fontWeight:700, color:"#111827" }}>{s.signature_name}</div>}
-                      {s.signature_title && <div style={{ fontSize:10.5, color:"#6b7280" }}>{s.signature_title}</div>}
+                      {s.signature_title && <div style={{ fontSize:10.5, color: "#6b7280" }}>{s.signature_title}</div>}
                     </div>
                   </div>
                 )}
 
                 {s.noc_footer_note && (
-                  <div style={{ marginTop:28, paddingTop:18, borderTop:"1px solid #e5e7eb", fontSize:11, lineHeight:1.65, color:"#6b7280", whiteSpace:"pre-line" }}>
+                  <div style={{ marginTop:28, paddingTop:18, borderTop:"1px solid #e5e7eb", fontSize:11, lineHeight:1.65, color: "#6b7280", whiteSpace:"pre-line" }}>
                     {s.noc_footer_note}
                   </div>
                 )}
@@ -258,7 +287,7 @@ export default function NOCModal({ candidate, company, totalAmount, onClose }) {
 
         <div className="modal-footer">
           <span style={{ flex:1, fontSize:11, color:"var(--color-ink-muted)" }}>
-            Total payable: <strong style={{ color:"var(--color-accent)" }}>{fmtMoneyC(totalAmount, currency)}</strong>
+            Total paid: <strong style={{ color:"var(--color-accent)" }}>{fmtMoneyC(totalAmount, currency)}</strong>
           </span>
           <button className="btn-ghost" onClick={onClose}>Cancel</button>
           <button className="btn-primary" onClick={handleDownloadPDF}>

@@ -17,8 +17,8 @@ export function fallbackFor(field, slug) {
 
 export function Card({ title, children, style }) {
   return (
-    <div style={{ background:"#fff", border:"1px solid #e3e6ea", borderRadius:12, padding:"24px 28px", boxShadow:"0 1px 3px rgba(0,0,0,0.06)", ...style }}>
-      {title && <div style={{ fontSize:13, fontWeight:700, color:"#111827", marginBottom:20, paddingBottom:12, borderBottom:"1px solid #eef0f3" }}>{title}</div>}
+    <div style={{ background:"var(--color-surface)", border:"1px solid var(--color-border)", borderRadius:12, padding:"24px 28px", boxShadow:"0 1px 3px rgba(0,0,0,0.06)", ...style }}>
+      {title && <div style={{ fontSize:13, fontWeight:700, color:"var(--color-ink)", marginBottom:20, paddingBottom:12, borderBottom:"1px solid var(--color-border-light)" }}>{title}</div>}
       {children}
     </div>
   );
@@ -32,19 +32,19 @@ export function FieldRow({ children, full, triple }) {
 export function Field({ label, children }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-      {label && <label style={{ fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:".07em", color:"#6b7280" }}>{label}</label>}
+      {label && <label style={{ fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:".07em", color: "var(--color-ink-muted)" }}>{label}</label>}
       {children}
     </div>
   );
 }
 
-const inputStyle = { background:"#fff", border:"1px solid #e3e6ea", borderRadius:8, padding:"9px 12px", color:"#111827", fontFamily:"'DM Sans',sans-serif", fontSize:14, outline:"none", width:"100%", transition:"border-color 0.15s, box-shadow 0.15s" };
-export const textareaStyle = { background:"#fff", border:"1px solid #e3e6ea", borderRadius:8, padding:"9px 12px", color:"#111827", fontFamily:"'DM Sans',sans-serif", fontSize:14, outline:"none", width:"100%", resize:"vertical", transition:"border-color 0.15s" };
+const inputStyle = { background:"var(--color-surface)", border:"1px solid var(--color-border)", borderRadius:8, padding:"9px 12px", color:"var(--color-ink)", fontFamily:"'DM Sans',sans-serif", fontSize:14, outline:"none", width:"100%", transition:"border-color 0.15s, box-shadow 0.15s" };
+export const textareaStyle = { background:"var(--color-surface)", border:"1px solid var(--color-border)", borderRadius:8, padding:"9px 12px", color:"var(--color-ink)", fontFamily:"'DM Sans',sans-serif", fontSize:14, outline:"none", width:"100%", resize:"vertical", transition:"border-color 0.15s" };
 
 export function Input({ value, onChange, placeholder, type="text" }) {
   return (
     <input type={type} value={value} onChange={onChange} placeholder={placeholder} style={inputStyle}
-      onFocus={e => { e.target.style.borderColor="#2563eb"; e.target.style.boxShadow="0 0 0 3px rgba(37,99,235,0.1)"; }}
+      onFocus={e => { e.target.style.borderColor="#4f46e5"; e.target.style.boxShadow="0 0 0 3px rgba(79,70,229,0.1)"; }}
       onBlur={e => { e.target.style.borderColor="#e3e6ea"; e.target.style.boxShadow="none"; }} />
   );
 }
@@ -52,12 +52,12 @@ export function Input({ value, onChange, placeholder, type="text" }) {
 export function ImgUpload({ src, onChange, label, imgStyle }) {
   return (
     <div style={{ border:"2px dashed #e3e6ea", borderRadius:10, padding:20, textAlign:"center", cursor:"pointer", position:"relative", transition:"all 0.2s" }}
-      onMouseEnter={e => e.currentTarget.style.borderColor="#2563eb"}
+      onMouseEnter={e => e.currentTarget.style.borderColor="#4f46e5"}
       onMouseLeave={e => e.currentTarget.style.borderColor="#e3e6ea"}>
       <input type="file" accept="image/*" style={{ position:"absolute", inset:0, opacity:0, cursor:"pointer" }}
         onChange={e => onChange(e.target.files[0])} />
       {src ? <img src={src} alt="" style={{ maxWidth:180, maxHeight:72, objectFit:"contain", borderRadius:6, marginBottom:6, display:"block", marginLeft:"auto", marginRight:"auto", ...imgStyle }} /> : null}
-      <div style={{ fontSize:12, color:"#9ca3af" }}><span style={{ color:"#2563eb", fontWeight:600 }}>Click to upload</span> · {label}</div>
+      <div style={{ fontSize:12, color: "var(--color-ink-muted)" }}><span style={{ color:"#4f46e5", fontWeight:600 }}>Click to upload</span> · {label}</div>
     </div>
   );
 }
@@ -89,12 +89,12 @@ export function NOCPreview({ settings, company }) {
     .replace(/{our_company}/g, s.company_name);
 
   return (
-    <div style={{ background:"#fff", color:"#111827", borderRadius:10, padding:"36px 40px", fontFamily:"Georgia,serif", fontSize:13, lineHeight:1.7, position:"relative", overflow:"hidden", border:"1px solid #e3e6ea", boxShadow:"var(--shadow-md)", minHeight:500 }}>
+    <div style={{ background:"var(--color-surface)", color:"var(--color-ink)", borderRadius:10, padding:"36px 40px", fontFamily:"Georgia,serif", fontSize:13, lineHeight:1.7, position:"relative", overflow:"hidden", border:"1px solid var(--color-border)", boxShadow:"var(--shadow-md)", minHeight:500 }}>
       <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", opacity:0.05, overflow:"hidden" }}>
         {s.watermark_url ? (
           <img src={s.watermark_url} alt="" style={{ maxWidth:"80%", maxHeight:"80%", objectFit:"contain" }} />
         ) : (
-          <div style={{ fontSize:120, fontWeight:900, color:"#1a1f2e", letterSpacing:-4 }}>
+          <div style={{ fontSize:120, fontWeight:900, color: "var(--color-ink-muted)", letterSpacing:-4 }}>
             {s.company_name.slice(0,3).toUpperCase()}
           </div>
         )}
@@ -105,9 +105,9 @@ export function NOCPreview({ settings, company }) {
           <div>
             {s.logo_url && <img src={s.logo_url} alt="" style={{ height:48, objectFit:"contain", marginBottom:6, display:"block" }} />}
             <div style={{ fontSize:17, fontWeight:700 }}>{s.company_name}</div>
-            {s.company_address && <div style={{ fontSize:11, color:"#6b7280", marginTop:2 }}>{s.company_address}</div>}
+            {s.company_address && <div style={{ fontSize:11, color: "var(--color-ink-muted)", marginTop:2 }}>{s.company_address}</div>}
           </div>
-          <div style={{ textAlign:"right", fontSize:11, color:"#6b7280", lineHeight:1.8 }}>
+          <div style={{ textAlign:"right", fontSize:11, color: "var(--color-ink-muted)", lineHeight:1.8 }}>
             {s.ein     && <div><strong>EIN:</strong> {s.ein}</div>}
             {s.email   && <div>{s.email}</div>}
             {s.phone   && <div>{s.phone}</div>}
@@ -116,12 +116,12 @@ export function NOCPreview({ settings, company }) {
         </div>
         {/* Title */}
         <div style={{ textAlign:"center", marginBottom:24 }}>
-          <div style={{ fontSize:18, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:"#1a1f2e" }}>No Objection Certificate</div>
-          <div style={{ fontSize:11, color:"#9ca3af", marginTop:4 }}>Date: {today}</div>
-          <div style={{ width:60, height:2.5, background:"#2563eb", margin:"8px auto 0" }} />
+          <div style={{ fontSize:18, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color: "var(--color-ink-muted)" }}>No Objection Certificate</div>
+          <div style={{ fontSize:11, color: "var(--color-ink-muted)", marginTop:4 }}>Date: {today}</div>
+          <div style={{ width:60, height:2.5, background:"#4f46e5", margin:"8px auto 0" }} />
         </div>
         {/* Body */}
-        <div style={{ fontSize:13, lineHeight:1.85, color:"#374151", marginBottom:36, whiteSpace:"pre-line" }}>
+        <div style={{ fontSize:13, lineHeight:1.85, color:"var(--color-ink-2)", marginBottom:36, whiteSpace:"pre-line" }}>
           {bodyText}
         </div>
         {/* Signature */}
@@ -129,14 +129,14 @@ export function NOCPreview({ settings, company }) {
           {s.signature_url && (
             <img src={s.signature_url} alt="Signature" style={{ height:54, objectFit:"contain", display:"block", marginBottom:4 }} />
           )}
-          <div style={{ borderTop:"1px solid #2563eb", paddingTop:10 }}>
-            <div style={{ fontWeight:700, fontSize:13, color:"#111827" }}>{s.signature_name}</div>
-            <div style={{ fontSize:12, color:"#6b7280" }}>{s.signature_title}</div>
-            <div style={{ fontSize:12, color:"#6b7280" }}>{s.company_name}</div>
+          <div style={{ borderTop:"1px solid #4f46e5", paddingTop:10 }}>
+            <div style={{ fontWeight:700, fontSize:13, color:"var(--color-ink)" }}>{s.signature_name}</div>
+            <div style={{ fontSize:12, color: "var(--color-ink-muted)" }}>{s.signature_title}</div>
+            <div style={{ fontSize:12, color: "var(--color-ink-muted)" }}>{s.company_name}</div>
           </div>
         </div>
         {s.noc_footer_note && (
-          <div style={{ marginTop:32, borderTop:"1px solid #eef0f3", paddingTop:10, fontSize:11, color:"#9ca3af", fontStyle:"italic" }}>
+          <div style={{ marginTop:32, borderTop:"1px solid #eef0f3", paddingTop:10, fontSize:11, color: "var(--color-ink-muted)", fontStyle:"italic" }}>
             {s.noc_footer_note}
           </div>
         )}

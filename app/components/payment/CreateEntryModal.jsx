@@ -262,7 +262,7 @@ export default function CreateEntryModal({ onClose }) {
                 {/* Status */}
                 <div className="field">
                   <label>Status</label>
-                  <select value={form.status} onChange={set("status")}>
+                  <select value={form.status} data-status={form.status} data-status={form.status} onChange={set("status")}>
                     {ALL_STATUSES.map((s) => (
                       <option key={s} value={s}>{s}</option>
                     ))}

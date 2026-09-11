@@ -145,7 +145,7 @@ export default function DeleteConfirmModal({
               transition: "background var(--duration-fast) var(--ease)",
             }}
             onMouseOver={(e) => {
-              if (!loading) e.currentTarget.style.background = "#b91c1c";
+              if (!loading) e.currentTarget.style.background = "var(--color-danger)";
             }}
             onMouseOut={(e) => {
               if (!loading) e.currentTarget.style.background = "var(--color-danger)";

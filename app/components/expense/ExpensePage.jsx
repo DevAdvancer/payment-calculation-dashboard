@@ -329,7 +329,7 @@ export default function ExpensePage() {
           <option value="">All</option>
           {categoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
         </SelectChip>
-        <SelectChip label="Status" value={filters.status} onChange={v => setFilters(f => ({ ...f, status: v }))}>
+        <SelectChip label="Status" value={filters.status} data-status={filters.status} data-status={filters.status} onChange={v => setFilters(f => ({ ...f, status: v }))}>
           <option value="">All</option>
           {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
         </SelectChip>
@@ -392,7 +392,7 @@ export default function ExpensePage() {
                     <td>
                       <select
                         className="tbl-select"
-                        value={e.status}
+                        value={e.status} data-status={e.status} data-status={e.status}
                         onChange={ev => updateExpense(e.id, { status: ev.target.value })}
                         style={{ fontSize: 11 }}
                       >
@@ -403,7 +403,7 @@ export default function ExpensePage() {
                     <td style={{ fontSize: 12, color: "var(--text-dim)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.notes || "—"}</td>
                     <td>
                       <div style={{ display: "flex", gap: 4 }}>
-                        <button onClick={() => openEdit(e)} title="Edit" style={iconBtn("#2563eb")}>
+                        <button onClick={() => openEdit(e)} title="Edit" style={iconBtn("#4f46e5")}>
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         </button>
                         <button onClick={() => handleDelete(e.id)} title="Delete" style={iconBtn("#ef4444")}>
@@ -452,7 +452,7 @@ export default function ExpensePage() {
                 <input type="number" value={draft.paid} onChange={e => setDraft(d => ({ ...d, paid: e.target.value }))} style={inputStyle} placeholder="0.00" />
               </Field>
               <Field label="Status">
-                <select value={draft.status} onChange={e => setDraft(d => ({ ...d, status: e.target.value }))} style={inputStyle}>
+                <select value={draft.status} data-status={draft.status} data-status={draft.status} onChange={e => setDraft(d => ({ ...d, status: e.target.value }))} style={inputStyle}>
                   {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </Field>
@@ -508,7 +508,7 @@ const inputStyle = {
   background: "var(--surface, #fff)", color: "var(--text, #111827)",
   outline: "none", boxSizing: "border-box",
 };
-const btnPrimary = { padding: "8px 16px", borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", fontWeight: 700, cursor: "pointer" };
+const btnPrimary = { padding: "8px 16px", borderRadius: 8, border: "none", background: "#4f46e5", color: "#fff", fontWeight: 700, cursor: "pointer" };
 const btnGhost   = { padding: "8px 16px", borderRadius: 8, border: "1px solid var(--border-md, #e5e7eb)", background: "transparent", color: "var(--text-muted)", cursor: "pointer" };
 const iconBtn = (color) => ({
   background: "transparent", border: "none", cursor: "pointer",

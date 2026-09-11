@@ -613,7 +613,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
                     style={{ width: 14, height: 14, cursor: "pointer" }}
                   />
                 </th>
-                <th style={{ width: 36 }}>#</th>
+                
                 <th>Company</th>
                 <th>Candidate</th>
                 <th>Date</th>
@@ -631,17 +631,20 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
             <tbody>
               {paginatedRows.map((entry, idx) => (
                 <tr key={entry.id} style={{ background: selected.has(entry.id) ? "var(--surface-2)" : undefined }}>
-                  <td style={{ textAlign: "center" }}>
-                    <input
-                      type="checkbox"
-                      checked={selected.has(entry.id)}
-                      onChange={() => toggleRow(entry.id)}
-                      style={{ width: 14, height: 14, cursor: "pointer" }}
-                    />
-                  </td>
-                  <td style={{ color: "var(--text-dim)", fontSize: 11 }}>{(page - 1) * pageSize + idx + 1}</td>
+                  <td style={{ textAlign: "center", position: "relative", width: 44 }}>
+                      <div className={"row-hover-checkbox " + (selected.has(entry.id) ? "is-selected" : "")} style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "inherit", zIndex: 10 }}>
+                        <input
+                          type="checkbox"
+                          checked={selected.has(entry.id)}
+                          onChange={() => toggleRow(entry.id)}
+                        />
+                      </div>
+                      <span style={{ color: "var(--text-dim)", fontSize: 11, position: "relative", zIndex: 1 }}>
+                        {(page - 1) * pageSize + idx + 1}
+                      </span>
+                    </td>
                   <td style={{ fontWeight: 500 }}>{entry.company || "—"}</td>
-                  <td style={{ fontWeight: 600, color: "var(--mint)" }}>{entry.candidate || "—"}</td>
+                  <td style={{ fontWeight: 600, color: "var(--color-ink)" }}>{entry.candidate || "—"}</td>
                   <td>
                     <DateInput
                       value={entry.poDate}
@@ -661,14 +664,14 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
                       {INSTANCE_OPTIONS.map(o => <option key={o}>{o}</option>)}
                     </select>
                   </td>
-                  <td style={{ fontWeight: 600, color: "var(--mint)", fontVariantNumeric: "tabular-nums" }}>
+                  <td style={{ fontWeight: 600, color: "var(--color-ink)", fontVariantNumeric: "tabular-nums" }}>
                     {fmtMoneyC(entry.amount, currencyOf(entry), 2)}
                   </td>
                   <td style={{ color: "var(--text-muted)", fontSize: 12 }}>{entry.serviceType}</td>
                   <td>
                     <select
                       className="tbl-select"
-                      value={entry.status}
+                      value={entry.status} data-status={entry.status}
                       onChange={e => updateStatus(entry.id, e.target.value)}
                       style={{ fontSize: 11 }}
                     >

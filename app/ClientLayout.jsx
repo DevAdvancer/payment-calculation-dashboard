@@ -94,10 +94,10 @@ export default function ClientLayout({ children, userRole, userPermissions, isVa
 
   return (
     <PermissionsProvider permissions={currentPerms}>
-      <div style={{ display:"flex", minHeight:"100vh" }}>
+      <div style={{ display:"flex", height:"100vh", overflow:"hidden" }}>
         <ProgressLoader active={loading && !isSignIn} offsetX={hideSidebar ? 0 : 220} />
         {!hideSidebar && <Sidebar userRole={currentRole} userPermissions={currentPerms} />}
-        <main style={{ marginLeft: hideSidebar ? 0 : 220, flex:1, background:"var(--color-bg)", overflowY:"auto", minHeight:"100vh" }}>
+        <main style={{ marginLeft: hideSidebar ? 0 : 220, flex:1, background:"var(--color-bg)", overflowY:"auto", height:"100vh" }}>
           {children}
         </main>
         <Toast />

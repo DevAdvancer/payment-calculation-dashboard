@@ -38,7 +38,6 @@ export default function CandidateHistoryPage() {
   const [search, setSearch] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selected, setSelected] = useState(null);
-  const [selectedCompany, setSelectedCompany] = useState("");
   const [animated, setAnimated] = useState(false);
   const [showNOC, setShowNOC] = useState(false);
   const searchRef = useRef();
@@ -57,12 +56,6 @@ export default function CandidateHistoryPage() {
   const candidateEntries = selected ? getByCandidate(selected) : [];
   const uniqueCompanies = Array.from(new Set(candidateEntries.map(e => e.company).filter(x => x && x !== "0")));
   
-  useEffect(() => {
-    if (uniqueCompanies.length > 0 && (!selectedCompany || !uniqueCompanies.includes(selectedCompany))) {
-      setSelectedCompany(uniqueCompanies[0]);
-    }
-  }, [uniqueCompanies, selectedCompany]);
-
   const totalPaid   = candidateEntries
   .filter(e => e.status === "Received")
   .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
@@ -74,11 +67,8 @@ export default function CandidateHistoryPage() {
   .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
   const totalAmount = totalPaid + totalDue;
   const pct = totalAmount > 0 ? Math.round((totalPaid / totalAmount) * 100) : 0;
-  const primaryCompany = selectedCompany || candidateEntries[0]?.company || "";
-  const primaryCurrency = currencyOf(primaryCompany);
-  const companyPaid = candidateEntries
-    .filter(e => e.company === primaryCompany && e.status === "Received")
-    .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+  
+  const primaryCurrency = currencyOf(candidateEntries[0] || {});
 
   /* ── Animate progress bar on candidate change ── */
   useEffect(() => {
@@ -148,15 +138,15 @@ export default function CandidateHistoryPage() {
         <div style={{
           display: "flex",
           alignItems: "center",
-          background: "var(--surface)",
-          border: `1.5px solid ${dropdownOpen ? "var(--teal)" : "var(--border-md)"}`,
+          background: "var(--color-surface-2)",
+          border: `1.5px solid ${dropdownOpen ? "var(--teal)" : "var(--color-border)"}`,
           borderRadius: "var(--r-xl)",
           padding: "10px 16px",
           gap: 10,
-          boxShadow: dropdownOpen ? "0 0 0 3px rgba(51,153,137,0.12)" : undefined,
+          boxShadow: dropdownOpen ? "0 0 0 3px var(--color-accent-soft)" : undefined,
           transition: "border-color 0.2s, box-shadow 0.2s",
         }}>
-          <svg width="18" height="18" fill="none" stroke="var(--text-muted)" strokeWidth="2" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+          <svg width="18" height="18" fill="none" stroke="var(--color-ink-muted)" strokeWidth="2" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
@@ -170,7 +160,7 @@ export default function CandidateHistoryPage() {
               background: "transparent",
               border: "none",
               outline: "none",
-              color: "var(--text)",
+              color: "var(--color-ink)",
               fontSize: 15,
               fontFamily: "var(--font)",
             }}
@@ -178,7 +168,7 @@ export default function CandidateHistoryPage() {
           {search && (
             <button
               onClick={clearSearch}
-              style={{ background: "transparent", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "0 2px", display: "flex", alignItems: "center" }}
+              style={{ background: "transparent", border: "none", color: "var(--color-ink-muted)", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "0 2px", display: "flex", alignItems: "center" }}
               title="Clear"
             >
               ×
@@ -193,10 +183,10 @@ export default function CandidateHistoryPage() {
             top: "calc(100% + 6px)",
             left: 0,
             right: 0,
-            background: "var(--surface)",
-            border: "1px solid var(--border-md)",
+            background: "var(--color-surface-2)",
+            border: "1px solid var(--color-border)",
             borderRadius: "var(--r-lg)",
-            boxShadow: "var(--shadow-lg)",
+            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.4)",
             zIndex: 500,
             overflow: "hidden",
             animation: "slideUp 0.15s ease",
@@ -231,7 +221,7 @@ export default function CandidateHistoryPage() {
                   <div style={{
                     width: 34, height: 34,
                     borderRadius: "50%",
-                    background: "linear-gradient(135deg, var(--teal), var(--mint))",
+                    background: "var(--color-primary)",
                     color: "#131515",
                     fontWeight: 700,
                     fontSize: 12,
@@ -243,8 +233,8 @@ export default function CandidateHistoryPage() {
                     {getInitials(name)}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text)" }}>{name}</div>
-                    {co && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{co}</div>}
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--color-ink)" }}>{name}</div>
+                    {co && <div style={{ fontSize: 11, color: "var(--color-ink-muted)", marginTop: 1 }}>{co}</div>}
                   </div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: p >= 100 ? "#4ade80" : p >= 50 ? "var(--mint)" : "#f97316", flexShrink: 0 }}>
                     {p}% paid
@@ -272,7 +262,7 @@ export default function CandidateHistoryPage() {
                 <div style={{
                   width: 52, height: 52,
                   borderRadius: "50%",
-                  background: "linear-gradient(135deg, var(--teal), var(--mint))",
+                  background: "var(--color-primary)",
                   color: "#131515",
                   fontWeight: 800,
                   fontSize: 18,
@@ -285,9 +275,9 @@ export default function CandidateHistoryPage() {
                   {getInitials(selected)}
                 </div>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text)", fontFamily: "var(--font-serif)" }}>{selected}</div>
-                  {primaryCompany && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{primaryCompany}</div>}
-                  <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 2 }}>{candidateEntries.length} payment entries found in total</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: "var(--color-ink)", fontFamily: "var(--font-serif)" }}>{selected}</div>
+                  {uniqueCompanies[0] && <div style={{ fontSize: 12, color: "var(--color-ink-muted)", marginTop: 2 }}>{uniqueCompanies.join(", ")}</div>}
+                  <div style={{ fontSize: 11, color: "var(--color-ink-muted)", marginTop: 2 }}>{candidateEntries.length} payment entries found in total</div>
                 </div>
               </div>
 
@@ -297,26 +287,6 @@ export default function CandidateHistoryPage() {
                 {/* Company Dropdown & NOC Generator */}
                 {uniqueCompanies.length > 0 && pct < 100 && (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginRight: 8 }}>
-                    <select
-                      value={selectedCompany}
-                      onChange={e => setSelectedCompany(e.target.value)}
-                      style={{
-                        padding: "7px 12px",
-                        borderRadius: "var(--r-md)",
-                        border: "1px solid var(--border-md)",
-                        background: "var(--surface)",
-                        color: "var(--text)",
-                        fontSize: 13,
-                        fontWeight: 500,
-                        outline: "none",
-                        cursor: "pointer",
-                        fontFamily: "var(--font)"
-                      }}
-                    >
-                      {uniqueCompanies.map(c => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
                     <button 
                       className="noc-btn" 
                       onClick={() => {
@@ -342,8 +312,8 @@ export default function CandidateHistoryPage() {
                 )}
 
                 <div style={{ background: "rgba(156,163,175,0.12)", border: "1px solid rgba(156,163,175,0.2)", borderRadius: "var(--r-lg)", padding: "8px 14px", textAlign: "center" }}>
-                  <div style={{ fontSize: 9.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--text-muted)" }}>Total</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmtMoneyC(totalPaid + totalDue, primaryCurrency, 0)}</div>
+                  <div style={{ fontSize: 9.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--color-ink-muted)" }}>Total</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-ink)", fontVariantNumeric: "tabular-nums" }}>{fmtMoneyC(totalPaid + totalDue, primaryCurrency, 0)}</div>
                 </div>
                 <div style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)", borderRadius: "var(--r-lg)", padding: "8px 14px", textAlign: "center" }}>
                   <div style={{ fontSize: 9.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "#4ade80" }}>Paid</div>
@@ -365,7 +335,7 @@ export default function CandidateHistoryPage() {
             {/* Progress Bar Section */}
             <div style={{ marginTop: 22 }}>
               <div className="candidate-progress-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>Payment Completion</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-ink-muted)" }}>Payment Completion</span>
                 <div className="candidate-progress-actions" style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: progressColor(pct) }}>
                     {pct}% Complete
@@ -409,7 +379,7 @@ export default function CandidateHistoryPage() {
                 <span style={{ display: "flex", alignItems: "center", gap: 4, color: "#4ade80" }}>
                   🟢 Paid <strong>{fmtMoneyC(totalPaid, primaryCurrency, 0)}</strong>
                 </span>
-                <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--text-dim)" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--color-ink-muted)" }}>
                   ⬜ Remaining <strong>{fmtMoneyC(totalDue, primaryCurrency, 0)}</strong>
                 </span>
               </div>
@@ -439,7 +409,7 @@ export default function CandidateHistoryPage() {
               <tbody>
                 {candidateEntries.map((entry, idx) => (
                   <tr key={entry.id}>
-                    <td style={{ color: "var(--text-dim)", fontSize: 11 }}>{idx + 1}</td>
+                    <td style={{ color: "var(--color-ink-muted)", fontSize: 11 }}>{idx + 1}</td>
                     <td style={{ fontWeight: 500 }}>{entry.company || "—"}</td>
                     <td>
                       <DateInput
@@ -449,8 +419,8 @@ export default function CandidateHistoryPage() {
                         style={{ minWidth: 132 }}
                       />
                     </td>
-                    <td style={{ color: "var(--text-muted)" }}>{entry.month}</td>
-                    <td style={{ color: "var(--text-muted)" }}>{entry.year}</td>
+                    <td style={{ color: "var(--color-ink-muted)" }}>{entry.month}</td>
+                    <td style={{ color: "var(--color-ink-muted)" }}>{entry.year}</td>
                     <td>
                       <select
                         className="tbl-select"
@@ -469,18 +439,18 @@ export default function CandidateHistoryPage() {
                     <td style={{ color: "#fbbf24", fontVariantNumeric: "tabular-nums" }}>
                       {fmtMoneyC(entry.status === "Pending" ? entry.amount : 0, currencyOf(entry), 0)}
                     </td>
-                    <td style={{ color: "var(--text-muted)", fontSize: 12 }}>{entry.serviceType}</td>
+                    <td style={{ color: "var(--color-ink-muted)", fontSize: 12 }}>{entry.serviceType}</td>
                     <td>
                       <select
                         className="tbl-select"
-                        value={entry.status}
+                        value={entry.status} data-status={entry.status}
                         onChange={e => updateStatus(entry.id, e.target.value)}
                         style={{ fontSize: 11 }}
                       >
                         {PAYMENT_STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
                       </select>
                     </td>
-                    <td style={{ color: "var(--text-dim)", fontSize: 12 }}>{entry.type || "—"}</td>
+                    <td style={{ color: "var(--color-ink-muted)", fontSize: 12 }}>{entry.type || "—"}</td>
                     <td>
                       <input
                         className="tbl-input"
@@ -514,8 +484,7 @@ export default function CandidateHistoryPage() {
       {showNOC && (
         <NOCModal
           candidate={selected}
-          company={primaryCompany}
-          totalAmount={pct === 100 ? totalAmount : companyPaid}
+          candidateEntries={candidateEntries}
           onClose={() => setShowNOC(false)}
         />
       )}
