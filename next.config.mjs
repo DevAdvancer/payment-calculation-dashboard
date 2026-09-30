@@ -16,6 +16,7 @@ const nextConfig = {
   // Turbopack is the default builder in Next.js 16; mirror the same
   // path alias there.
   turbopack: {
+    root: projectRoot,
     resolveAlias: {
       "@": path.resolve(projectRoot),
     },

@@ -653,77 +653,119 @@ export default function PaymentCalcPage() {
   /* ── KPIs (always scoped to the selected month + year, independent of
      the other filters that drive the table) — split by currency for
      stacked display. */
-  // Outstanding only considers Pending, Received only considers Received.
-  const totalPaidByCur  = sumByCurrency(statsRows.filter(e => e.status === "Received"), "paid");
-  const totalDueByCur   = sumByCurrency(statsRows.filter(e => e.status === "Pending"), "due");
-  const totalActualByCur = sumByCurrency(
-    statsRows.map(e => ({
-        ...e,
-      actual: (e.actual || e.amount) ?? 0
-    })),
-    "actual"
-  );
-  const totalPaidUSD     = totalPaidByCur.USD  + totalPaidByCur.GBP * gbpToUsd;
-  const totalDueUSD      = totalDueByCur.USD   + totalDueByCur.GBP * gbpToUsd;
-  const totalValueUSD    = totalPaidUSD + totalDueUSD; // Total Value is the sum of Received and Outstanding
-  const totalActualUSD   = totalActualByCur.USD + totalActualByCur.GBP * gbpToUsd;
+  const {
+    totalPaidUSD,
+    totalDueUSD,
+    totalValueUSD,
+    totalActualUSD,
+    recurringPaymentUSD,
+    moveAmountUSD,
+    laidOffAmountUSD,
+    defaultAmountUSD,
+    placementReceivedUSD,
+    placementPendingUSD,
+    newPlacementReceivedUSD,
+    newPlacementPendingUSD,
+    totalRecurringPlacement,
+    totalNewPlacementUSD,
+    newPlacementReceivedPct,
+    newPlacementPendingPct,
+    reconciliationUSD,
+    recurringPlacementCount
+  } = useMemo(() => {
+    const totals = {
+      totalPaidByCur: { USD: 0, GBP: 0 },
+      totalDueByCur: { USD: 0, GBP: 0 },
+      totalActualByCur: { USD: 0, GBP: 0 },
+      recurringPaymentByCur: { USD: 0, GBP: 0 },
+      moveAmountByCur: { USD: 0, GBP: 0 },
+      laidOffAmountByCur: { USD: 0, GBP: 0 },
+      defaultAmountByCur: { USD: 0, GBP: 0 },
+      placementReceivedByCur: { USD: 0, GBP: 0 },
+      placementPendingByCur: { USD: 0, GBP: 0 },
+      newPlacementReceivedByCur: { USD: 0, GBP: 0 },
+      newPlacementPendingByCur: { USD: 0, GBP: 0 },
+      recurringPlacementCount: 0,
+    };
 
-  const recurringPlacementEntries = statsRows.filter(
-    e => normalizeServiceTypeValue(e.serviceType) === "Placement"
-  );
-  const recurringPaymentByCur = sumByCurrency(recurringPlacementEntries, "amount");
-  const recurringPaymentUSD = recurringPaymentByCur.USD + recurringPaymentByCur.GBP * gbpToUsd;
+    for (let i = 0; i < statsRows.length; i++) {
+      const e = statsRows[i];
+      const cur = currencyOf(e);
+      const amount = parseFloat(e.amount) || 0;
+      const paid = parseFloat(e.paid) || 0;
+      const due = parseFloat(e.due) || 0;
+      const actual = parseFloat(e.actual || e.amount) || 0;
+      const svcType = normalizeServiceTypeValue(e.serviceType);
 
-  /* ── Move / Laid Off / Default metrics calculated directly from the active payment page entries (statsRows) */
-  const moveEntries = statsRows.filter(e => e.status === "Move");
-  const moveAmountByCur = sumByCurrency(moveEntries, "amount");
+      totals.totalActualByCur[cur] += actual;
 
-  const laidOffEntries = statsRows.filter(e => LAIDOFF_STATUSES.includes(e.status));
-  const laidOffAmountByCur = sumByCurrency(laidOffEntries, "amount");
+      if (e.status === "Received") {
+        totals.totalPaidByCur[cur] += paid;
+        if (svcType === "Placement") totals.placementReceivedByCur[cur] += amount;
+        if (svcType === "New Placement") totals.newPlacementReceivedByCur[cur] += amount;
+      } else if (e.status === "Pending") {
+        totals.totalDueByCur[cur] += due;
+        if (svcType === "Placement") totals.placementPendingByCur[cur] += amount;
+        if (svcType === "New Placement") totals.newPlacementPendingByCur[cur] += amount;
+      } else if (e.status === "Move") {
+        totals.moveAmountByCur[cur] += amount;
+      } else if (LAIDOFF_STATUSES.includes(e.status)) {
+        totals.laidOffAmountByCur[cur] += amount;
+      } else if (e.status === "Default") {
+        totals.defaultAmountByCur[cur] += amount;
+      }
 
-  const defaultEntries = statsRows.filter(e => e.status === "Default");
-  const defaultAmountByCur = sumByCurrency(defaultEntries, "amount");
+      if (svcType === "Placement") {
+        totals.recurringPaymentByCur[cur] += amount;
+        totals.recurringPlacementCount += 1;
+      }
+    }
 
-  const reconciliationByCur = {
-    USD: totalPaidByCur.USD + totalDueByCur.USD + moveAmountByCur.USD + laidOffAmountByCur.USD + defaultAmountByCur.USD,
-    GBP: totalPaidByCur.GBP + totalDueByCur.GBP + moveAmountByCur.GBP + laidOffAmountByCur.GBP + defaultAmountByCur.GBP,
-  };
-  const moveAmountUSD = moveAmountByCur.USD + moveAmountByCur.GBP * gbpToUsd;
-  const laidOffAmountUSD = laidOffAmountByCur.USD + laidOffAmountByCur.GBP * gbpToUsd;
-  const defaultAmountUSD = defaultAmountByCur.USD + defaultAmountByCur.GBP * gbpToUsd;
-  const reconciliationUSD = reconciliationByCur.USD + reconciliationByCur.GBP * gbpToUsd;
+    const calcUsd = (curObj) => curObj.USD + curObj.GBP * gbpToUsd;
 
-  const placementReceivedByCur = sumByCurrency(
-    statsRows.filter(e => e.status === "Received" && normalizeServiceTypeValue(e.serviceType) === "Placement"),
-    "amount"
-  );
+    const totalPaidUSD = calcUsd(totals.totalPaidByCur);
+    const totalDueUSD = calcUsd(totals.totalDueByCur);
+    const totalValueUSD = totalPaidUSD + totalDueUSD;
+    const totalActualUSD = calcUsd(totals.totalActualByCur);
+    const recurringPaymentUSD = calcUsd(totals.recurringPaymentByCur);
+    const moveAmountUSD = calcUsd(totals.moveAmountByCur);
+    const laidOffAmountUSD = calcUsd(totals.laidOffAmountByCur);
+    const defaultAmountUSD = calcUsd(totals.defaultAmountByCur);
+    
+    const reconciliationUSD = totalPaidUSD + totalDueUSD + moveAmountUSD + laidOffAmountUSD + defaultAmountUSD;
 
-  const placementPendingByCur = sumByCurrency(
-    statsRows.filter(e => e.status === "Pending" && normalizeServiceTypeValue(e.serviceType) === "Placement"),
-    "amount"
-  );
+    const placementReceivedUSD = calcUsd(totals.placementReceivedByCur);
+    const placementPendingUSD = calcUsd(totals.placementPendingByCur);
+    const newPlacementReceivedUSD = calcUsd(totals.newPlacementReceivedByCur);
+    const newPlacementPendingUSD = calcUsd(totals.newPlacementPendingByCur);
 
-  const newPlacementReceivedByCur = sumByCurrency(
-    statsRows.filter(e => e.status === "Received" && normalizeServiceTypeValue(e.serviceType) === "New Placement"),
-    "amount"
-  );
+    const totalRecurringPlacement = placementReceivedUSD + placementPendingUSD;
+    const totalNewPlacementUSD = newPlacementReceivedUSD + newPlacementPendingUSD;
+    
+    const newPlacementReceivedPct = totalNewPlacementUSD > 0 ? Math.round((newPlacementReceivedUSD / totalNewPlacementUSD) * 100) : 0;
+    const newPlacementPendingPct = totalNewPlacementUSD > 0 ? Math.round((newPlacementPendingUSD / totalNewPlacementUSD) * 100) : 0;
 
-  const newPlacementPendingByCur = sumByCurrency(
-    statsRows.filter(e => e.status === "Pending" && normalizeServiceTypeValue(e.serviceType) === "New Placement"),
-    "amount"
-  );
-
-  const placementReceivedUSD = placementReceivedByCur.USD + placementReceivedByCur.GBP * gbpToUsd;
-  const newPlacementReceivedUSD = newPlacementReceivedByCur.USD + newPlacementReceivedByCur.GBP * gbpToUsd;
-
-  const placementPendingUSD = placementPendingByCur.USD + placementPendingByCur.GBP * gbpToUsd;
-  const newPlacementPendingUSD = newPlacementPendingByCur.USD + newPlacementPendingByCur.GBP * gbpToUsd;
-
-  const totalRecurringPlacement = placementReceivedUSD + placementPendingUSD;
-
-  const totalNewPlacementUSD = newPlacementReceivedUSD + newPlacementPendingUSD;
-  const newPlacementReceivedPct = totalNewPlacementUSD > 0 ? Math.round((newPlacementReceivedUSD / totalNewPlacementUSD) * 100) : 0;
-  const newPlacementPendingPct = totalNewPlacementUSD > 0 ? Math.round((newPlacementPendingUSD / totalNewPlacementUSD) * 100) : 0;
+    return {
+      totalPaidUSD,
+      totalDueUSD,
+      totalValueUSD,
+      totalActualUSD,
+      recurringPaymentUSD,
+      moveAmountUSD,
+      laidOffAmountUSD,
+      defaultAmountUSD,
+      placementReceivedUSD,
+      placementPendingUSD,
+      newPlacementReceivedUSD,
+      newPlacementPendingUSD,
+      totalRecurringPlacement,
+      totalNewPlacementUSD,
+      newPlacementReceivedPct,
+      newPlacementPendingPct,
+      reconciliationUSD,
+      recurringPlacementCount: totals.recurringPlacementCount
+    };
+  }, [statsRows, gbpToUsd]);
 
   /* ── Delete with fade ── */
   const handleDelete = (id, candidateName) => {
@@ -1031,7 +1073,7 @@ export default function PaymentCalcPage() {
             {fmtMoneyC(totalRecurringPlacement, "USD", 2)}
           </div>
           <div className="kpi-sub" style={{ fontSize: 10, marginBottom: 6, color: "var(--color-ink-muted)", fontWeight: "bold" }}>
-            across {recurringPlacementEntries.length} {recurringPlacementEntries.length === 1 ? "entry" : "entries"}
+            across {recurringPlacementCount} {recurringPlacementCount === 1 ? "entry" : "entries"}
           </div>
            <hr style={{ border: "none", borderTop: "1px solid var(--color-border)", margin: "8px 0" }} />
           <div className="kpi-label" style={{ fontSize: 9, color: "var(--color-ink-subtle)", marginTop: 6, color: "var(--color-ink-muted)", fontWeight: "bold" }}>Placement</div>
