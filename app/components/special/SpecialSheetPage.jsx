@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { CircleAlert, AlertTriangle, Info } from "lucide-react";
 import SkeletonTable from "@/app/components/SkeletonTable";
 import { useLockedEntries } from "@/app/components/PermissionsContext";
@@ -20,6 +21,7 @@ import { normalizeCompanyName } from "@/lib/company-utils";
 import { normalizeSpecialSheetStatus } from "@/lib/status-utils";
 import { entryMatchesPeriod, periodOf } from "@/lib/period-utils";
 import MultiSelectDropdown from "@/app/components/MultiSelectDropdown";
+import DefaulterModal from "@/app/components/DefaulterModal";
 
 function statusBadgeClass(status) {
   if (status === "Received") return "badge-paid";
@@ -175,6 +177,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
     loading: false,
     loadingText: "",
   });
+  const [pendingDefaulter, setPendingDefaulter] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
 
@@ -452,7 +455,9 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
           </div>
         ))}
 
-        <button style={{border: "2px solid var(--border)", padding: "16px", borderRadius: "var(--r-lg)", backgroundColor: "red", color: "white", fontFamily: "15px" }}>Defaulter's Entry</button>
+        <Link href="/defaulter-entry">
+          <button style={{border: "2px solid var(--border)", padding: "16px", borderRadius: "var(--r-lg)", backgroundColor: "red", color: "white", fontFamily: "15px", cursor: "pointer" }}>Defaulter's Entry</button>
+        </Link>
       </div>
 
       {/* Filters + Export */}
@@ -672,7 +677,13 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
                     <select
                       className="tbl-select"
                       value={entry.status} data-status={entry.status}
-                      onChange={e => updateStatus(entry.id, e.target.value)}
+                      onChange={e => {
+                        if (e.target.value === "Default") {
+                          setPendingDefaulter(entry);
+                        } else {
+                          updateStatus(entry.id, e.target.value);
+                        }
+                      }}
                       style={{ fontSize: 11 }}
                     >
                       {statusOptions.map(s => <option key={s}>{s}</option>)}
@@ -733,6 +744,27 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
         onCancel={() => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))}
         loading={deleteConfirm.loading}
         loadingText={deleteConfirm.loadingText || "Deleting..."}
+      />
+
+      <DefaulterModal
+        isOpen={!!pendingDefaulter}
+        entry={pendingDefaulter}
+        onClose={() => setPendingDefaulter(null)}
+        onSubmit={async (data) => {
+          updateStatus(pendingDefaulter.id, "Default");
+          await useDashboardStore.getState().createEntry({
+            ...data,
+            id: "de-" + Date.now().toString(),
+            sheetScope: "defaulter-entry",
+            status: "Default",
+            amount: data.totalAmount,
+            paid: data.amountPaid,
+            due: data.outstandingAmount,
+            candidate: `${data.firstName || ''} ${data.lastName || ''}`.trim() || "Unknown",
+            metadata: data,
+          });
+          setPendingDefaulter(null);
+        }}
       />
     </div>
   );
