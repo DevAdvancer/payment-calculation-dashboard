@@ -22,6 +22,7 @@ import { normalizeSpecialSheetStatus } from "@/lib/status-utils";
 import { entryMatchesPeriod, periodOf } from "@/lib/period-utils";
 import MultiSelectDropdown from "@/app/components/MultiSelectDropdown";
 import DefaulterModal from "@/app/components/DefaulterModal";
+import DefaulterPreviewModal from "@/app/components/DefaulterPreviewModal";
 
 function statusBadgeClass(status) {
   if (status === "Received") return "badge-paid";
@@ -178,6 +179,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
     loadingText: "",
   });
   const [pendingDefaulter, setPendingDefaulter] = useState(null);
+  const [previewDefaulterData, setPreviewDefaulterData] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
 
@@ -764,7 +766,14 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
             metadata: data,
           });
           setPendingDefaulter(null);
+          setPreviewDefaulterData(data);
         }}
+      />
+      
+      <DefaulterPreviewModal
+        isOpen={!!previewDefaulterData}
+        data={previewDefaulterData}
+        onClose={() => setPreviewDefaulterData(null)}
       />
     </div>
   );

@@ -21,6 +21,7 @@ import MoneyStack from "@/app/components/MoneyStack";
 import QuickEntryModal from "./QuickEntryModal";
 import PaginationControls from "@/app/components/PaginationControls";
 import DefaulterModal from "@/app/components/DefaulterModal";
+import DefaulterPreviewModal from "@/app/components/DefaulterPreviewModal";
 import DeleteConfirmModal from "@/app/components/DeleteConfirmModal";
 import { normalizeCompanyName } from "@/lib/company-utils";
 import { normalizePaymentImportAmounts } from "@/lib/payment-import-utils";
@@ -282,6 +283,7 @@ export default function PaymentCalcPage() {
   const [page, setPage]                 = useState(1);
   const [pageSize, setPageSize]         = useState(100);
   const [pendingDefaulter, setPendingDefaulter] = useState(null);
+  const [previewDefaulterData, setPreviewDefaulterData] = useState(null);
   const [pendingMove, setPendingMove]   = useState(null);
   const [moveDateIso, setMoveDateIso]   = useState("");
   const [moveError, setMoveError]       = useState("");
@@ -1918,7 +1920,14 @@ export default function PaymentCalcPage() {
             metadata: data,
           });
           setPendingDefaulter(null);
+          setPreviewDefaulterData(data);
         }}
+      />
+      
+      <DefaulterPreviewModal
+        isOpen={!!previewDefaulterData}
+        data={previewDefaulterData}
+        onClose={() => setPreviewDefaulterData(null)}
       />
     </div>
   );
