@@ -24,14 +24,7 @@ export default function Sidebar({ userRole, userPermissions }) {
   const sidebarOpen    = useDashboardStore((s) => s.sidebarOpen);
   const setSidebarOpen = useDashboardStore((s) => s.setSidebarOpen);
 
-  const paymentGroupActive = pathname === `${PREFIX}/payment` || pathname === `${PREFIX}/laidoff` || pathname === `${PREFIX}/defaulter`;
-  const [paymentOpen, setPaymentOpen] = useState(paymentGroupActive);
-  
-  useEffect(() => {
-    if (paymentGroupActive) {
-      setPaymentOpen(true);
-    }
-  }, [paymentGroupActive]);
+
 
   const laidOffCount   = getLaidOff().length;
   const defaulterCount = getDefaulters().length;
@@ -178,21 +171,18 @@ export default function Sidebar({ userRole, userPermissions }) {
           <NavBtn
             href={`${PREFIX}/payment`}
             active={isActive(`${PREFIX}/payment`)}
-            onClick={() => { setPaymentOpen(v => !v); onNavClick(); }}
+            onClick={onNavClick}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="1" x2="12" y2="23"/>
               <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
             </svg>
             Payment Calculation
-            <span style={{ marginLeft:"auto", fontSize:10, transition:"transform 0.2s", transform: (paymentOpen || paymentGroupActive) ? "rotate(90deg)" : "none", color:"rgba(255,255,255,0.5)" }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-            </span>
           </NavBtn>
         )}
 
         {/* Sub: Laid Off */}
-        <div style={{ overflow:"hidden", maxHeight:(paymentOpen || paymentGroupActive) ? 120 : 0, transition:"max-height 0.25s ease", opacity:(paymentOpen || paymentGroupActive) ? 1 : 0 }}>
+        <div>
           {hasAccess('laidoff') && (
             <NavSubBtn href={`${PREFIX}/laidoff`} active={isActive(`${PREFIX}/laidoff`)} onClick={onNavClick}>
               <span style={{ width:6, height:6, borderRadius:"50%", background:"#f87171", flexShrink:0 }} />

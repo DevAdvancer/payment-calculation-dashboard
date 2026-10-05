@@ -20,6 +20,8 @@ import DateInput from "@/app/components/DateInput";
 import MoneyStack from "@/app/components/MoneyStack";
 import QuickEntryModal from "./QuickEntryModal";
 import PaginationControls from "@/app/components/PaginationControls";
+import DefaulterModal from "@/app/components/DefaulterModal";
+import DefaulterPreviewModal from "@/app/components/DefaulterPreviewModal";
 import DeleteConfirmModal from "@/app/components/DeleteConfirmModal";
 import { normalizeCompanyName } from "@/lib/company-utils";
 import { normalizePaymentImportAmounts } from "@/lib/payment-import-utils";
@@ -280,6 +282,8 @@ export default function PaymentCalcPage() {
   });
   const [page, setPage]                 = useState(1);
   const [pageSize, setPageSize]         = useState(100);
+  const [pendingDefaulter, setPendingDefaulter] = useState(null);
+  const [previewDefaulterData, setPreviewDefaulterData] = useState(null);
   const [pendingMove, setPendingMove]   = useState(null);
   const [moveDateIso, setMoveDateIso]   = useState("");
   const [moveError, setMoveError]       = useState("");
@@ -472,6 +476,10 @@ export default function PaymentCalcPage() {
 // };
 
   const handleStatusChange = (entry, nextStatus) => {
+    if (nextStatus === "Default") {
+      setPendingDefaulter(entry);
+      return;
+    }
     if (nextStatus === "Move" && entry.status !== "Move") {
       const currentMonthName = MONTH_NAMES[new Date().getMonth()];
       const isMonthMatch = (entry.month || "").trim().toLowerCase() === currentMonthName.toLowerCase();
@@ -1892,6 +1900,34 @@ export default function PaymentCalcPage() {
         onCancel={() => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))}
         loading={deleteConfirm.loading}
         loadingText={deleteConfirm.loadingText || "Deleting..."}
+      />
+      
+      <DefaulterModal
+        isOpen={!!pendingDefaulter}
+        entry={pendingDefaulter}
+        onClose={() => setPendingDefaulter(null)}
+        onSubmit={async (data) => {
+          updateStatus(pendingDefaulter.id, "Default");
+          await createEntry({
+            ...data,
+            id: "de-" + Date.now().toString(),
+            sheetScope: "defaulter-entry",
+            status: "Default",
+            amount: data.totalAmount,
+            paid: data.amountPaid,
+            due: data.outstandingAmount,
+            candidate: `${data.firstName || ''} ${data.lastName || ''}`.trim() || "Unknown",
+            metadata: data,
+          });
+          setPendingDefaulter(null);
+          setPreviewDefaulterData(data);
+        }}
+      />
+      
+      <DefaulterPreviewModal
+        isOpen={!!previewDefaulterData}
+        data={previewDefaulterData}
+        onClose={() => setPreviewDefaulterData(null)}
       />
     </div>
   );
