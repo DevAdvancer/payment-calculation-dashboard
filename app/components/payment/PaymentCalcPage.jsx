@@ -1,5 +1,5 @@
 "use client";
-import { Check, ClipboardList, Trash2 } from "lucide-react";
+import { Check, ClipboardList, Loader2, Redo2, Trash2, Undo2 } from "lucide-react";
 import SkeletonTable from "@/app/components/SkeletonTable";
 import { useLockedEntries, usePageMode } from "@/app/components/PermissionsContext";
 import { useState, useRef, useMemo, useEffect } from "react";
@@ -244,7 +244,7 @@ function clipboardRowsToObjects(text) {
 
 export default function PaymentCalcPage() {
   const pageMode = usePageMode("payment");
-  const { getActive, getLaidOff, getDefaulters, getCandidateNames, updateEntry, updateStatus, createEntry, deleteEntry, bulkDelete, importEntries, showToast, loading } =
+  const { entries: allStoreEntries, getActive, getLaidOff, getDefaulters, getCandidateNames, updateEntry, updateStatus, createEntry, deleteEntry, bulkDelete, importEntries, showToast, loading, entryHistory, undoEntryChange, redoEntryChange } =
     useDashboardStore();
 
   const _entries = getActive(); const entries = useLockedEntries(_entries, 'payment');
@@ -1281,6 +1281,26 @@ export default function PaymentCalcPage() {
           </div>
         </div>
         <div className="toolbar-right">
+          <button
+            className="btn-icon"
+            onClick={undoEntryChange}
+            disabled={pageMode !== "write" || entryHistory.busy || !entryHistory.past.length}
+            title="Undo last change"
+            aria-label="Undo last change"
+            style={{ opacity: pageMode !== "write" || entryHistory.busy || !entryHistory.past.length ? 0.5 : 1, cursor: pageMode !== "write" || entryHistory.busy || !entryHistory.past.length ? "not-allowed" : "pointer" }}
+          >
+            {entryHistory.busy === "undo" ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Undo2 size={14} />} Undo
+          </button>
+          <button
+            className="btn-icon"
+            onClick={redoEntryChange}
+            disabled={pageMode !== "write" || entryHistory.busy || !entryHistory.future.length}
+            title="Redo last undone change"
+            aria-label="Redo last undone change"
+            style={{ opacity: pageMode !== "write" || entryHistory.busy || !entryHistory.future.length ? 0.5 : 1, cursor: pageMode !== "write" || entryHistory.busy || !entryHistory.future.length ? "not-allowed" : "pointer" }}
+          >
+            {entryHistory.busy === "redo" ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Redo2 size={14} />} Redo
+          </button>
           {selected.size > 0 && (
             <button className="btn-del" onClick={handleDeleteSelected} style={{ marginRight: 8 }}>
               <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ marginRight: 6 }}>
@@ -1905,6 +1925,7 @@ export default function PaymentCalcPage() {
       <DefaulterModal
         isOpen={!!pendingDefaulter}
         entry={pendingDefaulter}
+        allEntries={allStoreEntries}
         onClose={() => setPendingDefaulter(null)}
         onSubmit={async (data) => {
           updateStatus(pendingDefaulter.id, "Default");

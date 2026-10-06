@@ -1,8 +1,8 @@
 "use client";
 import Link from "next/link";
-import { CircleAlert, AlertTriangle, Info } from "lucide-react";
+import { CircleAlert, AlertTriangle, Info, Loader2, Redo2, Undo2 } from "lucide-react";
 import SkeletonTable from "@/app/components/SkeletonTable";
-import { useLockedEntries } from "@/app/components/PermissionsContext";
+import { useLockedEntries, usePageMode } from "@/app/components/PermissionsContext";
 import { useState, useMemo, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import useDashboardStore, {
@@ -160,9 +160,10 @@ function clipboardRowsToObjects(text, isLaidOff) {
 }
 
 export default function SpecialSheetPage({ type = "laidoff" }) {
-  const { getLaidOff, getDefaulters, updateEntry, updateStatus, deleteEntry, bulkDelete, importEntries, showToast, loading } = useDashboardStore();
+  const { entries: allStoreEntries, getLaidOff, getDefaulters, updateEntry, updateStatus, deleteEntry, bulkDelete, importEntries, showToast, loading, entryHistory, undoEntryChange, redoEntryChange } = useDashboardStore();
 
   const isLaidOff = type === "laidoff";
+  const pageMode = usePageMode(isLaidOff ? "laidoff" : "defaulter");
   const rawEntries = isLaidOff ? getLaidOff() : getDefaulters();
   const fileRef = useRef();
   const pasteTargetRef = useRef();
@@ -516,6 +517,26 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
             Delete ({selected.size})
           </button>
         )}
+        <button
+          className="btn-icon"
+          onClick={undoEntryChange}
+          disabled={pageMode !== "write" || entryHistory.busy || !entryHistory.past.length}
+          title="Undo last change"
+          aria-label="Undo last change"
+          style={{ opacity: pageMode !== "write" || entryHistory.busy || !entryHistory.past.length ? 0.5 : 1, cursor: pageMode !== "write" || entryHistory.busy || !entryHistory.past.length ? "not-allowed" : "pointer" }}
+        >
+          {entryHistory.busy === "undo" ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Undo2 size={14} />} Undo
+        </button>
+        <button
+          className="btn-icon"
+          onClick={redoEntryChange}
+          disabled={pageMode !== "write" || entryHistory.busy || !entryHistory.future.length}
+          title="Redo last undone change"
+          aria-label="Redo last undone change"
+          style={{ opacity: pageMode !== "write" || entryHistory.busy || !entryHistory.future.length ? 0.5 : 1, cursor: pageMode !== "write" || entryHistory.busy || !entryHistory.future.length ? "not-allowed" : "pointer" }}
+        >
+          {entryHistory.busy === "redo" ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Redo2 size={14} />} Redo
+        </button>
         <label className="btn-icon" style={{ cursor: "pointer" }}>
           <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
@@ -751,6 +772,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
       <DefaulterModal
         isOpen={!!pendingDefaulter}
         entry={pendingDefaulter}
+        allEntries={allStoreEntries}
         onClose={() => setPendingDefaulter(null)}
         onSubmit={async (data) => {
           updateStatus(pendingDefaulter.id, "Default");

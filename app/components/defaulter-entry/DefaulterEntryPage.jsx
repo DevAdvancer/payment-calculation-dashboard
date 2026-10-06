@@ -109,6 +109,7 @@ export default function DefaulterEntryPage() {
         ssn: editForm.ssn,
         dob: editForm.dob,
         notes: editForm.notes,
+        updates: editForm.updates,
       };
 
       const patch = {
@@ -201,6 +202,7 @@ export default function DefaulterEntryPage() {
                   <th style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>SSN</th>
                   <th style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>DOB</th>
                   <th style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>Notes</th>
+                  <th style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>Updates</th>
                   <th style={{ padding: "12px 16px", textAlign: "center", width: "80px", position: "sticky", right: 0, background: "var(--surface-2, #1e2433)", zIndex: 10 }}>Actions</th>
                 </tr>
               </thead>
@@ -235,6 +237,7 @@ export default function DefaulterEntryPage() {
                         <td style={{ padding: "6px" }}><input style={inputStyle} name="ssn" value={editForm.ssn || ""} onChange={handleEditChange} /></td>
                         <td style={{ padding: "6px" }}><input type="date" style={inputStyle} name="dob" value={editForm.dob || ""} onChange={handleEditChange} /></td>
                         <td style={{ padding: "6px" }}><input style={inputStyle} name="notes" value={editForm.notes || ""} onChange={handleEditChange} /></td>
+                        <td style={{ padding: "6px" }}><input style={inputStyle} name="updates" value={editForm.updates || ""} onChange={handleEditChange} /></td>
                       </>
                     ) : (
                       <>
@@ -256,6 +259,7 @@ export default function DefaulterEntryPage() {
                         <td style={{ padding: "12px 16px", color: "var(--text-dim, #9ca3af)", fontSize: "13px", whiteSpace: "nowrap" }}>{entry.ssn || "—"}</td>
                         <td style={{ padding: "12px 16px", color: "var(--text-dim, #9ca3af)", fontSize: "13px", whiteSpace: "nowrap" }}>{entry.dob || "—"}</td>
                         <td style={{ padding: "12px 16px", color: "var(--text-dim, #9ca3af)", fontSize: "13px", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={entry.notes}>{entry.notes || "—"}</td>
+                        <td style={{ padding: "12px 16px", color: "var(--text-dim, #9ca3af)", fontSize: "13px", whiteSpace: "nowrap" }}>{entry.updates || "—"}</td>
                       </>
                     )}
                     <td style={{ padding: "12px 16px", textAlign: "center", position: "sticky", right: 0, background: "var(--surface, #111827)", borderLeft: "1px solid var(--border, #2d3748)", zIndex: 5 }}>

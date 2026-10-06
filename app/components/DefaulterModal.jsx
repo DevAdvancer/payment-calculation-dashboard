@@ -1,6 +1,6 @@
   import { useState, useEffect } from "react";
 
-export default function DefaulterModal({ isOpen, onClose, onSubmit, entry }) {
+export default function DefaulterModal({ isOpen, onClose, onSubmit, entry, allEntries = [] }) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     company: "",
@@ -21,6 +21,7 @@ export default function DefaulterModal({ isOpen, onClose, onSubmit, entry }) {
     ssn: "",
     dob: "",
     notes: "",
+    updates: "",
   });
 
   useEffect(() => {
@@ -33,9 +34,14 @@ export default function DefaulterModal({ isOpen, onClose, onSubmit, entry }) {
       // Safely parse local date to ISO for the <input type="date">
       const toISODate = (dateStr) => {
         if (!dateStr) return "";
-        const m = String(dateStr).match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+        const s = String(dateStr).trim();
+        // If it's already YYYY-MM-DD, return it directly to avoid timezone shift
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+        // Handle MM-DD-YYYY, M-D-YYYY, MM/DD/YYYY, or M/D/YYYY
+        const m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
         if (m) return `${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`;
-        const d = new Date(dateStr);
+        // Fallback for other formats
+        const d = new Date(s);
         if (!isNaN(d.getTime())) return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
         return "";
       };
@@ -44,6 +50,29 @@ export default function DefaulterModal({ isOpen, onClose, onSubmit, entry }) {
       const paid = parseFloat(entry?.paid) || 0;
       // Recalculate outstanding amount in case of stale data
       const outstanding = Math.max(0, total - paid);
+
+      /* ── Date Last Paid ──
+       * Find the most recent "Received" entry among ALL entries for
+       * this candidate and use its poDate.  Falls back to "" if none. */
+      const candidateName = (entry?.candidate || "").trim().toLowerCase();
+      let dateLastPaid = "";
+      if (candidateName && allEntries.length) {
+        const receivedEntries = allEntries
+          .filter(e =>
+            (e.candidate || "").trim().toLowerCase() === candidateName &&
+            e.status === "Received" &&
+            e.poDate
+          )
+          .map(e => {
+            const iso = toISODate(e.poDate);
+            return { iso, entry: e };
+          })
+          .filter(e => e.iso)      // discard unparseable dates
+          .sort((a, b) => b.iso.localeCompare(a.iso)); // newest first
+        if (receivedEntries.length) {
+          dateLastPaid = receivedEntries[0].iso;
+        }
+      }
 
       setFormData({
         company: entry?.company || "",
@@ -60,13 +89,15 @@ export default function DefaulterModal({ isOpen, onClose, onSubmit, entry }) {
         totalAmount: total,
         amountPaid: paid,
         outstandingAmount: outstanding,
-        dateLastPaid: "",
+        dateLastPaid,
         ssn: "",
         dob: "",
         notes: entry?.notes || "",
+        updates: "",
       });
     }
-  }, [isOpen, entry]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, entry?.id]);
 
   if (!isOpen) return null;
 
@@ -227,6 +258,10 @@ export default function DefaulterModal({ isOpen, onClose, onSubmit, entry }) {
               <div style={formGroupStyle}>
                 <label style={labelStyle}>Notes</label>
                 <textarea style={{ ...inputStyle, minHeight: "38px" }} name="notes" value={formData.notes} onChange={handleChange} />
+              </div>
+              <div style={formGroupStyle}>
+                <label style={labelStyle}>Updates</label>
+                <input style={inputStyle} name="updates" value={formData.updates} onChange={handleChange} />
               </div>
             </>
           )}
