@@ -33,6 +33,9 @@ Payment Details:
 Notes:
 ${data.notes || '—'}
 
+Updates:
+- Updates: ${data.updates || '—'}
+
 We sincerely appreciate your prompt attention to this matter.`;
 
     navigator.clipboard.writeText(copyText);
@@ -59,6 +62,7 @@ We sincerely appreciate your prompt attention to this matter.`;
     { label: "SSN", value: data.ssn },
     { label: "DOB", value: data.dob },
     { label: "Notes", value: data.notes },
+    { label: "Updates", value: data.updates },
   ];
 
   return (

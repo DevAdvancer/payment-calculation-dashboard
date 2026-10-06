@@ -21,6 +21,7 @@ export default function DefaulterModal({ isOpen, onClose, onSubmit, entry }) {
     ssn: "",
     dob: "",
     notes: "",
+    updates: "",
   });
 
   useEffect(() => {
@@ -64,6 +65,7 @@ export default function DefaulterModal({ isOpen, onClose, onSubmit, entry }) {
         ssn: "",
         dob: "",
         notes: entry?.notes || "",
+        updates: "",
       });
     }
   }, [isOpen, entry]);
@@ -227,6 +229,10 @@ export default function DefaulterModal({ isOpen, onClose, onSubmit, entry }) {
               <div style={formGroupStyle}>
                 <label style={labelStyle}>Notes</label>
                 <textarea style={{ ...inputStyle, minHeight: "38px" }} name="notes" value={formData.notes} onChange={handleChange} />
+              </div>
+              <div style={formGroupStyle}>
+                <label style={labelStyle}>Updates</label>
+                <input style={inputStyle} name="updates" value={formData.updates} onChange={handleChange} />
               </div>
             </>
           )}
