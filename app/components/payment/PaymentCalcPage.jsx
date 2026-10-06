@@ -244,7 +244,7 @@ function clipboardRowsToObjects(text) {
 
 export default function PaymentCalcPage() {
   const pageMode = usePageMode("payment");
-  const { getActive, getLaidOff, getDefaulters, getCandidateNames, updateEntry, updateStatus, createEntry, deleteEntry, bulkDelete, importEntries, showToast, loading, entryHistory, undoEntryChange, redoEntryChange } =
+  const { entries: allStoreEntries, getActive, getLaidOff, getDefaulters, getCandidateNames, updateEntry, updateStatus, createEntry, deleteEntry, bulkDelete, importEntries, showToast, loading, entryHistory, undoEntryChange, redoEntryChange } =
     useDashboardStore();
 
   const _entries = getActive(); const entries = useLockedEntries(_entries, 'payment');
@@ -1925,6 +1925,7 @@ export default function PaymentCalcPage() {
       <DefaulterModal
         isOpen={!!pendingDefaulter}
         entry={pendingDefaulter}
+        allEntries={allStoreEntries}
         onClose={() => setPendingDefaulter(null)}
         onSubmit={async (data) => {
           updateStatus(pendingDefaulter.id, "Default");

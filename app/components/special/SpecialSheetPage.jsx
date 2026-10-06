@@ -160,7 +160,7 @@ function clipboardRowsToObjects(text, isLaidOff) {
 }
 
 export default function SpecialSheetPage({ type = "laidoff" }) {
-  const { getLaidOff, getDefaulters, updateEntry, updateStatus, deleteEntry, bulkDelete, importEntries, showToast, loading, entryHistory, undoEntryChange, redoEntryChange } = useDashboardStore();
+  const { entries: allStoreEntries, getLaidOff, getDefaulters, updateEntry, updateStatus, deleteEntry, bulkDelete, importEntries, showToast, loading, entryHistory, undoEntryChange, redoEntryChange } = useDashboardStore();
 
   const isLaidOff = type === "laidoff";
   const pageMode = usePageMode(isLaidOff ? "laidoff" : "defaulter");
@@ -772,6 +772,7 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
       <DefaulterModal
         isOpen={!!pendingDefaulter}
         entry={pendingDefaulter}
+        allEntries={allStoreEntries}
         onClose={() => setPendingDefaulter(null)}
         onSubmit={async (data) => {
           updateStatus(pendingDefaulter.id, "Default");
