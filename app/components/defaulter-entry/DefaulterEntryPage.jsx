@@ -5,6 +5,25 @@ import useDashboardStore, { fmtMoneyC, currencyOf } from "@/lib/use-store";
 import PaginationControls from "@/app/components/PaginationControls";
 import DeleteConfirmModal from "@/app/components/DeleteConfirmModal";
 
+function formatDefaulterDate(value) {
+  if (value == null || String(value).trim() === "") return "—";
+
+  const raw = String(value).trim();
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const mdy = raw.match(/^(\d{1,2})([-/])(\d{1,2})\2(\d{4})$/);
+  const year = iso ? Number(iso[1]) : mdy ? Number(mdy[4]) : NaN;
+  const month = iso ? Number(iso[2]) : mdy ? Number(mdy[1]) : NaN;
+  const day = iso ? Number(iso[3]) : mdy ? Number(mdy[3]) : NaN;
+
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return raw;
+
+  const isLeapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [31, isLeapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (year < 1 || month < 1 || month > 12 || day < 1 || day > daysInMonth[month - 1]) return raw;
+
+  return `${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}-${String(year).padStart(4, "0")}`;
+}
+
 export default function DefaulterEntryPage() {
   const { getDefaulterEntries, updateEntry, deleteEntry, bulkDelete, loading, showToast } = useDashboardStore();
   const rawEntries = getDefaulterEntries ? getDefaulterEntries() : [];
@@ -251,13 +270,13 @@ export default function DefaulterEntryPage() {
                         <td style={{ padding: "12px 16px", color: "var(--text-dim, #9ca3af)", fontSize: "13px", whiteSpace: "nowrap" }}>{entry.homePhone || "—"}</td>
                         <td style={{ padding: "12px 16px", color: "var(--text-dim, #9ca3af)", fontSize: "13px", whiteSpace: "nowrap" }}>{entry.email || "—"}</td>
                         <td style={{ padding: "12px 16px", color: "var(--text-dim, #9ca3af)", fontSize: "13px", whiteSpace: "nowrap" }}>{entry.driversLicense || "—"}</td>
-                        <td style={{ padding: "12px 16px", color: "white", fontSize: "13px", whiteSpace: "nowrap" }}>{entry.lastChargeDate || "—"}</td>
+                        <td style={{ padding: "12px 16px", color: "white", fontSize: "13px", whiteSpace: "nowrap" }}>{formatDefaulterDate(entry.lastChargeDate)}</td>
                         <td style={{ padding: "12px 16px", color: "white", fontWeight: "600", fontSize: "13px", whiteSpace: "nowrap" }}>{fmtMoneyC(entry.totalAmount, "USD", 2)}</td>
                         <td style={{ padding: "12px 16px", color: "white", fontWeight: "600", fontSize: "13px", whiteSpace: "nowrap" }}>{fmtMoneyC(entry.amountPaid, "USD", 2)}</td>
                         <td style={{ padding: "12px 16px", color: "#fb7185", fontWeight: "600", fontSize: "13px", whiteSpace: "nowrap" }}>{fmtMoneyC(entry.outstandingAmount, "USD", 2)}</td>
-                        <td style={{ padding: "12px 16px", color: "white", fontSize: "13px", whiteSpace: "nowrap" }}>{entry.dateLastPaid || "—"}</td>
+                        <td style={{ padding: "12px 16px", color: "white", fontSize: "13px", whiteSpace: "nowrap" }}>{formatDefaulterDate(entry.dateLastPaid)}</td>
                         <td style={{ padding: "12px 16px", color: "var(--text-dim, #9ca3af)", fontSize: "13px", whiteSpace: "nowrap" }}>{entry.ssn || "—"}</td>
-                        <td style={{ padding: "12px 16px", color: "var(--text-dim, #9ca3af)", fontSize: "13px", whiteSpace: "nowrap" }}>{entry.dob || "—"}</td>
+                        <td style={{ padding: "12px 16px", color: "var(--text-dim, #9ca3af)", fontSize: "13px", whiteSpace: "nowrap" }}>{formatDefaulterDate(entry.dob)}</td>
                         <td style={{ padding: "12px 16px", color: "var(--text-dim, #9ca3af)", fontSize: "13px", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={entry.notes}>{entry.notes || "—"}</td>
                         <td style={{ padding: "12px 16px", color: "var(--text-dim, #9ca3af)", fontSize: "13px", whiteSpace: "nowrap" }}>{entry.updates || "—"}</td>
                       </>
