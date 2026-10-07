@@ -6,64 +6,49 @@ export default function DefaulterPreviewModal({ isOpen, onClose, data }) {
 
   if (!isOpen || !data) return null;
 
-  const handleCopy = () => {
-    const copyText = `Subject: Defaulter Notification - ${data.company || 'N/A'}
-
-Dear ${data.firstName || ''} ${data.lastName || ''},
-
-This is a formal notification regarding your outstanding balance with ${data.company || 'us'}. Please find the details of your account shared below.
-
-Account Details:
-- Company: ${data.company || '—'}
-- Name: ${data.firstName || ''} ${data.lastName || ''}
-- Address: ${data.street2 || ''}, ${data.city || ''}, ${data.state || ''} ${data.zip || ''}
-- Home Phone: ${data.homePhone || '—'}
-- Email: ${data.email || '—'}
-- Driver's License: ${data.driversLicense || '—'}
-- SSN: ${data.ssn || '—'}
-- DOB: ${data.dob || '—'}
-
-Payment Details:
-- Last Charge Date: ${data.lastChargeDate || '—'}
-- Date Last Paid: ${data.dateLastPaid || '—'}
-- Total Amount: ${fmtMoneyC(data.totalAmount, "USD", 2)}
-- Amount Paid: ${fmtMoneyC(data.amountPaid, "USD", 2)}
-- Outstanding Amount: ${fmtMoneyC(data.outstandingAmount, "USD", 2)}
-
-Notes:
-${data.notes || '—'}
-
-Updates:
-- Updates: ${data.updates || '—'}
-
-We sincerely appreciate your prompt attention to this matter.`;
-
-    navigator.clipboard.writeText(copyText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
+  const candidateName = [data.firstName, data.lastName].filter(Boolean).join(" ") || "Candidate Name";
   const fields = [
     { label: "Company", value: data.company },
     { label: "First Name", value: data.firstName },
     { label: "Last Name", value: data.lastName },
-    { label: "Address (Street 2)", value: data.street2 },
+    { label: "Street", value: data.street2 },
     { label: "City", value: data.city },
-    { label: "State", value: data.state },
     { label: "Zip", value: data.zip },
-    { label: "Home Phone", value: data.homePhone },
+    { label: "Phone", value: data.homePhone },
     { label: "Email", value: data.email },
-    { label: "Driver's License", value: data.driversLicense },
+    { label: "Drivers License", value: data.driversLicense },
     { label: "Last Charge Date", value: data.lastChargeDate },
     { label: "Total Amount", value: fmtMoneyC(data.totalAmount, "USD", 2), isAmount: true },
     { label: "Amount Paid", value: fmtMoneyC(data.amountPaid, "USD", 2), isAmount: true },
     { label: "Outstanding Amount", value: fmtMoneyC(data.outstandingAmount, "USD", 2), isAmount: true },
     { label: "Date Last Paid", value: data.dateLastPaid },
     { label: "SSN", value: data.ssn },
-    { label: "DOB", value: data.dob },
+    { label: "Date of Birth", value: data.dob },
     { label: "Notes", value: data.notes },
-    { label: "Updates", value: data.updates },
-  ];
+  ].map((field) => ({ ...field, value: field.value || "—" }));
+
+  const handleCopy = () => {
+    const copyText = `Subject Line - Defaulter Details and Supporting Documents of (${candidateName})
+
+Dear Team,
+
+Please find attached the detailed list of defaulters along with the relevant supporting documents for your review and further reference.
+
+The attached documents include the available details and supporting information related to the respective candidate’s accounts. These have been compiled to provide a clear overview of the outstanding cases and the relevant background for each defaulter.
+
+Debtor Details
+${fields.map(({ label, value }) => `${label}: ${value}`).join("\n")}
+
+I request you to kindly review the attached details and documents and take the necessary action as required. In case any additional information, clarification, or supporting documentation is needed for any particular case, please feel free to let me know.
+
+Please consider the attached information for further review and necessary follow-up from your end.
+
+Thank you for your time and cooperation.`;
+
+    navigator.clipboard.writeText(copyText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div style={{
@@ -100,38 +85,32 @@ We sincerely appreciate your prompt attention to this matter.`;
              <div style={{ margin: "0 auto", width: "100%", maxWidth: 640, background: "#111827", border: "1px solid #1f2937", borderRadius: 12, overflow: "hidden", boxShadow: "0 4px 18px rgba(0,0,0,0.2)" }}>
               <div style={{ padding: "16px 32px", borderBottom: "1px solid #1f2937", background: "#0f172a" }}>
                 <div style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 13, fontWeight: 500, color: "#6366f1" }}>
-                  Subject: Defaulter Notification - {data.company || 'N/A'}
+                  Subject Line - Defaulter Details and Supporting Documents of ({candidateName})
                 </div>
               </div>
               
               <div style={{ padding: "24px 32px 32px", color: "#e2e8f0", fontSize: 14, lineHeight: 1.6 }}>
-                 <p style={{ margin: "0 0 16px 0" }}>Dear <strong>{data.firstName || ''} {data.lastName || ''}</strong>,</p>
-                 <p style={{ margin: "0 0 24px 0" }}>This is a formal notification regarding your outstanding balance with {data.company || 'our company'}. Please find the detailed breakdown of your account and payment schedule shared below.</p>
+                 <p style={{ margin: "0 0 16px 0" }}>Dear Team,</p>
+                 <p style={{ margin: "0 0 16px 0" }}>Please find attached the detailed list of defaulters along with the relevant supporting documents for your review and further reference.</p>
+                 <p style={{ margin: "0 0 24px 0" }}>The attached documents include the available details and supporting information related to the respective candidate’s accounts. These have been compiled to provide a clear overview of the outstanding cases and the relevant background for each defaulter.</p>
                  
                  <table style={{ width: "100%", borderCollapse: "collapse", margin: "24px 0", fontSize: 13, border: "2px solid #020617" }}>
                     <tbody>
                       <tr style={{ background: "#020617", color: "#fff", fontWeight: "bold" }}>
-                        <td style={{ border: "1px solid #1e293b", padding: "8px 12px", width: "40%" }}>Defaulter Information</td>
-                        <td style={{ border: "1px solid #1e293b", padding: "8px 12px", width: "60%" }}>Details</td>
+                        <td colSpan={2} style={{ border: "1px solid #1e293b", padding: "8px 12px", textAlign: "center" }}>Debtor Details</td>
                       </tr>
                       {fields.map((field, idx) => (
                         <tr key={idx} style={{ background: field.isAmount ? "#1e293b" : "#0f172a" }}>
                           <td style={{ border: "1px solid #1e293b", padding: "8px 12px", fontWeight: "bold", color: field.isAmount ? "#f8fafc" : "#94a3b8" }}>{field.label}</td>
-                          <td style={{ border: "1px solid #1e293b", padding: "8px 12px", color: "#e2e8f0", fontFamily: field.isAmount ? "var(--font-mono)" : "inherit", fontWeight: field.isAmount ? "600" : "400" }}>{field.value || '—'}</td>
+                          <td style={{ border: "1px solid #1e293b", padding: "8px 12px", color: "#e2e8f0", fontFamily: field.isAmount ? "var(--font-mono)" : "inherit", fontWeight: field.isAmount ? "600" : "400" }}>{field.value}</td>
                         </tr>
                       ))}
                     </tbody>
                  </table>
 
-                 <div style={{ marginTop: "32px", background: "#1e293b", padding: "16px", borderRadius: "8px", borderLeft: "4px solid #f59e0b" }}>
-                   <p style={{ margin: 0, fontSize: 13, color: "#cbd5e1" }}>
-                     <strong>Important Notice:</strong> Going forward, this email thread will serve as the official communication channel for any queries, issues, clarifications, or requests related to compliance.
-                   </p>
-                 </div>
-                 
-                 <p style={{ margin: "24px 0 0 0", fontSize: 13, color: "#94a3b8" }}>
-                   If you are unable to reach us by phone, you may reply directly to this email or send us a text message, and our Compliance Team will assist you accordingly.
-                 </p>
+                 <p style={{ margin: "48px 0 16px 0" }}>I request you to kindly review the attached details and documents and take the necessary action as required. In case any additional information, clarification, or supporting documentation is needed for any particular case, please feel free to let me know.</p>
+                 <p style={{ margin: "0 0 16px 0" }}>Please consider the attached information for further review and necessary follow-up from your end.</p>
+                 <p style={{ margin: 0 }}>Thank you for your time and cooperation.</p>
               </div>
            </div>
            </div>
