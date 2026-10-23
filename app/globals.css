@@ -4,6 +4,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
+  color-scheme: dark;
   --color-bg:           #020617;
   --color-surface:      #0f172a;
   --color-surface-2:    #1e293b;
@@ -26,11 +27,15 @@
   --mint: var(--color-success);
   --teal: var(--color-primary);
   --border: var(--color-border);
+  --border-md: var(--color-border);
+  --surface: var(--color-surface);
   --surface-1: var(--color-surface);
   --surface-2: var(--color-surface-2);
+  --text: var(--color-ink);
   --text-main: var(--color-ink);
   --text-dim: var(--color-ink-2);
   --text-muted: var(--color-ink-muted);
+  --font: var(--font-body);
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --text-xs:  12px; --text-sm:  13px; --text-md:  14px; --text-lg:  16px;
@@ -644,6 +649,12 @@ input[type="checkbox"]::before { content: ""; width: 8px; height: 8px; clip-path
 input[type="checkbox"]:checked { background-color: var(--color-primary); border-color: var(--color-primary); }
 input[type="checkbox"]:checked::before { transform: scale(1); }
 input[type="checkbox"]:focus { outline: 2px solid var(--color-accent-soft); outline-offset: 2px; }
+select option {
+  color-scheme: dark;
+  background-color: var(--color-surface, #0f172a);
+  color: var(--color-ink, #f8fafc);
+}
+
 select.tbl-select, select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2394a3b8%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 6px center; background-size: 14px; padding-right: 24px !important; }
 .row-hover-checkbox { opacity: 0; transition: opacity 0.15s var(--ease); }
 .tbl tbody tr:hover .row-hover-checkbox, .excel-table tbody tr:hover .row-hover-checkbox { opacity: 1; }

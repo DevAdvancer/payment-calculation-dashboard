@@ -458,9 +458,11 @@ export default function SpecialSheetPage({ type = "laidoff" }) {
           </div>
         ))}
 
-        <Link href="/defaulter-entry">
-          <button style={{border: "2px solid var(--border)", padding: "16px", borderRadius: "var(--r-lg)", backgroundColor: "red", color: "white", fontFamily: "15px", cursor: "pointer" }}>Defaulter's Entry</button>
-        </Link>
+        {!isLaidOff && (
+          <Link href="/defaulter-entry">
+            <button style={{border: "2px solid var(--border)", padding: "16px", borderRadius: "var(--r-lg)", backgroundColor: "red", color: "white", fontFamily: "15px", cursor: "pointer" }}>Defaulter's Entry</button>
+          </Link>
+        )}
       </div>
 
       {/* Filters + Export */}

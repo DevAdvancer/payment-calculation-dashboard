@@ -18,7 +18,7 @@ const RECEIVED_STATUS = "Received";
 export default function SummaryPage() {
   const today = new Date();
 
-  // const currentMonth = MONTH_NAMES[today.getMonth()];
+  const currentMonth = MONTH_NAMES[today.getMonth()];
   const currentYear = String(today.getFullYear());
   const { getActive, loading } = useDashboardStore();
   const hasFilterAccess = useFilterAccess("monthly");
@@ -27,7 +27,7 @@ export default function SummaryPage() {
   const [filters, setFilters] = useState({
     year: currentYear,
     company: [],
-    month: [],
+    month: [currentMonth],
   });
   const [gbpToUsd, setGbpToUsd] = useState(1.35);
 
@@ -392,8 +392,8 @@ export default function SummaryPage() {
         {/* Filter row */}
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <FilterSelect label="Year" value={filters.year} onChange={v => setFilters(f => ({ ...f, year: v }))}>
-            <option value="">All</option>
-            {years.map(y => <option key={y} value={y}>{y}</option>)}
+            <option value="" style={{ background: "var(--color-surface, #0f172a)", color: "var(--color-ink, #f8fafc)" }}>All</option>
+            {years.map(y => <option key={y} value={y} style={{ background: "var(--color-surface, #0f172a)", color: "var(--color-ink, #f8fafc)" }}>{y}</option>)}
           </FilterSelect>
           {hasFilterAccess("month") && (
   <MultiSelectDropdown
@@ -534,10 +534,10 @@ export default function SummaryPage() {
 
 function FilterSelect({ label, value, onChange, children }) {
   return (
-    <label style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 10px", border: "1px solid var(--border-md)", borderRadius: 8, background: "var(--surface)", fontSize: 12 }}>
-      <span style={{ fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".06em", fontSize: 10 }}>{label}</span>
+    <label style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", height: 29, border: "1px solid var(--color-border)", borderRadius: "var(--radius-md, 8px)", background: "var(--color-surface)", fontSize: 12, boxSizing: "border-box" }}>
+      <span style={{ fontWeight: 700, color: "var(--color-ink-muted)", textTransform: "uppercase", letterSpacing: ".06em", fontSize: 10 }}>{label}</span>
       <select value={value} onChange={e => onChange(e.target.value)}
-        style={{ background: "transparent", border: "none", outline: "none", color: "var(--text)", fontFamily: "var(--font)", fontSize: 12, fontWeight: 600, cursor: "pointer", minWidth: 80 }}>
+        style={{ background: "var(--color-surface, #0f172a)", colorScheme: "dark", border: "none", outline: "none", color: "var(--color-ink, #f8fafc)", fontFamily: "var(--font-body, var(--font))", fontSize: 12, fontWeight: 600, cursor: "pointer", minWidth: 80 }}>
         {children}
       </select>
     </label>
